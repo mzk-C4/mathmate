@@ -499,7 +499,6 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                       MaterialPageRoute(
                         builder: (_) => const GeogebraPage(
                           appName: 'graphing',
-                          initialExpression: 'f(x) = x^2',
                         ),
                       ),
                     );

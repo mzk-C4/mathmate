@@ -794,13 +794,18 @@ const ChatMessageEmbeddedSchema = Schema(
       name: r'content',
       type: IsarType.string,
     ),
-    r'role': PropertySchema(
+    r'reasoning': PropertySchema(
       id: 1,
+      name: r'reasoning',
+      type: IsarType.string,
+    ),
+    r'role': PropertySchema(
+      id: 2,
       name: r'role',
       type: IsarType.string,
     ),
     r'timestamp': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'timestamp',
       type: IsarType.dateTime,
     )
@@ -818,6 +823,12 @@ int _chatMessageEmbeddedEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.content.length * 3;
+  {
+    final value = object.reasoning;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.role.length * 3;
   return bytesCount;
 }
@@ -829,8 +840,9 @@ void _chatMessageEmbeddedSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.content);
-  writer.writeString(offsets[1], object.role);
-  writer.writeDateTime(offsets[2], object.timestamp);
+  writer.writeString(offsets[1], object.reasoning);
+  writer.writeString(offsets[2], object.role);
+  writer.writeDateTime(offsets[3], object.timestamp);
 }
 
 ChatMessageEmbedded _chatMessageEmbeddedDeserialize(
@@ -841,8 +853,9 @@ ChatMessageEmbedded _chatMessageEmbeddedDeserialize(
 ) {
   final object = ChatMessageEmbedded();
   object.content = reader.readString(offsets[0]);
-  object.role = reader.readString(offsets[1]);
-  object.timestamp = reader.readDateTime(offsets[2]);
+  object.reasoning = reader.readStringOrNull(offsets[1]);
+  object.role = reader.readString(offsets[2]);
+  object.timestamp = reader.readDateTime(offsets[3]);
   return object;
 }
 
@@ -856,8 +869,10 @@ P _chatMessageEmbeddedDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -997,6 +1012,160 @@ extension ChatMessageEmbeddedQueryFilter on QueryBuilder<ChatMessageEmbedded,
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'content',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reasoning',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reasoning',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reasoning',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'reasoning',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'reasoning',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'reasoning',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'reasoning',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'reasoning',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'reasoning',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'reasoning',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reasoning',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessageEmbedded, ChatMessageEmbedded, QAfterFilterCondition>
+      reasoningIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'reasoning',
         value: '',
       ));
     });

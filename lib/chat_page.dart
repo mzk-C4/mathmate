@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:mathmate/data/conversation_models.dart';
+import 'package:mathmate/data/conversation_repository.dart';
+import 'package:mathmate/services/latex_compiler.dart';
 import 'package:mathmate/services/vivo_chat_service.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  final int? conversationId;
+
+  const ChatPage({super.key, this.conversationId});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -20,9 +25,27 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isLoading = false;
   final FocusNode _inputFocus = FocusNode();
+  bool _titleSet = false;
+  int? _conversationId;
 
   static const String _systemPrompt =
-      '你是一个专业的数学辅导助手，名为蓝心。你应该用友好、专业的态度回答用户提出的数学问题，帮助用户理解和解决数学难题。如果用户问的不是数学问题，你可以友善地引导他们回到数学话题上。请用中文回答。回答时可以使用Markdown格式来展示数学公式、步骤和代码。';
+      '【角色定位】你是一个高效的数学解题助手，专注于快速、准确地解答数学问题。\n'
+      '\n'
+      '【响应原则】\n'
+      '1. 速度优先：优先考虑响应速度，在保证准确性的前提下，尽量减少思考时间\n'
+      '2. 步骤清晰：使用编号列出解题步骤\n'
+      '3. 简洁明了：直接给出核心答案，避免冗余表述\n'
+      '4. 数学符号：正确使用 LaTeX 数学符号和公式，行内公式用 \$...\$，块级公式用 \$\$...\$\$\n'
+      '5. 结构化输出：使用 Markdown 标题(###)分隔不同部分，重要结论用**加粗**\n'
+      '\n'
+      '【执行要求】\n'
+      '1. 快速理解数学问题的核心\n'
+      '2. 直接给出解题步骤（用编号列表）\n'
+      '3. 每个步骤使用简洁的数学符号表达\n'
+      '4. 最后用 \$\$...\$\$ 给出最终答案\n'
+      '5. 控制回答长度，重点突出\n'
+      '6. 如果用户问的不是数学问题，友善地引导他们回到数学话题上\n'
+      '7. 请用中文回答';
 
   static const List<String> _suggestions = <String>[
     '如何解一元二次方程？',
@@ -34,9 +57,55 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    _conversationId = widget.conversationId;
+    if (_conversationId != null) {
+      _loadConversation(_conversationId!);
+    }
     _historyMessages.add(
       VivoChatMessage(role: 'system', content: _systemPrompt),
     );
+  }
+
+  Future<void> _loadConversation(int id) async {
+    final Conversation? conversation =
+        await ConversationRepository.instance.getConversation(id);
+    if (conversation == null || !mounted) return;
+
+    final List<ChatMessage> loaded = <ChatMessage>[];
+    for (final ChatMessageEmbedded msg in conversation.messages) {
+      loaded.add(ChatMessage(
+        role: msg.role,
+        content: msg.content,
+        reasoning: msg.reasoning,
+      ));
+      _historyMessages.add(VivoChatMessage(role: msg.role, content: msg.content));
+    }
+    _titleSet = loaded.isNotEmpty;
+    setState(() {
+      _messages.addAll(loaded);
+    });
+  }
+
+  @override
+  void didUpdateWidget(ChatPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.conversationId != oldWidget.conversationId) {
+      _switchConversation(widget.conversationId);
+    }
+  }
+
+  Future<void> _switchConversation(int? id) async {
+    _messages.clear();
+    _historyMessages.clear();
+    _conversationId = id;
+    _titleSet = false;
+    _historyMessages.add(
+      VivoChatMessage(role: 'system', content: _systemPrompt),
+    );
+    if (id != null) {
+      await _loadConversation(id);
+    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -72,15 +141,57 @@ class _ChatPageState extends State<ChatPage> {
 
     _historyMessages.add(VivoChatMessage(role: 'user', content: content));
 
+    final String title = content.length > 20
+        ? '${content.substring(0, 20)}...'
+        : content;
+
+    // auto-create conversation on first message
+    if (_conversationId == null) {
+      final Conversation conversation =
+          await ConversationRepository.instance.createConversation(title);
+      _conversationId = conversation.id;
+    } else if (!_titleSet) {
+      _titleSet = true;
+      await ConversationRepository.instance.updateTitle(
+        _conversationId!,
+        title,
+      );
+    } else {
+      _titleSet = true; // mark as set so we don't update again
+    }
+
+    final DateTime now = DateTime.now();
+    await ConversationRepository.instance.addMessage(
+      _conversationId!,
+      ChatMessageEmbedded()
+        ..role = 'user'
+        ..content = content
+        ..timestamp = now,
+    );
+
     try {
-      final String response = await _chatService.sendMessage(_historyMessages);
+      final VivoChatResponse response =
+          await _chatService.sendMessage(_historyMessages);
       _historyMessages.add(
-        VivoChatMessage(role: 'assistant', content: response),
+        VivoChatMessage(role: 'assistant', content: response.content),
+      );
+
+      await ConversationRepository.instance.addMessage(
+        _conversationId!,
+        ChatMessageEmbedded()
+          ..role = 'assistant'
+          ..content = response.content
+          ..reasoning = response.reasoning
+          ..timestamp = DateTime.now(),
       );
 
       if (mounted) {
         setState(() {
-          _messages.add(ChatMessage(role: 'assistant', content: response));
+          _messages.add(ChatMessage(
+            role: 'assistant',
+            content: response.content,
+            reasoning: response.reasoning,
+          ));
           _isLoading = false;
         });
         _scrollToBottom();
@@ -108,6 +219,39 @@ class _ChatPageState extends State<ChatPage> {
         duration: Duration(seconds: 1),
       ),
     );
+  }
+
+  Future<void> _compileLatex(String content) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('正在编译 LaTeX...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    final LatexCompiler compiler = LatexCompiler();
+    final LatexCompileResult result = await compiler.compile(content);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result.success) {
+      await compiler.openPdf(result.pdfPath!);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PDF 编译完成'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('编译失败: ${result.error}'),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    }
   }
 
   @override
@@ -246,6 +390,9 @@ class _ChatPageState extends State<ChatPage> {
         crossAxisAlignment:
             isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: <Widget>[
+          if (!isUser && message.reasoning != null &&
+              message.reasoning!.isNotEmpty)
+            _buildReasoningCard(message.reasoning!),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment:
@@ -299,13 +446,27 @@ class _ChatPageState extends State<ChatPage> {
           if (!isUser)
             Padding(
               padding: const EdgeInsets.only(left: 8, top: 4),
-              child: GestureDetector(
-                onTap: () => _copyMessage(message.content),
-                child: const Icon(
-                  Icons.content_copy,
-                  size: 14,
-                  color: Colors.grey,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  GestureDetector(
+                    onTap: () => _copyMessage(message.content),
+                    child: const Icon(
+                      Icons.content_copy,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () => _compileLatex(message.content),
+                    child: const Icon(
+                      Icons.picture_as_pdf,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -313,17 +474,41 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  Widget _buildReasoningCard(String reasoning) {
+    return _ReasoningCard(reasoning: reasoning);
+  }
+
   Widget _buildMarkdownContent(String text) {
+    // 保护代码块，避免 $ 被误识别为数学公式
+    final List<String> codeBlocks = <String>[];
+    String processed = text.replaceAllMapped(
+      RegExp(r'```[\s\S]*?```'),
+      (Match m) {
+        codeBlocks.add(m.group(0)!);
+        return '\x00CODEBLOCK${codeBlocks.length - 1}\x00';
+      },
+    );
+
+    // 保护行内代码
+    final List<String> inlineCodes = <String>[];
+    processed = processed.replaceAllMapped(
+      RegExp(r'`[^`]+`'),
+      (Match m) {
+        inlineCodes.add(m.group(0)!);
+        return '\x00INLINECODE${inlineCodes.length - 1}\x00';
+      },
+    );
+
     final List<Widget> blocks = <Widget>[];
     final RegExp mathRegex = RegExp(r'\$\$(.+?)\$\$|\$(.+?)\$');
-    final Iterable<RegExpMatch> matches = mathRegex.allMatches(text);
+    final Iterable<RegExpMatch> matches = mathRegex.allMatches(processed);
 
     int lastEnd = 0;
     for (final RegExpMatch match in matches) {
       if (match.start > lastEnd) {
-        final String plainText = text.substring(lastEnd, match.start);
+        final String plainText = processed.substring(lastEnd, match.start);
         if (plainText.trim().isNotEmpty) {
-          blocks.add(_mdWidget(plainText));
+          blocks.add(_mdWidget(_restorePlaceholders(plainText, codeBlocks, inlineCodes)));
         }
       }
 
@@ -353,10 +538,10 @@ class _ChatPageState extends State<ChatPage> {
       lastEnd = match.end;
     }
 
-    if (lastEnd < text.length) {
-      final String remaining = text.substring(lastEnd);
+    if (lastEnd < processed.length) {
+      final String remaining = processed.substring(lastEnd);
       if (remaining.trim().isNotEmpty) {
-        blocks.add(_mdWidget(remaining));
+        blocks.add(_mdWidget(_restorePlaceholders(remaining, codeBlocks, inlineCodes)));
       }
     }
 
@@ -375,6 +560,17 @@ class _ChatPageState extends State<ChatPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: blocks,
     );
+  }
+
+  String _restorePlaceholders(String text, List<String> codeBlocks, List<String> inlineCodes) {
+    String result = text;
+    for (int i = 0; i < codeBlocks.length; i++) {
+      result = result.replaceAll('\x00CODEBLOCK$i\x00', codeBlocks[i]);
+    }
+    for (int i = 0; i < inlineCodes.length; i++) {
+      result = result.replaceAll('\x00INLINECODE$i\x00', inlineCodes[i]);
+    }
+    return result;
   }
 
   Widget _mdWidget(String data) {
@@ -530,9 +726,83 @@ class _TypingDotState extends State<_TypingDot>
   }
 }
 
+class _ReasoningCard extends StatefulWidget {
+  final String reasoning;
+  const _ReasoningCard({required this.reasoning});
+
+  @override
+  State<_ReasoningCard> createState() => _ReasoningCardState();
+}
+
+class _ReasoningCardState extends State<_ReasoningCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8, left: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FC),
+          borderRadius: BorderRadius.circular(10),
+          border: const Border(
+            left: BorderSide(color: Color(0xFF9FA8DA), width: 3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(Icons.psychology_outlined,
+                    size: 14, color: Color(0xFF5C6BC0)),
+                const SizedBox(width: 6),
+                const Text(
+                  '思考过程',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF5C6BC0),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                  color: const Color(0xFF5C6BC0),
+                ),
+              ],
+            ),
+            if (_expanded) ...[
+              const SizedBox(height: 8),
+              Text(
+                widget.reasoning,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: Color(0xFF555555),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ChatMessage {
   final String role;
   final String content;
+  final String? reasoning;
 
-  ChatMessage({required this.role, required this.content});
+  ChatMessage({
+    required this.role,
+    required this.content,
+    this.reasoning,
+  });
 }

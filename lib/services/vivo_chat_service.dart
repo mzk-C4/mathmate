@@ -16,6 +16,13 @@ class VivoChatMessage {
   };
 }
 
+class VivoChatResponse {
+  final String content;
+  final String? reasoning;
+
+  VivoChatResponse({required this.content, this.reasoning});
+}
+
 class VivoAiChatService {
   static const String _apiKeyEnv = 'VIVO_API_KEY';
   static const String _modelEnv = 'VIVO_MODEL_ID';
@@ -32,7 +39,7 @@ class VivoAiChatService {
     _dotenvLoaded = true;
   }
 
-  Future<String> sendMessage(List<VivoChatMessage> messages) async {
+  Future<VivoChatResponse> sendMessage(List<VivoChatMessage> messages) async {
     await _ensureEnvLoaded();
 
     final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
@@ -73,14 +80,15 @@ class VivoAiChatService {
     }
 
     final dynamic data = jsonDecode(utf8.decode(response.bodyBytes));
-    return _extractContent(data);
+    return _extractResponse(data);
   }
 
-  String _extractContent(dynamic data) {
-    final dynamic content = data['choices']?[0]?['message']?['content'];
-    if (content is String) {
-      return content.trim();
-    }
-    return '';
+  VivoChatResponse _extractResponse(dynamic data) {
+    final dynamic message = data['choices']?[0]?['message'];
+    final String content = (message?['content'] as String?)?.trim() ?? '';
+    final String? reasoning =
+        (message?['reasoning_content'] as String?)?.trim();
+
+    return VivoChatResponse(content: content, reasoning: reasoning);
   }
 }

@@ -18,5 +18,6 @@ class Conversation {
 class ChatMessageEmbedded {
   late String role; // 'user' | 'assistant' | 'system'
   late String content;
+  String? reasoning;
   late DateTime timestamp;
 }

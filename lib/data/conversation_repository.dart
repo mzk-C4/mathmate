@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -49,7 +50,10 @@ class ConversationRepository {
         await _isar!.conversations.get(conversationId);
     if (conversation == null) return;
 
-    conversation.messages.add(message);
+    conversation.messages = <ChatMessageEmbedded>[
+      ...conversation.messages,
+      message,
+    ];
     conversation.updatedAt = message.timestamp;
 
     await _isar!.writeTxn(() async {
