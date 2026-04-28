@@ -514,19 +514,23 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(
-                        tool['icon'] as IconData,
-                        color: const Color(0xFF3F51B5),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        tool['name'] as String,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Icon(
+                          tool['icon'] as IconData,
+                          color: const Color(0xFF3F51B5),
+                          size: 22,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          tool['name'] as String,
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

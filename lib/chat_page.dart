@@ -29,23 +29,8 @@ class _ChatPageState extends State<ChatPage> {
   int? _conversationId;
 
   static const String _systemPrompt =
-      '【角色定位】你是一个高效的数学解题助手，专注于快速、准确地解答数学问题。\n'
-      '\n'
-      '【响应原则】\n'
-      '1. 速度优先：优先考虑响应速度，在保证准确性的前提下，尽量减少思考时间\n'
-      '2. 步骤清晰：使用编号列出解题步骤\n'
-      '3. 简洁明了：直接给出核心答案，避免冗余表述\n'
-      '4. 数学符号：正确使用 LaTeX 数学符号和公式，行内公式用 \$...\$，块级公式用 \$\$...\$\$\n'
-      '5. 结构化输出：使用 Markdown 标题(###)分隔不同部分，重要结论用**加粗**\n'
-      '\n'
-      '【执行要求】\n'
-      '1. 快速理解数学问题的核心\n'
-      '2. 直接给出解题步骤（用编号列表）\n'
-      '3. 每个步骤使用简洁的数学符号表达\n'
-      '4. 最后用 \$\$...\$\$ 给出最终答案\n'
-      '5. 控制回答长度，重点突出\n'
-      '6. 如果用户问的不是数学问题，友善地引导他们回到数学话题上\n'
-      '7. 请用中文回答';
+      '你是数学解题助手。规则：1.用LaTeX输出公式(行内\$...\$,独立\$\$...\$\$)；'
+      '2.分步骤编号解答；3.重点加粗；4.最终答案放最后。中文回答。非数学问题请引导回数学。';
 
   static const List<String> _suggestions = <String>[
     '如何解一元二次方程？',
@@ -169,9 +154,12 @@ class _ChatPageState extends State<ChatPage> {
         ..timestamp = now,
     );
 
+    // 只保留 system prompt + 最近 6 轮对话，减少请求体加速
+    final List<VivoChatMessage> trimmedHistory = _trimHistory(_historyMessages);
+
     try {
       final VivoChatResponse response =
-          await _chatService.sendMessage(_historyMessages);
+          await _chatService.sendMessage(trimmedHistory);
       _historyMessages.add(
         VivoChatMessage(role: 'assistant', content: response.content),
       );
@@ -209,6 +197,14 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
     }
+  }
+
+  List<VivoChatMessage> _trimHistory(List<VivoChatMessage> full) {
+    if (full.length <= 13) return full; // system + 6 rounds = 13 max
+    return <VivoChatMessage>[
+      full.first, // system prompt
+      ...full.sublist(full.length - 12), // last 6 rounds
+    ];
   }
 
   void _copyMessage(String text) {

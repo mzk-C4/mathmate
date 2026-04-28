@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,10 +25,16 @@ class _JxgWebViewState extends State<JxgWebView> {
       VisualizationController();
   late final WebViewController _controller;
   bool _loading = true;
+  bool _isDesktop = false;
 
   @override
   void initState() {
     super.initState();
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      _isDesktop = true;
+      _loading = false;
+      return;
+    }
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..addJavaScriptChannel(
@@ -73,6 +80,26 @@ class _JxgWebViewState extends State<JxgWebView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isDesktop) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.desktop_windows, size: 48, color: Colors.grey),
+            SizedBox(height: 12),
+            Text(
+              '几何可视化暂不支持桌面端',
+              style: TextStyle(color: Colors.grey, fontSize: 15),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '请在手机或平板上查看',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
     return Stack(
       children: [
         WebViewWidget(controller: _controller),

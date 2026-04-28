@@ -87,6 +87,10 @@ flutter:
     - assets/visualization/index.html
     - assets/visualization/jxg_engine.js
     - assets/visualization/jsxgraphcore.js
+    - assets/geogebra/index.html
+    - assets/geogebra/deployggb.js
+    - assets/geogebra/web3d/web3d.nocache.js
+    - assets/geogebra/web3d/0C7057AD68C986E5B1859BFB332A1012.cache.js
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -63,15 +63,20 @@ class VivoAiChatService {
     final Map<String, dynamic> body = <String, dynamic>{
       'model': modelId,
       'messages': formattedMessages,
-      'temperature': 0.7,
-      'max_tokens': 2048,
+      'temperature': 0.3,
+      'max_tokens': 1024,
     };
 
-    final http.Response response = await http.post(
-      Uri.parse(baseUrl),
-      headers: headers,
-      body: jsonEncode(body),
-    );
+    final http.Response response = await http
+        .post(
+          Uri.parse(baseUrl),
+          headers: headers,
+          body: jsonEncode(body),
+        )
+        .timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw Exception('请求超时，请重试'),
+        );
 
     if (response.statusCode != 200) {
       final String detail = utf8.decode(response.bodyBytes);
