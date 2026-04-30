@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -22,23 +20,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasError = false;
-  bool _isDesktop = false;
 
   @override
   void initState() {
     super.initState();
-
-    // 桌面端不支持 WebView，直接用外部浏览器打开
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      _isDesktop = true;
-      _isLoading = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _openInExternalBrowser().then((_) {
-          if (mounted) Navigator.pop(context);
-        });
-      });
-      return;
-    }
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -111,35 +96,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
-      body: _isDesktop ? _buildDesktopBody() : _buildMobileBody(),
-    );
-  }
-
-  Widget _buildDesktopBody() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const Icon(Icons.open_in_browser, size: 48, color: Colors.white54),
-          const SizedBox(height: 16),
-          const Text(
-            '正在外部浏览器中打开...',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.title,
-            style: const TextStyle(color: Colors.white38, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: _openInExternalBrowser,
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('重新打开'),
-          ),
-        ],
-      ),
+      body: _buildMobileBody(),
     );
   }
 

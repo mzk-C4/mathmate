@@ -495,39 +495,41 @@ class _ChatPageState extends State<ChatPage> {
       },
     );
 
+    // Two-pass: first split by $$...$$ (display math), then split text segments by $...$ (inline math)
     final List<Widget> blocks = <Widget>[];
-    final RegExp mathRegex = RegExp(r'\$\$(.+?)\$\$|\$(.+?)\$');
-    final Iterable<RegExpMatch> matches = mathRegex.allMatches(processed);
+    final RegExp displayMathRegex = RegExp(r'\$\$([\s\S]*?)\$\$');
 
     int lastEnd = 0;
-    for (final RegExpMatch match in matches) {
+    for (final RegExpMatch match in displayMathRegex.allMatches(processed)) {
       if (match.start > lastEnd) {
-        final String plainText = processed.substring(lastEnd, match.start);
-        if (plainText.trim().isNotEmpty) {
-          blocks.add(_mdWidget(_restorePlaceholders(plainText, codeBlocks, inlineCodes)));
+        final String textBefore = processed.substring(lastEnd, match.start).trim();
+        if (textBefore.isNotEmpty) {
+          blocks.addAll(_buildInlineContent(textBefore, codeBlocks, inlineCodes));
         }
       }
 
-      final String? displayMath = match.group(1);
-      final String? inlineMath = match.group(2);
-      final String mathSource = (displayMath ?? inlineMath ?? '').trim();
-      if (mathSource.isNotEmpty) {
+      final String latex = (match.group(1) ?? '').trim();
+      if (latex.isNotEmpty) {
         try {
           blocks.add(
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Math.tex(
-                mathSource,
-                mathStyle: displayMath != null
-                    ? MathStyle.display
-                    : MathStyle.text,
-                textStyle: const TextStyle(fontSize: 15),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Math.tex(
+                  latex,
+                  mathStyle: MathStyle.display,
+                  textStyle: const TextStyle(fontSize: 15),
+                ),
               ),
             ),
           );
         } catch (_) {
           blocks.add(
-            Text(mathSource, style: const TextStyle(fontFamily: 'monospace')),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(latex, style: const TextStyle(fontFamily: 'monospace')),
+            ),
           );
         }
       }
@@ -535,9 +537,9 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (lastEnd < processed.length) {
-      final String remaining = processed.substring(lastEnd);
-      if (remaining.trim().isNotEmpty) {
-        blocks.add(_mdWidget(_restorePlaceholders(remaining, codeBlocks, inlineCodes)));
+      final String remaining = processed.substring(lastEnd).trim();
+      if (remaining.isNotEmpty) {
+        blocks.addAll(_buildInlineContent(remaining, codeBlocks, inlineCodes));
       }
     }
 
@@ -556,6 +558,57 @@ class _ChatPageState extends State<ChatPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: blocks,
     );
+  }
+
+  List<Widget> _buildInlineContent(String text, List<String> codeBlocks, List<String> inlineCodes) {
+    final List<Widget> widgets = <Widget>[];
+    final RegExp inlineMathRegex = RegExp(r'\$([^\$\n]+)\$');
+
+    int lastEnd = 0;
+    for (final RegExpMatch match in inlineMathRegex.allMatches(text)) {
+      if (match.start > lastEnd) {
+        final String textBefore = text.substring(lastEnd, match.start).trim();
+        if (textBefore.isNotEmpty) {
+          widgets.add(_mdWidget(_restorePlaceholders(textBefore, codeBlocks, inlineCodes)));
+        }
+      }
+
+      final String latex = (match.group(1) ?? '').trim();
+      if (latex.isNotEmpty) {
+        try {
+          widgets.add(
+            Math.tex(
+              latex,
+              mathStyle: MathStyle.text,
+              textStyle: const TextStyle(fontSize: 15),
+            ),
+          );
+        } catch (_) {
+          widgets.add(
+            Text(latex, style: const TextStyle(fontFamily: 'monospace', fontSize: 15)),
+          );
+        }
+      }
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < text.length) {
+      final String textAfter = text.substring(lastEnd).trim();
+      if (textAfter.isNotEmpty) {
+        widgets.add(_mdWidget(_restorePlaceholders(textAfter, codeBlocks, inlineCodes)));
+      }
+    }
+
+    if (widgets.isEmpty && text.isNotEmpty) {
+      widgets.add(_mdWidget(_restorePlaceholders(text, codeBlocks, inlineCodes)));
+    }
+
+    return <Widget>[
+      Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: widgets,
+      ),
+    ];
   }
 
   String _restorePlaceholders(String text, List<String> codeBlocks, List<String> inlineCodes) {

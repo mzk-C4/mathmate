@@ -1,13 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:http/http.dart' as http;
 import 'package:mathmate/beautiful_result_page.dart';
 import 'package:mathmate/pages/chat_home_page.dart';
 import 'package:mathmate/notes_page.dart';
 import 'package:mathmate/geogebra_page.dart';
 import 'package:mathmate/data/conversation_repository.dart';
+import 'package:mathmate/data/history_models.dart';
 import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/data/video_resources.dart';
 import 'package:mathmate/grade_selection_page.dart';
@@ -115,13 +119,13 @@ class QuestionHomePage extends StatefulWidget {
 
 class _QuestionHomePageState extends State<QuestionHomePage> {
   final ScannerService _scannerService = ScannerService();
-  final VideoRecommendationService _recommendationService =
-      VideoRecommendationService();
+  final VideoRecommendationService _recommendationService = VideoRecommendationService();
   final TextEditingController _searchController = TextEditingController();
 
   bool _isScanning = false;
   bool _isRefreshing = false;
   List<VideoResource> _recommendedVideos = <VideoResource>[];
+  String _currentGrade = '高中';
 
   @override
   void initState() {
@@ -154,61 +158,70 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
 
   Future<void> _loadGradeLevelAndVideos() async {
     final int? grade = await HistoryRepository.instance.getGradeLevel();
-    final List<VideoResource> videos = await _recommendationService.recommendVideos();
+    _currentGrade = grade != null
+        ? (grade >= 1 && grade <= 6 ? '小学' : grade >= 7 && grade <= 9 ? '初中' : '高中')
+        : '高中';
+
+    // 优先使用AI推荐
+    List<VideoResource> videos = await _recommendationService.recommendVideos();
+
+    // AI推荐失败或返回空时，回退到本地筛选
+    if (videos.isEmpty) {
+      videos = getVideoResourcesByGrade(_currentGrade);
+      try {
+        final List<MathHistory> histories = await HistoryRepository.instance
+            .watchHistories()
+            .first
+            .timeout(const Duration(seconds: 3));
+        if (histories.isNotEmpty) {
+          videos = _boostByHistory(videos, histories);
+        }
+      } catch (_) {}
+      videos = List<VideoResource>.from(videos)..shuffle(Random());
+    }
+
     if (mounted) {
-      setState(() {
-        _recommendedVideos = videos.isNotEmpty ? videos : getVideoResourcesByGrade(
-          grade != null
-              ? (grade >= 1 && grade <= 6 ? '小学' : grade >= 7 && grade <= 9 ? '初中' : '高中')
-              : '高中',
-        );
-      });
+      setState(() => _recommendedVideos = videos);
     }
   }
 
   Future<void> _onRefresh() async {
     if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    await _loadGradeLevelAndVideos();
+    if (mounted) setState(() => _isRefreshing = false);
+  }
 
-    setState(() {
-      _isRefreshing = true;
-    });
+  List<VideoResource> _boostByHistory(
+      List<VideoResource> videos, List<MathHistory> histories) {
+    const List<String> keywords = <String>[
+      '函数', '几何', '向量', '数列', '导数', '三角', '概率', '集合',
+      '不等式', '解析几何', '立体几何', '方程', '统计', '排列', '组合',
+    ];
 
-    try {
-      final List<VideoResource> videos = await _recommendationService.recommendVideos();
-      if (mounted) {
-        if (videos.isNotEmpty) {
-          setState(() {
-            _recommendedVideos = videos;
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('暂无相关视频推荐'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+    final Set<String> matchedModules = <String>{};
+    for (final MathHistory h in histories.take(10)) {
+      final String content = h.ocrContent;
+      for (final String kw in keywords) {
+        if (content.contains(kw)) {
+          for (final VideoResource v in videos) {
+            if (v.module.contains(kw) || v.title.contains(kw)) {
+              matchedModules.add(v.module);
+            }
+          }
         }
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('网络请求失败: ${e.toString()}'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: '重试',
-              onPressed: _onRefresh,
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
-      }
     }
+
+    if (matchedModules.isEmpty) return videos;
+
+    final List<VideoResource> boosted = videos
+        .where((v) => matchedModules.contains(v.module))
+        .toList();
+    final List<VideoResource> rest = videos
+        .where((v) => !matchedModules.contains(v.module))
+        .toList();
+    return <VideoResource>[...boosted, ...rest];
   }
 
   Future<void> _scanAndOpenResult() async {
@@ -490,7 +503,7 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                   'onTap': () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const GeogebraPage(appName: 'classic'),
+                        builder: (_) => const GeogebraPage(appName: 'geometry'),
                       ),
                     );
                   },
@@ -621,6 +634,40 @@ class _VideoCard extends StatefulWidget {
 }
 
 class _VideoCardState extends State<_VideoCard> {
+  String? _coverUrl;
+  bool _coverLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.video.coverUrl != null) {
+      _coverUrl = widget.video.coverUrl;
+    } else if (widget.video.bvId.isNotEmpty) {
+      _fetchCover();
+    }
+  }
+
+  Future<void> _fetchCover() async {
+    if (_coverLoaded) return;
+    try {
+      final http.Response response = await http.get(
+        Uri.parse('https://api.bilibili.com/x/web-interface/view?bvid=${widget.video.bvId}'),
+      ).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+        final String? pic = data['data']?['pic'] as String?;
+        if (pic != null && mounted) {
+          setState(() {
+            _coverUrl = pic;
+            _coverLoaded = true;
+          });
+        }
+      }
+    } catch (_) {
+      _coverLoaded = true;
+    }
+  }
+
   void _openVideo() {
     final String bvId = widget.video.bvId;
     if (bvId.isEmpty) {
@@ -663,34 +710,15 @@ class _VideoCardState extends State<_VideoCard> {
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              Container(
-                color: const Color(0xFFE8EEFF),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    const Icon(
-                      Icons.video_library,
-                      color: Color(0xFF3F51B5),
-                      size: 40,
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        widget.video.uploader,
-                        style: const TextStyle(
-                          color: Color(0xFF3F51B5),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // 封面图或占位
+              _coverUrl != null
+                  ? Image.network(
+                      _coverUrl!,
+                      fit: BoxFit.cover,
+                      width: 160,
+                      errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                    )
+                  : _buildPlaceholder(),
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -748,6 +776,37 @@ class _VideoCardState extends State<_VideoCard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: const Color(0xFFE8EEFF),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          const Icon(
+            Icons.video_library,
+            color: Color(0xFF3F51B5),
+            size: 40,
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              widget.video.uploader,
+              style: const TextStyle(
+                color: Color(0xFF3F51B5),
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

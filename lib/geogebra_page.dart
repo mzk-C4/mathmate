@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -16,35 +14,40 @@ class GeogebraPage extends StatefulWidget {
 }
 
 class _GeogebraPageState extends State<GeogebraPage> {
-  WebViewController? _controller;
+  late final WebViewController _controller;
   bool _loading = true;
-  bool _isDesktop = false;
+  bool _hasError = false;
 
   String get _title {
     switch (widget.appName) {
+      case 'geometry':
       case 'classic':
         return '几何画板';
-      case '3d':
-        return '3D 绘图';
-      case 'geometry':
-        return '平面几何';
-      default:
+      case 'graphing':
         return '函数绘图';
+      default:
+        return '几何画板';
+    }
+  }
+
+  Uri get _appUrl {
+    switch (widget.appName) {
+      case 'geometry':
+      case 'classic':
+        return Uri.parse('https://www.geogebra.org/geometry');
+      case 'graphing':
+        return Uri.parse('https://www.geogebra.org/calculator');
+      default:
+        return Uri.parse('https://www.geogebra.org/geometry');
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _isDesktop = Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-    if (!_isDesktop) {
-      _initWebView();
-    }
-  }
-
-  void _initWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFFFFFFFF))
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (_) {
@@ -54,20 +57,21 @@ class _GeogebraPageState extends State<GeogebraPage> {
             if (mounted) {
               setState(() {
                 _loading = false;
+                _hasError = true;
               });
             }
           },
         ),
       )
-      ..addJavaScriptChannel(
-        'GeometryBridge',
-        onMessageReceived: (JavaScriptMessage message) {
-          // interactive geometry events
-        },
-      )
-      ..loadFlutterAsset('assets/geometry/index.html');
+      ..loadRequest(_appUrl);
+  }
 
-    if (mounted) setState(() {});
+  void _retry() {
+    setState(() {
+      _loading = true;
+      _hasError = false;
+    });
+    _controller.loadRequest(_appUrl);
   }
 
   @override
@@ -80,47 +84,39 @@ class _GeogebraPageState extends State<GeogebraPage> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isDesktop) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(Icons.desktop_windows, size: 56, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
-              '交互式几何画板暂不支持桌面端',
-              style: TextStyle(fontSize: 16, color: Color(0xFF333333)),
+      body: Stack(
+        children: <Widget>[
+          WebViewWidget(controller: _controller),
+          if (_loading)
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  CircularProgressIndicator(color: Color(0xFF3F51B5)),
+                  SizedBox(height: 12),
+                  Text('加载中...', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              '请在手机或平板上使用',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+          if (_hasError)
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Icon(Icons.error_outline, color: Colors.grey, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('加载失败', style: TextStyle(fontSize: 16, color: Color(0xFF333333))),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _retry,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('重试'),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      );
-    }
-
-    return Stack(
-      children: <Widget>[
-        if (_controller != null) WebViewWidget(controller: _controller!),
-        if (_loading)
-          const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                CircularProgressIndicator(color: Color(0xFF3F51B5)),
-                SizedBox(height: 12),
-                Text('几何画板加载中...', style: TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
