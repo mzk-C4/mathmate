@@ -21,21 +21,59 @@ import 'package:mathmate/pages/video_player_page.dart';
 import 'package:mathmate/profile_page.dart';
 import 'package:mathmate/scanner/enhanced_crop_page.dart';
 import 'package:mathmate/services/scanner_service.dart';
+import 'package:mathmate/services/theme_service.dart';
 import 'package:mathmate/services/video_recommendation_service.dart';
+import 'package:mathmate/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HistoryRepository.instance.init();
   await ConversationRepository.instance.init();
+  await ThemeService.instance.init();
 
   final bool isFirst = await HistoryRepository.instance.isFirstLaunch();
   runApp(MathMateApp(checkFirstLaunch: isFirst));
 }
 
-class MathMateApp extends StatelessWidget {
+class MathMateApp extends StatefulWidget {
   final bool checkFirstLaunch;
 
   const MathMateApp({super.key, required this.checkFirstLaunch});
+
+  @override
+  State<MathMateApp> createState() => _MathMateAppState();
+}
+
+class _MathMateAppState extends State<MathMateApp> {
+  late ThemeService _themeService;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeService = ThemeService.instance;
+    _themeService.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    _themeService.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
+  }
+
+  ThemeMode get _themeMode {
+    switch (_themeService.mode) {
+      case AppThemeMode.light:
+        return ThemeMode.light;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+      case AppThemeMode.system:
+        return ThemeMode.system;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,11 +89,10 @@ class MathMateApp extends StatelessWidget {
         Locale('zh', 'CN'),
         Locale('en', 'US'),
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF3F51B5),
-      ),
-      home: checkFirstLaunch ? const GradeSelectionPage() : const MainScreen(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: _themeMode,
+      home: widget.checkFirstLaunch ? const GradeSelectionPage() : const MainScreen(),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mathmate/chat_page.dart';
 import 'package:mathmate/data/conversation_models.dart';
 import 'package:mathmate/data/conversation_repository.dart';
+import 'package:mathmate/services/model_service.dart';
 
 class ChatHomePage extends StatefulWidget {
   const ChatHomePage({super.key});
@@ -17,6 +18,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
   int? _currentConversationId;
   List<Conversation> _conversations = <Conversation>[];
   StreamSubscription<List<Conversation>>? _conversationSub;
+  String _currentModel = 'qwen-plus';
 
   @override
   void initState() {
@@ -30,6 +32,16 @@ class _ChatHomePageState extends State<ChatHomePage> {
         });
       }
     });
+    _initModel();
+  }
+
+  Future<void> _initModel() async {
+    await ModelService.instance.init();
+    if (mounted) {
+      setState(() {
+        _currentModel = ModelService.instance.currentModelId;
+      });
+    }
   }
 
   @override
@@ -75,12 +87,13 @@ class _ChatHomePageState extends State<ChatHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
+      backgroundColor: cs.surface,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: Icon(Icons.menu, color: cs.onSurface),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text(
@@ -88,13 +101,39 @@ class _ChatHomePageState extends State<ChatHomePage> {
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: cs.surface,
         elevation: 0,
-        foregroundColor: const Color(0xFF1A1A1A),
+        foregroundColor: cs.onSurface,
         surfaceTintColor: Colors.transparent,
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            icon: Icon(Icons.smart_toy_outlined, color: cs.onSurface),
+            tooltip: '选择模型',
+            onSelected: (String id) async {
+              await ModelService.instance.setModel(id);
+              if (mounted) {
+                setState(() => _currentModel = id);
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return ModelService.availableModels.map((m) {
+                final bool selected = m['id'] == _currentModel;
+                return PopupMenuItem<String>(
+                  value: m['id'],
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(child: Text(m['name']!)),
+                      if (selected) Icon(Icons.check, size: 16, color: cs.primary),
+                    ],
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(color: Colors.grey.shade200, height: 0.5),
+          child: Container(color: cs.outlineVariant, height: 0.5),
         ),
       ),
       drawer: _buildDrawer(),
@@ -120,6 +159,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
   }
 
   Widget _buildDrawerHeader() {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Column(
@@ -129,28 +169,31 @@ class _ChatHomePageState extends State<ChatHomePage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8EEFF),
+              color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome,
               size: 24,
-              color: Color(0xFF3F51B5),
+              color: cs.primary,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             '蓝心数学助手',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
+              color: cs.onSurface,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             '你的专属数学辅导老师',
-            style: TextStyle(fontSize: 13, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 13,
+              color: cs.onSurface.withValues(alpha: 0.5),
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -160,8 +203,8 @@ class _ChatHomePageState extends State<ChatHomePage> {
               icon: const Icon(Icons.add, size: 18),
               label: const Text('新对话'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF3F51B5),
-                side: const BorderSide(color: Color(0xFF3F51B5)),
+                foregroundColor: cs.primary,
+                side: BorderSide(color: cs.primary),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -175,11 +218,15 @@ class _ChatHomePageState extends State<ChatHomePage> {
   }
 
   Widget _buildConversationList() {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     if (_conversations.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           '暂无对话记录',
-          style: TextStyle(color: Colors.grey, fontSize: 13),
+          style: TextStyle(
+            color: cs.onSurface.withValues(alpha: 0.4),
+            fontSize: 13,
+          ),
         ),
       );
     }
@@ -206,8 +253,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
           },
           child: ListTile(
             selected: isActive,
-            selectedTileColor:
-                const Color(0xFF3F51B5).withValues(alpha: 0.08),
+            selectedTileColor: cs.primary.withValues(alpha: 0.08),
             title: Text(
               conversation.title,
               maxLines: 1,
@@ -215,15 +261,18 @@ class _ChatHomePageState extends State<ChatHomePage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: cs.onSurface,
               ),
             ),
             subtitle: Text(
               _formatTime(conversation.updatedAt),
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 11,
+                color: cs.onSurface.withValues(alpha: 0.4),
+              ),
             ),
             trailing: isActive
-                ? const Icon(Icons.chat_bubble, size: 16,
-                    color: Color(0xFF3F51B5))
+                ? Icon(Icons.chat_bubble, size: 16, color: cs.primary)
                 : null,
             onTap: () => _loadConversation(conversation.id),
           ),

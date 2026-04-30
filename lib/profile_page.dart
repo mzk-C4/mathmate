@@ -4,14 +4,7 @@ import 'package:mathmate/account_settings_page.dart';
 import 'package:mathmate/grade_selection_page.dart';
 import 'package:mathmate/help_support_page.dart';
 import 'package:mathmate/history_list_page.dart';
-
-const Color _profilePrimaryColor = Color(0xFF3F51B5);
-const Color _profileBackgroundColor = Colors.white;
-const Color _profileMutedTextColor = Color(0xFF8E98A8);
-const Color _profileTopDecorColor = Color(0xFFF4F6FA);
-const Color _profileCardShadowColor = Color(0x12000000);
-const double _profileCardRadius = 12;
-const double _profileCardElevationBlur = 10;
+import 'package:mathmate/services/theme_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -23,8 +16,9 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: _profileBackgroundColor,
+      backgroundColor: cs.surface,
       body: Stack(
         children: <Widget>[
           Positioned(
@@ -33,9 +27,9 @@ class _ProfilePageState extends State<ProfilePage> {
             right: 0,
             child: Container(
               height: 220,
-              decoration: const BoxDecoration(
-                color: _profileTopDecorColor,
-                borderRadius: BorderRadius.vertical(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                borderRadius: const BorderRadius.vertical(
                   bottom: Radius.elliptical(320, 120),
                 ),
               ),
@@ -47,12 +41,16 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Text(
+                  Text(
                     '我的',
-                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 22),
-                  _buildHeader(),
+                  _buildHeader(cs),
                   const SizedBox(height: 26),
                   _MenuCard(
                     icon: Icons.settings_outlined,
@@ -80,6 +78,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         setState(() {});
                       }
                     },
+                  ),
+                  const SizedBox(height: 10),
+                  _MenuCard(
+                    icon: Icons.dark_mode_outlined,
+                    title: '深色模式',
+                    onTap: () => _showThemePicker(context),
                   ),
                   const SizedBox(height: 10),
                   _MenuCard(
@@ -119,12 +123,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 18),
                   Material(
-                    color: const Color(0xFFF2F4F8),
-                    borderRadius: BorderRadius.circular(_profileCardRadius),
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(_profileCardRadius),
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () {},
-                      child: const SizedBox(
+                      child: SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: Center(
@@ -133,7 +137,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF5D6778),
+                              color: cs.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                         ),
@@ -149,7 +153,59 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildHeader() {
+  void _showThemePicker(BuildContext context) {
+    final ThemeService ts = ThemeService.instance;
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext ctx, StateSetter setDialogState) {
+            return AlertDialog(
+              title: const Text('选择主题'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: AppThemeMode.values.map((AppThemeMode mode) {
+                  final String label;
+                  final IconData icon;
+                  switch (mode) {
+                    case AppThemeMode.light:
+                      label = '浅色模式';
+                      icon = Icons.light_mode;
+                    case AppThemeMode.dark:
+                      label = '深色模式';
+                      icon = Icons.dark_mode;
+                    case AppThemeMode.system:
+                      label = '跟随系统';
+                      icon = Icons.settings_brightness;
+                  }
+                  return RadioListTile<AppThemeMode>(
+                    title: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(icon, size: 20),
+                        const SizedBox(width: 8),
+                        Text(label),
+                      ],
+                    ),
+                    value: mode,
+                    groupValue: ts.mode,
+                    onChanged: (AppThemeMode? v) {
+                      if (v != null) {
+                        ts.setMode(v);
+                        setDialogState(() {});
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(ColorScheme cs) {
     return Align(
       alignment: Alignment.center,
       child: Column(
@@ -161,7 +217,7 @@ class _ProfilePageState extends State<ProfilePage> {
               shape: BoxShape.circle,
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: _profilePrimaryColor.withValues(alpha: 0.28),
+                  color: cs.primary.withValues(alpha: 0.28),
                   blurRadius: 18,
                   offset: const Offset(0, 8),
                 ),
@@ -177,14 +233,18 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'MathMate_User',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+            ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Level: Math Explorer',
-            style: TextStyle(fontSize: 13, color: _profileMutedTextColor),
+            style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.5)),
           ),
         ],
       ),
@@ -205,40 +265,42 @@ class _MenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(_profileCardRadius),
-      shadowColor: _profileCardShadowColor,
+      color: cs.surface,
+      borderRadius: BorderRadius.circular(12),
+      shadowColor: cs.shadow,
       child: InkWell(
-        borderRadius: BorderRadius.circular(_profileCardRadius),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
           height: 58,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_profileCardRadius),
-            boxShadow: const <BoxShadow>[
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: _profileCardShadowColor,
-                blurRadius: _profileCardElevationBlur,
-                offset: Offset(0, 2),
+                color: cs.shadow.withValues(alpha: 0.07),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Row(
             children: <Widget>[
-              Icon(icon, color: _profilePrimaryColor),
+              Icon(icon, color: cs.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFB3BCCB)),
+              Icon(Icons.chevron_right_rounded, color: cs.onSurface.withValues(alpha: 0.3)),
             ],
           ),
         ),

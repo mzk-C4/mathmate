@@ -99,6 +99,17 @@ jobs:
         run: |
           python3 .github/workflows/scripts/gen_changelog.py
 
+      - name: 读取Changelog内容供Release使用
+        id: read_changelog
+        run: |
+          CHANGELOG_PATH="doc/Changelogs/${{ github.event.inputs.main_version }}/${{ github.event.inputs.sub_version }}/App.md"
+          if [ -f "$CHANGELOG_PATH" ]; then
+            echo "content=$(cat "$CHANGELOG_PATH" | sed 's/\r$//' | awk '{printf "%s\\n", $0}' | sed 's/\\$//')" >> $GITHUB_OUTPUT
+            echo "✅ Changelog文件已读取"
+          else
+            echo "⚠️ Changelog文件不存在: $CHANGELOG_PATH"
+          fi
+
       - name: 提交&推送Changelog文件
         run: |
           git config --global user.name "github-actions[bot]"
@@ -111,3 +122,15 @@ jobs:
         run: |
           git push origin ${{ steps.process_tag.outputs.current_tag }}
           echo "✅ 已自动推送Tag ${{ steps.process_tag.outputs.current_tag }} 到远端"
+
+      - name: 创建GitHub Release
+        if: steps.read_changelog.outputs.content != ''
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.read_changelog.outputs.content }}
+          tag_name: ${{ github.event.inputs.current_tag }}
+          name: ${{ github.event.inputs.current_tag }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

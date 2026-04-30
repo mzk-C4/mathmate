@@ -89,6 +89,24 @@ class ConversationRepository {
     return _isar!.conversations.get(id);
   }
 
+  /// 替换对话中的所有消息（用于删除/编辑消息后更新）
+  Future<void> replaceMessages(
+    int conversationId,
+    List<ChatMessageEmbedded> messages,
+  ) async {
+    await init();
+    final Conversation? conversation =
+        await _isar!.conversations.get(conversationId);
+    if (conversation == null) return;
+
+    conversation.messages = messages;
+    conversation.updatedAt = DateTime.now();
+
+    await _isar!.writeTxn(() async {
+      await _isar!.conversations.put(conversation);
+    });
+  }
+
   /// 删除对话
   Future<void> deleteConversation(int id) async {
     await init();
