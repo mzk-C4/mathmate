@@ -16,7 +16,6 @@ import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/data/video_resources.dart';
 import 'package:mathmate/grade_selection_page.dart';
 import 'package:mathmate/history_list_page.dart';
-import 'package:mathmate/pages/calculator_page.dart';
 import 'package:mathmate/pages/video_player_page.dart';
 import 'package:mathmate/profile_page.dart';
 import 'package:mathmate/scanner/enhanced_crop_page.dart';
@@ -24,7 +23,6 @@ import 'package:mathmate/services/scanner_service.dart';
 import 'package:mathmate/services/theme_service.dart';
 import 'package:mathmate/services/video_recommendation_service.dart';
 import 'package:mathmate/theme/app_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -527,11 +525,13 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
             itemBuilder: (BuildContext context, int index) {
               final List<Map<String, dynamic>> tools = <Map<String, dynamic>>[
                 <String, dynamic>{
-                  'icon': Icons.calculate_outlined,
-                  'name': '计算器',
+                  'icon': Icons.science_outlined,
+                  'name': '科学计算器',
                   'onTap': () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CalculatorPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const GeogebraPage(appName: 'scientific'),
+                      ),
                     );
                   },
                 },
@@ -571,23 +571,24 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                   },
                 },
                 <String, dynamic>{
-                  'icon': Icons.science_outlined,
-                  'name': '科学计算器',
+                  'icon': Icons.grid_view_rounded,
+                  'name': '计算器套件',
                   'onTap': () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const GeogebraPage(appName: 'scientific'),
+                        builder: (_) => const GeogebraPage(appName: 'suite'),
                       ),
                     );
                   },
                 },
                 <String, dynamic>{
-                  'icon': Icons.people_outline,
-                  'name': '社区资源',
+                  'icon': Icons.bar_chart_rounded,
+                  'name': '概率模型',
                   'onTap': () {
-                    launchUrl(
-                      Uri.parse('https://www.geogebra.org/materials'),
-                      mode: LaunchMode.externalApplication,
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const GeogebraPage(appName: 'probability'),
+                      ),
                     );
                   },
                 },
