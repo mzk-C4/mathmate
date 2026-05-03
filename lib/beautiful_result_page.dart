@@ -422,23 +422,24 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
     String emptyText = '暂无内容',
     Color accentColor = const Color(0xFF3F51B5),
   }) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     if (content.trim().isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: cs.outlineVariant),
         ),
         child: Row(
           children: <Widget>[
-            Icon(Icons.info_outline, size: 18, color: Colors.grey.shade400),
+            Icon(Icons.info_outline, size: 18, color: cs.onSurfaceVariant),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 emptyText,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
               ),
             ),
           ],
@@ -453,12 +454,12 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
       padding: const EdgeInsets.all(16),
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border(left: BorderSide(color: accentColor, width: 4)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: accentColor.withValues(alpha: 0.06),
+            color: cs.shadow.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -713,6 +714,7 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -745,9 +747,9 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
             maxChildSize: 0.92,
             builder: (BuildContext context, ScrollController controller) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: SingleChildScrollView(
                   controller: controller,
@@ -760,7 +762,7 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
                           width: 40,
                           height: 5,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: cs.onSurfaceVariant,
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
@@ -906,13 +908,13 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
+                              color: cs.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               _geometryMessage ?? '暂未生成可视化数据。',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.blueGrey),
+                              style: TextStyle(color: cs.onSurfaceVariant),
                             ),
                           ),
                         const SizedBox(height: 24),

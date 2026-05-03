@@ -116,10 +116,10 @@ class KatexPdfService {
           el.innerHTML = '<span class="render-error">[公式渲染失败]</span>';
         }
       });
-      // 等待两帧确保 KaTeX 渲染 + 布局完成后再触发打印
+      // KaTeX 渲染完成后设置就绪标志
       requestAnimationFrame(function() {
         requestAnimationFrame(function() {
-          window.print();
+          document.body.setAttribute('data-ready', 'true');
         });
       });
     })();
@@ -234,81 +234,12 @@ class KatexPdfService {
 
   /// 打开 WebView 打印对话框
   Future<void> _openPrintDialog(BuildContext context, String htmlContent) async {
-    bool hasError = false;
-
-    late final WebViewController controller;
-    controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFFFFFFFF))
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onWebResourceError: (_) {
-            hasError = true;
-          },
-        ),
-      )
-      ..loadHtmlString(htmlContent);
+    if (!context.mounted) return;
 
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext ctx) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: Row(
-            children: <Widget>[
-              const Text('导出 PDF'),
-              const Spacer(),
-              if (hasError)
-                const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
-            ],
-          ),
-          content: SizedBox(
-            width: MediaQuery.of(ctx).size.width * 0.95,
-            height: MediaQuery.of(ctx).size.height * 0.75,
-            child: Stack(
-              children: <Widget>[
-                WebViewWidget(controller: controller),
-                if (hasError)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      color: Colors.orange.shade50,
-                      child: const Row(
-                        children: <Widget>[
-                          Icon(Icons.info_outline, color: Colors.orange, size: 18),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '部分资源加载失败，但公式仍会尽力渲染。请点击下方打印按钮重试。',
-                              style: TextStyle(fontSize: 13, color: Colors.orange),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('关闭'),
-            ),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await controller.runJavaScript('window.print();');
-              },
-              icon: const Icon(Icons.print),
-              label: const Text('打印/导出 PDF'),
-            ),
-          ],
-        ),
-      ),
+      builder: (BuildContext ctx) => _PdfExportDialog(htmlContent: htmlContent),
     );
   }
 
@@ -316,6 +247,118 @@ class KatexPdfService {
   static void clearCache() {
     _cachedJs = null;
     _cachedCss = null;
+  }
+}
+
+class _PdfExportDialog extends StatefulWidget {
+  final String htmlContent;
+
+  const _PdfExportDialog({required this.htmlContent});
+
+  @override
+  State<_PdfExportDialog> createState() => _PdfExportDialogState();
+}
+
+class _PdfExportDialogState extends State<_PdfExportDialog> {
+  late final WebViewController _controller;
+  bool _isReady = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFFFFFFFF))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onWebResourceError: (_) {
+            if (mounted) setState(() => _hasError = true);
+          },
+        ),
+      )
+      ..loadHtmlString(widget.htmlContent);
+    _monitorReady();
+  }
+
+  Future<void> _monitorReady() async {
+    for (int i = 0; i < 30; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return;
+      try {
+        final String? ready = await _controller.runJavaScriptReturningResult(
+          'document.body.getAttribute("data-ready")',
+        ) as String?;
+        if (ready == 'true') {
+          if (mounted) setState(() => _isReady = true);
+          return;
+        }
+      } catch (_) {}
+    }
+    if (mounted) setState(() => _isReady = true); // 超时后也显示内容
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        title: Row(
+          children: <Widget>[
+            const Text('导出 PDF'),
+            const Spacer(),
+            if (_hasError)
+              const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+          ],
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          height: MediaQuery.of(context).size.height * 0.75,
+          child: Stack(
+            children: <Widget>[
+              WebViewWidget(controller: _controller),
+              if (!_isReady)
+                const Center(child: CircularProgressIndicator()),
+              if (_hasError && _isReady)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Colors.orange.shade50,
+                    child: const Row(
+                      children: <Widget>[
+                        Icon(Icons.info_outline, color: Colors.orange, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '部分资源加载失败，但公式仍会尽力渲染。请点击下方打印按钮。',
+                            style: TextStyle(fontSize: 13, color: Colors.orange),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('关闭'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await _controller.runJavaScript('window.print();');
+            },
+            icon: const Icon(Icons.print),
+            label: const Text('打印/导出 PDF'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

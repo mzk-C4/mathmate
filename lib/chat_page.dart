@@ -4,12 +4,9 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:mathmate/data/conversation_models.dart';
 import 'package:mathmate/data/conversation_repository.dart';
-import 'package:mathmate/services/chat_stream_service.dart';
 import 'package:mathmate/services/katex_pdf_service.dart';
 import 'package:mathmate/services/model_service.dart';
-import 'package:mathmate/services/vivo_chat_service.dart';
-
-enum ChatState { idle, streaming, error }
+import 'package:mathmate/services/supabase_chat_service.dart';
 
 class ChatPage extends StatefulWidget {
   final int? conversationId;
@@ -22,15 +19,13 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final ChatStreamService _streamService = ChatStreamService();
+  final SupabaseChatService _chatService = SupabaseChatService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = <ChatMessage>[];
-  final List<VivoChatMessage> _historyMessages = <VivoChatMessage>[];
+  final List<SupabaseChatMessage> _historyMessages = <SupabaseChatMessage>[];
 
-  ChatState _chatState = ChatState.idle;
-  String _streamingContent = '';
-  String? _streamingReasoning;
+  bool _isLoading = false;
   final FocusNode _inputFocus = FocusNode();
   bool _titleSet = false;
   int? _conversationId;
@@ -54,7 +49,7 @@ class _ChatPageState extends State<ChatPage> {
       _loadConversation(_conversationId!);
     }
     _historyMessages.add(
-      VivoChatMessage(role: 'system', content: _systemPrompt),
+      SupabaseChatMessage(role: 'system', content: _systemPrompt),
     );
     if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -76,7 +71,7 @@ class _ChatPageState extends State<ChatPage> {
         reasoning: msg.reasoning,
         timestamp: msg.timestamp,
       ));
-      _historyMessages.add(VivoChatMessage(role: msg.role, content: msg.content));
+      _historyMessages.add(SupabaseChatMessage(role: msg.role, content: msg.content));
     }
     _titleSet = loaded.isNotEmpty;
     setState(() {
@@ -98,7 +93,7 @@ class _ChatPageState extends State<ChatPage> {
     _conversationId = id;
     _titleSet = false;
     _historyMessages.add(
-      VivoChatMessage(role: 'system', content: _systemPrompt),
+      SupabaseChatMessage(role: 'system', content: _systemPrompt),
     );
     if (id != null) {
       await _loadConversation(id);
@@ -128,7 +123,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _sendMessage({String? text}) async {
     final String content = (text ?? _inputController.text).trim();
-    if (content.isEmpty || _chatState == ChatState.streaming) return;
+    if (content.isEmpty || _isLoading) return;
 
     _inputController.clear();
     final DateTime now = DateTime.now();
@@ -138,13 +133,11 @@ class _ChatPageState extends State<ChatPage> {
         content: content,
         timestamp: now,
       ));
-      _chatState = ChatState.streaming;
-      _streamingContent = '';
-      _streamingReasoning = null;
+      _isLoading = true;
     });
     _scrollToBottom();
 
-    _historyMessages.add(VivoChatMessage(role: 'user', content: content));
+    _historyMessages.add(SupabaseChatMessage(role: 'user', content: content));
 
     final String title = content.length > 20
         ? '${content.substring(0, 20)}...'
@@ -169,52 +162,29 @@ class _ChatPageState extends State<ChatPage> {
         ..timestamp = now,
     );
 
-    final List<VivoChatMessage> trimmedHistory = _trimHistory(_historyMessages);
+    final List<SupabaseChatMessage> trimmedHistory = _trimHistory(_historyMessages);
 
     try {
-      final Stream<StreamChunk> stream = _streamService.sendMessageStream(
+      final SupabaseChatResponse response = await _chatService.sendMessage(
         messages: trimmedHistory,
-        modelId: ModelService.instance.currentModelId,
+        provider: ModelService.instance.currentModelId,
       );
 
-      await for (final StreamChunk chunk in stream) {
-        if (!mounted || _chatState != ChatState.streaming) break;
-        if (chunk.error != null) {
-          _historyMessages.removeLast(); // remove user msg
-          setState(() { _chatState = ChatState.error; });
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('发送失败: ${chunk.error}'),
-                action: SnackBarAction(label: '重试', onPressed: _sendMessage),
-              ),
-            );
-          }
-          return;
-        }
-        if (chunk.isDone) break;
-        if (chunk.content != null) _streamingContent += chunk.content!;
-        if (chunk.reasoning != null) {
-          _streamingReasoning = (_streamingReasoning ?? '') + chunk.reasoning!;
-        }
-        setState(() {});
-        _scrollToBottom();
-      }
-
       if (!mounted) return;
-      if (_chatState != ChatState.streaming) return;
 
       final DateTime assistantNow = DateTime.now();
+      final String assistantContent = response.content;
+
       _historyMessages.add(
-        VivoChatMessage(role: 'assistant', content: _streamingContent),
+        SupabaseChatMessage(role: 'assistant', content: assistantContent),
       );
 
       await ConversationRepository.instance.addMessage(
         _conversationId!,
         ChatMessageEmbedded()
           ..role = 'assistant'
-          ..content = _streamingContent
-          ..reasoning = _streamingReasoning
+          ..content = assistantContent
+          ..reasoning = response.reasoning
           ..timestamp = assistantNow,
       );
 
@@ -222,19 +192,17 @@ class _ChatPageState extends State<ChatPage> {
         setState(() {
           _messages.add(ChatMessage(
             role: 'assistant',
-            content: _streamingContent,
-            reasoning: _streamingReasoning,
+            content: assistantContent,
+            reasoning: response.reasoning,
             timestamp: assistantNow,
           ));
-          _chatState = ChatState.idle;
-          _streamingContent = '';
-          _streamingReasoning = null;
+          _isLoading = false;
         });
         _scrollToBottom();
       }
     } catch (e) {
       if (mounted) {
-        setState(() { _chatState = ChatState.error; });
+        setState(() { _isLoading = false; });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('发送失败: $e'),
@@ -245,43 +213,13 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _stopGeneration() {
-    _streamService.cancel();
-    final String partial = _streamingContent;
-    if (partial.isNotEmpty) {
-      _historyMessages.add(
-        VivoChatMessage(role: 'assistant', content: partial),
-      );
-      final DateTime now = DateTime.now();
-      ConversationRepository.instance.addMessage(
-        _conversationId!,
-        ChatMessageEmbedded()
-          ..role = 'assistant'
-          ..content = partial
-          ..reasoning = _streamingReasoning
-          ..timestamp = now,
-      );
-      _messages.add(ChatMessage(
-        role: 'assistant',
-        content: partial,
-        reasoning: _streamingReasoning,
-        timestamp: now,
-      ));
-    }
-    setState(() {
-      _chatState = ChatState.idle;
-      _streamingContent = '';
-      _streamingReasoning = null;
-    });
-  }
-
   void _rebuildHistory() {
     _historyMessages.clear();
     _historyMessages.add(
-      VivoChatMessage(role: 'system', content: _systemPrompt),
+      SupabaseChatMessage(role: 'system', content: _systemPrompt),
     );
     for (final ChatMessage msg in _messages) {
-      _historyMessages.add(VivoChatMessage(role: msg.role, content: msg.content));
+      _historyMessages.add(SupabaseChatMessage(role: msg.role, content: msg.content));
     }
   }
 
@@ -368,9 +306,9 @@ class _ChatPageState extends State<ChatPage> {
     _sendMessage(text: userContent);
   }
 
-  List<VivoChatMessage> _trimHistory(List<VivoChatMessage> full) {
+  List<SupabaseChatMessage> _trimHistory(List<SupabaseChatMessage> full) {
     if (full.length <= 13) return full; // system + 6 rounds = 13 max
-    return <VivoChatMessage>[
+    return <SupabaseChatMessage>[
       full.first, // system prompt
       ...full.sublist(full.length - 12), // last 6 rounds
     ];
@@ -427,7 +365,7 @@ class _ChatPageState extends State<ChatPage> {
     return Column(
       children: <Widget>[
         Expanded(
-          child: _messages.isEmpty && _chatState == ChatState.idle
+          child: _messages.isEmpty && !_isLoading
               ? _buildWelcomeScreen()
               : _buildMessageList(),
         ),
@@ -512,70 +450,13 @@ class _ChatPageState extends State<ChatPage> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      itemCount: _messages.length + (_chatState == ChatState.streaming ? 1 : 0),
+      itemCount: _messages.length + (_isLoading ? 1 : 0),
       itemBuilder: (BuildContext context, int index) {
         if (index == _messages.length) {
-          return _buildStreamingBubble();
+          return _buildTypingIndicator();
         }
         return _buildMessageBubble(_messages[index]);
       },
-    );
-  }
-
-  Widget _buildStreamingBubble() {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    if (_streamingContent.isEmpty) {
-      return _buildTypingIndicator();
-    }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: CircleAvatar(
-              radius: 14,
-              backgroundColor: cs.primaryContainer,
-              child: Icon(Icons.auto_awesome, size: 16, color: cs.primary),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.78,
-              ),
-              clipBehavior: Clip.hardEdge,
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  topRight: Radius.circular(18),
-                  bottomLeft: Radius.circular(4),
-                  bottomRight: Radius.circular(18),
-                ),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: cs.shadow.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  _buildMarkdownContent(_streamingContent),
-                  const SizedBox(height: 2),
-                  _StreamingCursor(color: cs.primary),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -616,7 +497,7 @@ class _ChatPageState extends State<ChatPage> {
     final bool isUser = message.role == 'user';
     final int msgIndex = _messages.indexOf(message);
     final bool isLastAi = !isUser && _messages.isNotEmpty && _messages.last == message &&
-        _chatState != ChatState.streaming;
+        !_isLoading;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -942,33 +823,35 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildInputBar() {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final bool streaming = _chatState == ChatState.streaming;
     final bool hasText = _inputController.text.trim().isNotEmpty;
     return Hero(
       tag: 'search-to-chat',
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border(top: BorderSide(color: cs.outlineVariant)),
-      ),
-      child: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(24),
-                ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: cs.shadow,
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.search, color: cs.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Expanded(
                 child: TextField(
                   controller: _inputController,
                   focusNode: _inputFocus,
                   maxLines: 4,
                   minLines: 1,
                   textInputAction: TextInputAction.newline,
-                  readOnly: streaming,
+                  readOnly: _isLoading,
                   style: TextStyle(color: cs.onSurface),
                   decoration: InputDecoration(
                     hintText: '输入数学问题...',
@@ -976,55 +859,36 @@ class _ChatPageState extends State<ChatPage> {
                         color: cs.onSurface.withValues(alpha: 0.4)),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 18,
+                      horizontal: 8,
                       vertical: 12,
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            if (streaming)
+              const SizedBox(width: 8),
               GestureDetector(
-                onTap: _stopGeneration,
+                onTap: hasText && !_isLoading ? () => _sendMessage() : null,
                 child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.stop_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              )
-            else
-              GestureDetector(
-                onTap: hasText ? () => _sendMessage() : null,
-                child: Container(
-                  width: 44,
-                  height: 44,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: hasText
+                    color: hasText && !_isLoading
                         ? cs.primary
                         : cs.surfaceContainerHighest,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.send_rounded,
-                    color: hasText
+                    _isLoading ? Icons.hourglass_top : Icons.send_rounded,
+                    color: hasText && !_isLoading
                         ? cs.onPrimary
                         : cs.onSurface.withValues(alpha: 0.3),
-                    size: 20,
+                    size: 18,
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1150,55 +1014,6 @@ class _ReasoningCardState extends State<_ReasoningCard> {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StreamingCursor extends StatefulWidget {
-  final Color color;
-  const _StreamingCursor({this.color = const Color(0xFF3F51B5)});
-
-  @override
-  State<_StreamingCursor> createState() => _StreamingCursorState();
-}
-
-class _StreamingCursorState extends State<_StreamingCursor>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (BuildContext context, Widget? child) {
-        return Opacity(
-          opacity: _controller.value,
-          child: child,
-        );
-      },
-      child: Container(
-        width: 2,
-        height: 18,
-        decoration: BoxDecoration(
-          color: widget.color,
-          borderRadius: BorderRadius.circular(1),
         ),
       ),
     );

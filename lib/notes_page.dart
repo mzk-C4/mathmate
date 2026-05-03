@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:open_file/open_file.dart';
+import 'package:path/path.dart' as p;
 import 'note_editor_page.dart';
 import 'note_handwriting_editor_page.dart';
 import 'note_model.dart';
@@ -83,6 +87,39 @@ class _NotesPageState extends State<NotesPage> {
     }
   }
 
+  Future<void> _importPdf() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final pickedFile = result.files.first;
+    if (pickedFile.path == null) return;
+
+    final srcPath = pickedFile.path!;
+    final fileName = pickedFile.name;
+
+    final appDir = Directory('${Directory.systemTemp.path}/mathmate_pdfs');
+    if (!await appDir.exists()) await appDir.create(recursive: true);
+    final destPath = '${appDir.path}/$fileName';
+    await File(srcPath).copy(destPath);
+
+    if (!mounted) return;
+    setState(() {
+      allNotes.insert(0, Note(
+        title: p.basenameWithoutExtension(fileName),
+        content: '',
+        createTime: DateTime.now(),
+        updateTime: DateTime.now(),
+        noteType: 'pdf',
+        pdfPath: destPath,
+      ));
+    });
+    await _saveNotesToLocal();
+    _filterNotes();
+  }
+
   Future<void> _createNewNote({bool handwriting = false}) async {
     final result = await Navigator.push(
       context,
@@ -105,6 +142,18 @@ class _NotesPageState extends State<NotesPage> {
 
   Future<void> _editNote(int index) async {
     final note = filteredNotes[index];
+    if (note.noteType == 'pdf') {
+      if (note.pdfPath.isNotEmpty && File(note.pdfPath).existsSync()) {
+        await OpenFile.open(note.pdfPath);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('PDF文件不存在')),
+          );
+        }
+      }
+      return;
+    }
     final isHandwriting = note.noteType == 'handwriting';
     final result = await Navigator.push(
       context,
@@ -172,6 +221,9 @@ class _NotesPageState extends State<NotesPage> {
         category: note.category,
         tags: note.tags,
         hasHistoryLink: note.hasHistoryLink,
+        noteType: note.noteType,
+        pdfPath: note.pdfPath,
+        linkedHistories: note.linkedHistories,
       );
     });
     await _saveNotesToLocal();
@@ -311,6 +363,15 @@ class _NotesPageState extends State<NotesPage> {
                       _createNewNote(handwriting: true);
                     },
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                    title: const Text("导入PDF"),
+                    subtitle: const Text("从手机导入PDF文件"),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _importPdf();
+                    },
+                  ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -329,10 +390,13 @@ class _NotesPageState extends State<NotesPage> {
                     "${note.createTime.year}-${note.createTime.month.toString().padLeft(2, '0')}-${note.createTime.day.toString().padLeft(2, '0')} ${note.createTime.hour.toString().padLeft(2, '0')}:${note.createTime.minute.toString().padLeft(2, '0')}";
 
                 final isHandwriting = note.noteType == 'handwriting';
+                final isPdf = note.noteType == 'pdf';
                 return ListTile(
                   leading: isHandwriting
                       ? const Icon(Icons.draw, color: Colors.orange, size: 28)
-                      : null,
+                      : isPdf
+                          ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28)
+                          : null,
                   title: Row(
                     children: [
                       Expanded(child: Text(note.title.isEmpty ? "无标题" : note.title)),
@@ -346,13 +410,23 @@ class _NotesPageState extends State<NotesPage> {
                           ),
                           child: const Text("手写", style: TextStyle(fontSize: 10, color: Colors.orange)),
                         ),
+                      if (isPdf)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: const Text("PDF", style: TextStyle(fontSize: 10, color: Colors.red)),
+                        ),
                     ],
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getPlainTextPreview(note.content),
+                        isPdf ? 'PDF 文件' : _getPlainTextPreview(note.content),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

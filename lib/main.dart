@@ -24,12 +24,18 @@ import 'package:mathmate/services/theme_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mathmate/services/video_recommendation_service.dart';
 import 'package:mathmate/theme/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HistoryRepository.instance.init();
   await ConversationRepository.instance.init();
   await ThemeService.instance.init();
+
+  await Supabase.initialize(
+    url: 'https://nsetgslkaocosehsbqcy.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zZXRnc2xrYW9jb3NlaHNicWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMwNjQ4MDAsImV4cCI6MjA1ODY0MDgwMH0.placeholder',
+  );
 
   final bool isFirst = await HistoryRepository.instance.isFirstLaunch();
   runApp(MathMateApp(checkFirstLaunch: isFirst));
@@ -909,15 +915,24 @@ class _ChatTransitionRoute extends PageRouteBuilder<void> {
       : super(
           pageBuilder: (context, animation, secondaryAnimation) => targetPage,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: CurvedAnimation(
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.15),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
                 parent: animation,
-                curve: Curves.easeInOut,
+                curve: Curves.easeOutCubic,
+              )),
+              child: FadeTransition(
+                opacity: CurvedAnimation(
+                  parent: animation,
+                  curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+                ),
+                child: child,
               ),
-              child: child,
             );
           },
-          transitionDuration: const Duration(milliseconds: 350),
+          transitionDuration: const Duration(milliseconds: 400),
           reverseTransitionDuration: const Duration(milliseconds: 300),
         );
 }

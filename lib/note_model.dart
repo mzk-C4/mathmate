@@ -11,7 +11,9 @@ class Note {
   final String category;
   final List<String> tags;
   final bool hasHistoryLink;
-  final String noteType; // 'type' = 打字笔记, 'handwriting' = 手写笔记
+  final String noteType; // 'type' = 打字笔记, 'handwriting' = 手写笔记, 'pdf' = PDF导入
+  final String pdfPath; // PDF文件路径，仅 noteType='pdf' 时有效
+  final List<Map<String, String>> linkedHistories; // 嵌入笔记的搜题历史卡片
 
   Note({
     required this.title,
@@ -25,6 +27,8 @@ class Note {
     this.tags = const [],
     this.hasHistoryLink = false,
     this.noteType = 'type',
+    this.pdfPath = '',
+    this.linkedHistories = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -40,6 +44,8 @@ class Note {
       'tags': tags,
       'hasHistoryLink': hasHistoryLink,
       'noteType': noteType,
+      'pdfPath': pdfPath,
+      'linkedHistories': linkedHistories,
     };
   }
 
@@ -73,6 +79,14 @@ class Note {
       tags: List<String>.from(json['tags'] ?? []),
       hasHistoryLink: json['hasHistoryLink'] ?? false,
       noteType: json['noteType'] ?? 'type',
+      pdfPath: json['pdfPath'] ?? '',
+      linkedHistories: json['linkedHistories'] != null
+          ? List<Map<String, String>>.from(
+              (json['linkedHistories'] as List).map(
+                (e) => Map<String, String>.from(e as Map),
+              ),
+            )
+          : [],
     );
   }
 }
