@@ -1,0 +1,29 @@
+warning: in the working copy of 'lib/chat_page.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/data/video_resources.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/note_handwriting_editor_page.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/pdf_viewer_page.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/services/video_recommendation_service.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/services/vivo_chat_service.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'linux/flutter/generated_plugin_registrant.cc', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'linux/flutter/generated_plugins.cmake', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'macos/Flutter/GeneratedPluginRegistrant.swift', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'windows/flutter/generated_plugin_registrant.cc', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'windows/flutter/generated_plugins.cmake', LF will be replaced by CRLF the next time Git touches it
+ lib/chat_page.dart                             |  34 [32m++++[m[31m---[m
+ lib/data/history_repository.dart               |  17 [32m++++[m
+ lib/data/video_resources.dart                  | 134 [32m++++++++++++++++++++++++[m
+ lib/grade_selection_page.dart                  |   3 [32m+[m[31m-[m
+ lib/main.dart                                  |  30 [32m+++[m[31m---[m
+ lib/note_handwriting_editor_page.dart          |   7 [32m+[m[31m-[m
+ lib/pdf_viewer_page.dart                       |   5 [32m+[m[31m-[m
+ lib/services/supabase_chat_service.dart        |  51 [31m----------[m
+ lib/services/video_recommendation_service.dart |   4 [32m+[m
+ lib/services/vivo_chat_service.dart            |   6 [32m+[m[31m-[m
+ linux/flutter/generated_plugin_registrant.cc   |   4 [31m-[m
+ linux/flutter/generated_plugins.cmake          |   1 [31m-[m
+ macos/Flutter/GeneratedPluginRegistrant.swift  |   2 [31m-[m
+ pubspec.lock                                   | 136 [31m-------------------------[m
+ pubspec.yaml                                   |   1 [31m-[m
+ windows/flutter/generated_plugin_registrant.cc |   3 [31m-[m
+ windows/flutter/generated_plugins.cmake        |   1 [31m-[m
+ 17 files changed, 200 insertions(+), 239 deletions(-)

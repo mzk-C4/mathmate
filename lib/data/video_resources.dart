@@ -690,6 +690,140 @@ final List<VideoResource> allVideoResources = <VideoResource>[
     bvId: 'BV19y4y1s7za',
     uploader: '一数',
   ),
+
+  // ========== 大学数学 ==========
+
+  // ==================== 高等数学 ====================
+  const VideoResource(
+    title: '极限',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV1D4DnYCEQS',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '一元微分',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV1zz4y1o7m2',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '一元积分',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV1ee411r71f',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '多元微分',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV16b421H7ac',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '重积分',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV11t42177s1',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '微分方程',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV1etZxBGEZc',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '无穷级数',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV13w4m1S7Rx',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '曲线曲面积分',
+    grade: '大学',
+    module: '高等数学',
+    bvId: 'BV1Xy4y1L7Z5',
+    uploader: '宋浩老师',
+  ),
+
+  // ==================== 线性代数 ====================
+  const VideoResource(
+    title: '行列式',
+    grade: '大学',
+    module: '线性代数',
+    bvId: 'BV1eN411r7ku',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '矩阵',
+    grade: '大学',
+    module: '线性代数',
+    bvId: 'BV1c2421P7g8',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '线性方程组',
+    grade: '大学',
+    module: '线性代数',
+    bvId: 'BV1ZM4y1n7VH',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '特征值/特征向量',
+    grade: '大学',
+    module: '线性代数',
+    bvId: 'BV1TH4y1L7PV',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '二次型',
+    grade: '大学',
+    module: '线性代数',
+    bvId: 'BV1ZC411j7mu',
+    uploader: '宋浩老师',
+  ),
+
+  // ==================== 概率论与数理统计 ====================
+  const VideoResource(
+    title: '概率',
+    grade: '大学',
+    module: '概率论与数理统计',
+    bvId: 'BV1JXppejE8q',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '一维分布',
+    grade: '大学',
+    module: '概率论与数理统计',
+    bvId: 'BV1T14y1h7uV',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '二维分布',
+    grade: '大学',
+    module: '概率论与数理统计',
+    bvId: 'BV1xm9eY7E5y',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '参数估计',
+    grade: '大学',
+    module: '概率论与数理统计',
+    bvId: 'BV1FbKBzzEP8',
+    uploader: '宋浩老师',
+  ),
+  const VideoResource(
+    title: '假设检验',
+    grade: '大学',
+    module: '概率论与数理统计',
+    bvId: 'BV1yf4y1K7so',
+    uploader: '宋浩老师',
+  ),
 ];
 
 /// 按学段获取视频资源

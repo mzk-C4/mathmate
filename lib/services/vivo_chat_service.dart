@@ -39,11 +39,11 @@ class VivoAiChatService {
     _dotenvLoaded = true;
   }
 
-  Future<VivoChatResponse> sendMessage(List<VivoChatMessage> messages) async {
+  Future<VivoChatResponse> sendMessage(List<VivoChatMessage> messages, {String? modelId}) async {
     await _ensureEnvLoaded();
 
     final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-    final String modelId = (dotenv.env[_modelEnv] ?? _defaultModel).trim();
+    final String resolvedModel = modelId ?? (dotenv.env[_modelEnv] ?? _defaultModel).trim();
     final String baseUrl =
         (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
 
@@ -61,7 +61,7 @@ class VivoAiChatService {
     };
 
     final Map<String, dynamic> body = <String, dynamic>{
-      'model': modelId,
+      'model': resolvedModel,
       'messages': formattedMessages,
       'temperature': 0.7,
       'max_tokens': 2048,

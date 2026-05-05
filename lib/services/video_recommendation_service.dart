@@ -89,6 +89,8 @@ class VideoRecommendationService {
     if (grade >= 1 && grade <= 6) return '小学${grade}年级';
     if (grade >= 7 && grade <= 9) return '初中${grade - 6}年级';
     if (grade >= 10 && grade <= 12) return '高中${grade - 9}年级';
+    if (grade >= 13 && grade <= 16) return '大学${grade - 12}年级';
+    if (grade == 17) return '研究生';
     return '未知年级';
   }
 
@@ -209,6 +211,8 @@ $videoDb
             targetGrade = '小学';
           } else if (grade >= 7 && grade <= 9) {
             targetGrade = '初中';
+          } else if (grade >= 13) {
+            targetGrade = '大学';
           }
         }
 

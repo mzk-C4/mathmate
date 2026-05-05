@@ -49,7 +49,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #525659; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
@@ -588,7 +588,8 @@ class _PdfRingColorPickerState extends State<_PdfRingColorPicker> {
 
     if (distSq > radius * radius) return;
 
-    final angle = (atan2(dy, dx) + pi) / (2 * pi);
+    final raw = atan2(dy, dx);
+    final angle = (raw < 0 ? raw + 2 * pi : raw) / (2 * pi);
     final dist = sqrt(distSq) / radius;
 
     setState(() {

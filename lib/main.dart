@@ -24,7 +24,7 @@ import 'package:mathmate/services/theme_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mathmate/services/video_recommendation_service.dart';
 import 'package:mathmate/theme/app_theme.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:mathmate/tutorial_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,19 +32,19 @@ Future<void> main() async {
   await ConversationRepository.instance.init();
   await ThemeService.instance.init();
 
-  await Supabase.initialize(
-    url: 'https://nsetgslkaocosehsbqcy.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zZXRnc2xrYW9jb3NlaHNicWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3ODQ0MzAsImV4cCI6MjA5MzM2MDQzMH0.30FRbdCsoa4WN6oahQy7JJFt3i_2850CEy0zHEC1M7s',
-  );
-
   final bool isFirst = await HistoryRepository.instance.isFirstLaunch();
-  runApp(MathMateApp(checkFirstLaunch: isFirst));
+  final bool tutorialCompleted = await HistoryRepository.instance.isTutorialCompleted();
+  runApp(MathMateApp(
+    checkFirstLaunch: isFirst,
+    showTutorial: !tutorialCompleted && !isFirst,
+  ));
 }
 
 class MathMateApp extends StatefulWidget {
   final bool checkFirstLaunch;
+  final bool showTutorial;
 
-  const MathMateApp({super.key, required this.checkFirstLaunch});
+  const MathMateApp({super.key, required this.checkFirstLaunch, this.showTutorial = false});
 
   @override
   State<MathMateApp> createState() => _MathMateAppState();
@@ -98,8 +98,14 @@ class _MathMateAppState extends State<MathMateApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
-      home: widget.checkFirstLaunch ? const GradeSelectionPage() : const MainScreen(),
+      home: _getInitialPage(),
     );
+  }
+
+  Widget _getInitialPage() {
+    if (widget.checkFirstLaunch) return const GradeSelectionPage();
+    if (widget.showTutorial) return const TutorialPage();
+    return const MainScreen();
   }
 }
 
@@ -194,12 +200,6 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
     _currentGrade = grade != null
         ? (grade >= 1 && grade <= 6 ? '小学' : grade >= 7 && grade <= 9 ? '初中' : grade >= 10 && grade <= 12 ? '高中' : '大学')
         : '高中';
-
-    // 大学阶段先不推荐视频
-    if (_currentGrade == '大学') {
-      if (mounted) setState(() => _recommendedVideos = <VideoResource>[]);
-      return;
-    }
 
     // 优先使用AI推荐
     List<VideoResource> videos = await _recommendationService.recommendVideos();

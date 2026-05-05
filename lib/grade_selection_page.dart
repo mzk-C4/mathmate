@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/main.dart';
+import 'package:mathmate/tutorial_page.dart';
 
 class GradeSelectionPage extends StatefulWidget {
   final bool isFromSettings;
@@ -184,7 +185,7 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
                         navigator.pop(_selectedGrade);
                       } else {
                         navigator.pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const MainScreen()),
+                          MaterialPageRoute(builder: (_) => const TutorialPage()),
                           (Route<dynamic> route) => false,
                         );
                       }

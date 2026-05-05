@@ -6,7 +6,7 @@ import 'package:mathmate/data/conversation_models.dart';
 import 'package:mathmate/data/conversation_repository.dart';
 import 'package:mathmate/services/katex_pdf_service.dart';
 import 'package:mathmate/services/model_service.dart';
-import 'package:mathmate/services/supabase_chat_service.dart';
+import 'package:mathmate/services/vivo_chat_service.dart';
 
 class ChatPage extends StatefulWidget {
   final int? conversationId;
@@ -19,11 +19,11 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final SupabaseChatService _chatService = SupabaseChatService();
+  final VivoAiChatService _chatService = VivoAiChatService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = <ChatMessage>[];
-  final List<SupabaseChatMessage> _historyMessages = <SupabaseChatMessage>[];
+  final List<VivoChatMessage> _historyMessages = <VivoChatMessage>[];
 
   bool _isLoading = false;
   final FocusNode _inputFocus = FocusNode();
@@ -49,7 +49,7 @@ class _ChatPageState extends State<ChatPage> {
       _loadConversation(_conversationId!);
     }
     _historyMessages.add(
-      SupabaseChatMessage(role: 'system', content: _systemPrompt),
+      VivoChatMessage(role: 'system', content: _systemPrompt),
     );
     if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,7 +71,7 @@ class _ChatPageState extends State<ChatPage> {
         reasoning: msg.reasoning,
         timestamp: msg.timestamp,
       ));
-      _historyMessages.add(SupabaseChatMessage(role: msg.role, content: msg.content));
+      _historyMessages.add(VivoChatMessage(role: msg.role, content: msg.content));
     }
     _titleSet = loaded.isNotEmpty;
     setState(() {
@@ -93,7 +93,7 @@ class _ChatPageState extends State<ChatPage> {
     _conversationId = id;
     _titleSet = false;
     _historyMessages.add(
-      SupabaseChatMessage(role: 'system', content: _systemPrompt),
+      VivoChatMessage(role: 'system', content: _systemPrompt),
     );
     if (id != null) {
       await _loadConversation(id);
@@ -137,7 +137,7 @@ class _ChatPageState extends State<ChatPage> {
     });
     _scrollToBottom();
 
-    _historyMessages.add(SupabaseChatMessage(role: 'user', content: content));
+    _historyMessages.add(VivoChatMessage(role: 'user', content: content));
 
     final String title = content.length > 20
         ? '${content.substring(0, 20)}...'
@@ -162,13 +162,15 @@ class _ChatPageState extends State<ChatPage> {
         ..timestamp = now,
     );
 
-    final List<SupabaseChatMessage> trimmedHistory = _trimHistory(_historyMessages);
+    final List<VivoChatMessage> trimmedHistory = _trimHistory(_historyMessages);
 
+    debugPrint('[ChatPage] 开始调用 chatService.sendMessage...');
     try {
-      final SupabaseChatResponse response = await _chatService.sendMessage(
-        messages: trimmedHistory,
-        provider: ModelService.instance.currentModelId,
+      final VivoChatResponse response = await _chatService.sendMessage(
+        trimmedHistory,
+        modelId: ModelService.instance.currentModelId,
       );
+      debugPrint('[ChatPage] 收到响应: ${response.content.length} 字符');
 
       if (!mounted) return;
 
@@ -176,7 +178,7 @@ class _ChatPageState extends State<ChatPage> {
       final String assistantContent = response.content;
 
       _historyMessages.add(
-        SupabaseChatMessage(role: 'assistant', content: assistantContent),
+        VivoChatMessage(role: 'assistant', content: assistantContent),
       );
 
       await ConversationRepository.instance.addMessage(
@@ -216,10 +218,10 @@ class _ChatPageState extends State<ChatPage> {
   void _rebuildHistory() {
     _historyMessages.clear();
     _historyMessages.add(
-      SupabaseChatMessage(role: 'system', content: _systemPrompt),
+      VivoChatMessage(role: 'system', content: _systemPrompt),
     );
     for (final ChatMessage msg in _messages) {
-      _historyMessages.add(SupabaseChatMessage(role: msg.role, content: msg.content));
+      _historyMessages.add(VivoChatMessage(role: msg.role, content: msg.content));
     }
   }
 
@@ -306,9 +308,9 @@ class _ChatPageState extends State<ChatPage> {
     _sendMessage(text: userContent);
   }
 
-  List<SupabaseChatMessage> _trimHistory(List<SupabaseChatMessage> full) {
+  List<VivoChatMessage> _trimHistory(List<VivoChatMessage> full) {
     if (full.length <= 13) return full; // system + 6 rounds = 13 max
-    return <SupabaseChatMessage>[
+    return <VivoChatMessage>[
       full.first, // system prompt
       ...full.sublist(full.length - 12), // last 6 rounds
     ];

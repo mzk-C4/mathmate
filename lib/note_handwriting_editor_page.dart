@@ -594,8 +594,8 @@ class _NoteHandwritingEditorPageState extends State<NoteHandwritingEditorPage>
               },
             ),
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: "识别",
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: "AI识别",
             onPressed: _currentPage.strokes.isEmpty ? null : _recognizeHandwriting,
           ),
           IconButton(
@@ -1193,7 +1193,8 @@ class _RingColorPickerWidgetState extends State<_RingColorPickerWidget> {
     if (distSq > radius * radius) return;
 
     // 角度 → 色相 (0..1)
-    final angle = (atan2(dy, dx) + pi) / (2 * pi);
+    final raw = atan2(dy, dx);
+    final angle = (raw < 0 ? raw + 2 * pi : raw) / (2 * pi);
     // 距离 → 饱和度 (中心=0, 边缘=1)
     final dist = sqrt(distSq) / radius;
 

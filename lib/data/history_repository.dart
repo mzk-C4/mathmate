@@ -13,6 +13,7 @@ import 'package:mathmate/visualization/safe_json_parser.dart';
 
 const String _kIsFirstLaunch = 'is_first_launch';
 const String _kGradeLevel = 'grade_level';
+const String _kTutorialCompleted = 'tutorial_completed';
 
 class HistoryRepository {
   HistoryRepository._();
@@ -207,5 +208,21 @@ class HistoryRepository {
   Future<void> setGradeLevel(int grade) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kGradeLevel, grade);
+  }
+
+  // 新手引导
+  Future<bool> isTutorialCompleted() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kTutorialCompleted) ?? false;
+  }
+
+  Future<void> setTutorialCompleted() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kTutorialCompleted, true);
+  }
+
+  Future<void> resetTutorial() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kTutorialCompleted);
   }
 }
