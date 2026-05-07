@@ -31,8 +31,13 @@ class _ChatPageState extends State<ChatPage> {
   int? _conversationId;
 
   static const String _systemPrompt =
-      '你是数学解题助手。规则：1.用LaTeX输出公式(行内\$...\$,独立\$\$...\$\$)；'
-      '2.分步骤编号解答；3.重点加粗；4.最终答案放最后。中文回答。非数学问题请引导回数学。';
+      '你是数学解题助手。回答必须使用 Markdown 排版，严格遵守以下规则：\n'
+      '1. 数学公式必须使用 LaTeX：行内公式用 \$...\$ 包裹，独立公式独占一行用 \$\$...\$\$ 包裹。'
+      '禁止输出未包裹的纯 LaTeX 代码（如 \\sqrt{...} 不能单独出现）。\n'
+      '2. 分步骤编号解答，使用 ### 或 **加粗** 强调标题和重点。\n'
+      '3. 不同逻辑段落之间空一行。\n'
+      '4. 最终答案放在最后。\n'
+      '5. 中文回答，非数学问题引导回数学。';
 
   static const List<String> _suggestions = <String>[
     '如何解一元二次方程？',
@@ -537,7 +542,6 @@ class _ChatPageState extends State<ChatPage> {
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width * 0.78,
                     ),
-                    clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
                       color: isUser ? cs.primary : cs.surface,
                       borderRadius: BorderRadius.only(
@@ -676,7 +680,7 @@ class _ChatPageState extends State<ChatPage> {
         try {
           blocks.add(
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: 10),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Math.tex(
@@ -724,54 +728,101 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   List<Widget> _buildInlineContent(String text, List<String> codeBlocks, List<String> inlineCodes) {
-    final List<Widget> widgets = <Widget>[];
+    final String restored = _restorePlaceholders(text, codeBlocks, inlineCodes);
     final RegExp inlineMathRegex = RegExp(r'\$([^\$\n]+)\$');
 
-    int lastEnd = 0;
-    for (final RegExpMatch match in inlineMathRegex.allMatches(text)) {
-      if (match.start > lastEnd) {
-        final String textBefore = text.substring(lastEnd, match.start).trim();
-        if (textBefore.isNotEmpty) {
-          widgets.add(_mdWidget(_restorePlaceholders(textBefore, codeBlocks, inlineCodes)));
-        }
-      }
+    // 无内联公式时走完整 MarkdownBody
+    if (!inlineMathRegex.hasMatch(restored)) {
+      return <Widget>[_mdWidget(restored)];
+    }
 
+    // 有内联公式时用 RichText + WidgetSpan 保证行内对齐
+    final List<InlineSpan> spans = <InlineSpan>[];
+    int lastEnd = 0;
+
+    for (final RegExpMatch match in inlineMathRegex.allMatches(restored)) {
+      if (match.start > lastEnd) {
+        spans.addAll(_parseMarkdownToSpans(restored.substring(lastEnd, match.start)));
+      }
       final String latex = (match.group(1) ?? '').trim();
       if (latex.isNotEmpty) {
-        try {
-          widgets.add(
-            Math.tex(
-              latex,
-              mathStyle: MathStyle.text,
-              textStyle: const TextStyle(fontSize: 15),
-            ),
-          );
-        } catch (_) {
-          widgets.add(
-            Text(latex, style: const TextStyle(fontFamily: 'monospace', fontSize: 15)),
-          );
-        }
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Math.tex(
+            latex,
+            mathStyle: MathStyle.text,
+            textStyle: const TextStyle(fontSize: 15),
+            onErrorFallback: (_) => Text(latex, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
+          ),
+        ));
       }
       lastEnd = match.end;
     }
 
-    if (lastEnd < text.length) {
-      final String textAfter = text.substring(lastEnd).trim();
-      if (textAfter.isNotEmpty) {
-        widgets.add(_mdWidget(_restorePlaceholders(textAfter, codeBlocks, inlineCodes)));
-      }
-    }
-
-    if (widgets.isEmpty && text.isNotEmpty) {
-      widgets.add(_mdWidget(_restorePlaceholders(text, codeBlocks, inlineCodes)));
+    if (lastEnd < restored.length) {
+      spans.addAll(_parseMarkdownToSpans(restored.substring(lastEnd)));
     }
 
     return <Widget>[
-      Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: widgets,
+      SelectionArea(
+        child: Text.rich(
+          TextSpan(
+            style: const TextStyle(fontSize: 15, height: 1.7, color: Color(0xFF333333)),
+            children: spans,
+          ),
+        ),
       ),
     ];
+  }
+
+  /// 解析简单 Markdown 内联语法为 [InlineSpan]，供 RichText 使用。
+  static final RegExp _mdInlinePattern = RegExp(
+    r'(\*\*(.+?)\*\*)|'     // **bold**
+    r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|' // *italic* (not **)
+    r'(`[^`]+`)',           // `code`
+  );
+
+  static List<InlineSpan> _parseMarkdownToSpans(String text) {
+    final List<InlineSpan> spans = <InlineSpan>[];
+    final Color textColor = const Color(0xFF333333);
+
+    int lastEnd = 0;
+    for (final Match match in _mdInlinePattern.allMatches(text)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(text: text.substring(lastEnd, match.start)));
+      }
+
+      if (match.group(1) != null) {
+        // **bold**
+        spans.add(TextSpan(
+          text: match.group(2),
+          style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
+        ));
+      } else if (match.group(3) != null) {
+        // *italic*
+        spans.add(TextSpan(
+          text: match.group(3),
+          style: TextStyle(fontStyle: FontStyle.italic, color: textColor),
+        ));
+      } else if (match.group(4) != null) {
+        // `code`
+        spans.add(TextSpan(
+          text: match.group(4),
+          style: TextStyle(fontFamily: 'monospace', fontSize: 13.5, color: textColor),
+        ));
+      }
+
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(text: text.substring(lastEnd)));
+    }
+
+    if (spans.isEmpty && text.isNotEmpty) {
+      spans.add(TextSpan(text: text));
+    }
+    return spans;
   }
 
   String _restorePlaceholders(String text, List<String> codeBlocks, List<String> inlineCodes) {
@@ -796,7 +847,7 @@ class _ChatPageState extends State<ChatPage> {
   static MarkdownStyleSheet _mdStyle(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-      p: TextStyle(fontSize: 15, height: 1.55, color: cs.onSurface),
+      p: TextStyle(fontSize: 15, height: 1.7, color: cs.onSurface),
       code: TextStyle(
         fontSize: 13,
         fontFamily: 'monospace',
