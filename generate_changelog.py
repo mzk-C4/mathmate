@@ -7,9 +7,9 @@ API_KEY = "sk-7d21e797a5b54b89a29c6fc864f0899b"
 API_URL = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-v4-flash"
 
-main_version = "1.3"
-sub_version = "1.3.0"
-current_tag = "v1.3.0"
+main_version = "1.9"
+sub_version = "1.9.0"
+current_tag = "v1.9.0"
 
 update_date = datetime.now().strftime("%Y-%m-%d")
 
