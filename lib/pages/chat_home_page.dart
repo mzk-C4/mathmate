@@ -141,6 +141,9 @@ class _ChatHomePageState extends State<ChatHomePage> {
       body: ChatPage(
         conversationId: _currentConversationId,
         initialQuery: widget.initialQuery,
+        onConversationCreated: (int id) {
+          _currentConversationId = id;
+        },
       ),
     );
   }

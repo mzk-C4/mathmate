@@ -11,8 +11,9 @@ import 'package:mathmate/services/vivo_chat_service.dart';
 class ChatPage extends StatefulWidget {
   final int? conversationId;
   final String? initialQuery;
+  final void Function(int)? onConversationCreated;
 
-  const ChatPage({super.key, this.conversationId, this.initialQuery});
+  const ChatPage({super.key, this.conversationId, this.initialQuery, this.onConversationCreated});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -61,11 +62,16 @@ class _ChatPageState extends State<ChatPage> {
     _historyMessages.add(
       VivoChatMessage(role: 'system', content: _systemPrompt),
     );
+    _inputController.addListener(_onInputChanged);
     if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _sendMessage(text: widget.initialQuery!);
       });
     }
+  }
+
+  void _onInputChanged() {
+    setState(() {});
   }
 
   Future<void> _loadConversation(int id) async {
@@ -157,6 +163,7 @@ class _ChatPageState extends State<ChatPage> {
       final Conversation conversation =
           await ConversationRepository.instance.createConversation(title);
       _conversationId = conversation.id;
+      widget.onConversationCreated?.call(conversation.id);
     } else if (!_titleSet) {
       _titleSet = true;
       await ConversationRepository.instance.updateTitle(_conversationId!, title);

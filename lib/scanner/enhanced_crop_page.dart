@@ -57,13 +57,13 @@ class _EnhancedCropPageState extends State<EnhancedCropPage> {
                 ].reduce((a, b) => a < b ? a : b);
 
                 if (minDist == distTop) {
-                  _topPercent = relativeY.clamp(0.0, _bottomPercent - 0.1);
+                  _topPercent = relativeY.clamp(0.0, _bottomPercent);
                 } else if (minDist == distBottom) {
-                  _bottomPercent = relativeY.clamp(_topPercent + 0.1, 1.0);
+                  _bottomPercent = relativeY.clamp(_topPercent, 1.0);
                 } else if (minDist == distLeft) {
-                  _leftPercent = relativeX.clamp(0.0, _rightPercent - 0.1);
+                  _leftPercent = relativeX.clamp(0.0, _rightPercent);
                 } else if (minDist == distRight) {
-                  _rightPercent = relativeX.clamp(_leftPercent + 0.1, 1.0);
+                  _rightPercent = relativeX.clamp(_leftPercent, 1.0);
                 }
               });
             },

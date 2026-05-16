@@ -1,18 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'note_handwriting_editor_page.dart';
+import 'note_model.dart';
+import 'widgets/ring_color_picker.dart';
 
 enum _PdfMode { view, write, eraser }
 
 class PdfViewerPage extends StatefulWidget {
-  final String pdfPath;
-  final String title;
+  final Note note;
 
-  const PdfViewerPage({super.key, required this.pdfPath, required this.title});
+  const PdfViewerPage({super.key, required this.note});
 
   @override
   State<PdfViewerPage> createState() => _PdfViewerPageState();
@@ -23,6 +24,11 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   int _currentPage = 1;
   int _totalPages = 1;
   bool _isLoading = true;
+  bool _isDirty = false;
+
+  String _title = '';
+  String _category = '其他';
+  List<String> _tags = [];
 
   final Map<int, List<HandwritingStroke>> _pageStrokes = {};
   List<Offset> _currentPoints = [];
@@ -30,19 +36,84 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   double _strokeWidth = 3.0;
   _PdfMode _mode = _PdfMode.view;
 
+  Note get _note => widget.note;
+
   List<HandwritingStroke> get _currentStrokes =>
       _pageStrokes.putIfAbsent(_currentPage, () => []);
 
   @override
   void initState() {
     super.initState();
+    _title = _note.title;
+    _category = _note.category;
+    _tags = List.from(_note.tags);
+    _loadAnnotations();
     _initPdfViewer();
   }
 
-  void _initPdfViewer() {
-    final file = File(widget.pdfPath);
+  void _loadAnnotations() {
+    if (_note.content.isNotEmpty) {
+      try {
+        final data = jsonDecode(_note.content);
+        if (data is Map<String, dynamic>) {
+          for (final entry in data.entries) {
+            final pageNum = int.tryParse(entry.key);
+            if (pageNum != null && entry.value is List) {
+              _pageStrokes[pageNum] = (entry.value as List)
+                  .map((s) => HandwritingStroke.fromJson(s as Map<String, dynamic>))
+                  .toList();
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  Map<String, dynamic> _serializeAnnotations() {
+    final result = <String, dynamic>{};
+    for (final entry in _pageStrokes.entries) {
+      result[entry.key.toString()] =
+          entry.value.map((s) => s.toJson()).toList();
+    }
+    return result;
+  }
+
+  Future<void> _saveAndPop() async {
+    setState(() => _isDirty = false);
+    final content = jsonEncode(_serializeAnnotations());
+    final updatedNote = Note(
+      title: _title,
+      content: content,
+      createTime: _note.createTime,
+      updateTime: DateTime.now(),
+      textColor: _note.textColor,
+      imagePaths: _note.imagePaths,
+      isFavorite: _note.isFavorite,
+      category: _category,
+      tags: _tags,
+      hasHistoryLink: _note.hasHistoryLink,
+      noteType: _note.noteType,
+      pdfPath: _note.pdfPath,
+      linkedHistories: _note.linkedHistories,
+    );
+    if (!mounted) return;
+    Navigator.pop(context, updatedNote);
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_isDirty) return true;
+    await _saveAndPop();
+    return false;
+  }
+
+  Future<void> _initPdfViewer() async {
+    final file = File(_note.pdfPath);
     final bytes = file.readAsBytesSync();
     final base64Pdf = base64Encode(bytes);
+
+    final pdfJsSrc = await rootBundle.loadString('assets/pdfjs/pdf.min.js');
+    final workerJsSrc =
+        await rootBundle.loadString('assets/pdfjs/pdf.worker.min.js');
 
     final html = '''
 <!DOCTYPE html>
@@ -56,12 +127,15 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     canvas { margin: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
     .page-container { display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+$pdfJsSrc
+  </script>
 </head>
 <body>
   <div class="page-container" id="container"></div>
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var workerBlob = new Blob([atob('${base64Encode(utf8.encode(workerJsSrc))}')], {type: 'application/javascript'});
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
     var pdfDoc = null;
     var currentPage = 1;
     var totalPages = 0;
@@ -196,17 +270,24 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         points: List.from(_currentPoints),
       ));
       _currentPoints.clear();
+      _isDirty = true;
     });
   }
 
   void _undo() {
     setState(() {
-      if (_currentStrokes.isNotEmpty) _currentStrokes.removeLast();
+      if (_currentStrokes.isNotEmpty) {
+        _currentStrokes.removeLast();
+        _isDirty = true;
+      }
     });
   }
 
   void _clearPage() {
-    setState(() => _currentStrokes.clear());
+    setState(() {
+      _currentStrokes.clear();
+      _isDirty = true;
+    });
   }
 
   void _eraseStrokes() {
@@ -223,6 +304,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         }
         return false;
       });
+      _isDirty = true;
     });
   }
 
@@ -246,75 +328,166 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       ),
       builder: (ctx) {
         return SingleChildScrollView(
-          child: _PdfRingColorPicker(
+          child: RingColorPicker(
             initialColor: _selectedColor,
             onColorChanged: (c) => setState(() => _selectedColor = c),
             onConfirm: () => Navigator.pop(ctx),
-            cs: Theme.of(context).colorScheme,
+            colorScheme: Theme.of(context).colorScheme,
           ),
         );
       },
     );
   }
 
+  void _showEditInfoDialog() {
+    final titleCtrl = TextEditingController(text: _title);
+    String selectedCategory = _category;
+    final tagCtrl = TextEditingController(text: _tags.join('、'));
+    const categories = ['代数', '几何', '微积分', '其他'];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('编辑信息'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: '标题'),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                decoration: const InputDecoration(labelText: '分类'),
+                items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList()
+                  ..add(DropdownMenuItem(
+                    value: '其他',
+                    child: Text('其他（${_note.category}）'),
+                  )),
+                onChanged: (v) {
+                  if (v != null) setDialogState(() => selectedCategory = v);
+                },
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: tagCtrl,
+                decoration: const InputDecoration(labelText: '标签（用、分隔）'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _title = titleCtrl.text.trim().isEmpty ? _note.title : titleCtrl.text.trim();
+                  _category = selectedCategory;
+                  _tags = tagCtrl.text
+                      .split('、')
+                      .map((t) => t.trim())
+                      .where((t) => t.isNotEmpty)
+                      .toList();
+                  _isDirty = true;
+                });
+                Navigator.pop(ctx);
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: const Color(0xFF525659),
-      appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: cs.surface,
-        foregroundColor: cs.onSurface,
-        elevation: 0,
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    if (_mode == _PdfMode.view)
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final canLeave = await _onWillPop();
+        if (canLeave && mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF525659),
+        appBar: AppBar(
+          title: Text(_title),
+          backgroundColor: cs.surface,
+          foregroundColor: cs.onSurface,
+          elevation: 0,
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: '更多操作',
+              onSelected: (value) {
+                if (value == 'info') _showEditInfoDialog();
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: 'info', child: Text('编辑信息')),
+              ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.save),
+              tooltip: '保存标注',
+              onPressed: _saveAndPop,
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    children: [
                       InteractiveViewer(
+                        panEnabled: _mode == _PdfMode.view,
+                        scaleEnabled: _mode == _PdfMode.view,
                         minScale: 0.5,
                         maxScale: 5.0,
                         child: WebViewWidget(controller: _controller),
-                      )
-                    else
-                      WebViewWidget(controller: _controller),
-                    IgnorePointer(
-                      child: CustomPaint(
-                        painter: _PdfStrokePainter(
-                          strokes: _currentStrokes,
-                          currentPoints: _currentPoints,
-                          currentColor: _mode == _PdfMode.eraser
-                              ? Colors.grey.withValues(alpha: 0.3)
-                              : _selectedColor,
-                          currentWidth: _mode == _PdfMode.eraser ? 24.0 : _strokeWidth,
-                        ),
-                        size: Size.infinite,
                       ),
-                    ),
-                    if (_mode != _PdfMode.view)
-                      Positioned.fill(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onPanStart: _onPanStart,
-                          onPanUpdate: _onPanUpdate,
-                          onPanEnd: _onPanEnd,
+                      IgnorePointer(
+                        child: CustomPaint(
+                          painter: _PdfStrokePainter(
+                            strokes: _currentStrokes,
+                            currentPoints: _currentPoints,
+                            currentColor: _mode == _PdfMode.eraser
+                                ? Colors.grey.withValues(alpha: 0.3)
+                                : _selectedColor,
+                            currentWidth: _mode == _PdfMode.eraser ? 24.0 : _strokeWidth,
+                          ),
+                          size: Size.infinite,
                         ),
                       ),
-                  ],
+                      if (_mode != _PdfMode.view)
+                        Positioned.fill(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onPanStart: _onPanStart,
+                            onPanUpdate: _onPanUpdate,
+                            onPanEnd: _onPanEnd,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              _buildToolbar(cs),
-              _buildPageBar(cs),
-            ],
-          ),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
-        ],
+                _buildToolbar(cs),
+                _buildPageBar(cs),
+              ],
+            ),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator()),
+          ],
+        ),
       ),
     );
   }
@@ -547,206 +720,4 @@ class _PdfStrokePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PdfStrokePainter oldDelegate) => true;
-}
-
-class _PdfRingColorPicker extends StatefulWidget {
-  final Color initialColor;
-  final ValueChanged<Color> onColorChanged;
-  final VoidCallback onConfirm;
-  final ColorScheme cs;
-
-  const _PdfRingColorPicker({
-    required this.initialColor,
-    required this.onColorChanged,
-    required this.onConfirm,
-    required this.cs,
-  });
-
-  @override
-  State<_PdfRingColorPicker> createState() => _PdfRingColorPickerState();
-}
-
-class _PdfRingColorPickerState extends State<_PdfRingColorPicker> {
-  late double hue;
-  late double saturation;
-  double brightness = 1.0;
-  Color currentColor = Colors.black;
-
-  @override
-  void initState() {
-    super.initState();
-    final hsv = HSVColor.fromColor(widget.initialColor);
-    hue = hsv.hue / 360;
-    saturation = hsv.saturation;
-    brightness = hsv.value;
-    currentColor = widget.initialColor;
-  }
-
-  Color _hsvToColor(double h, double s, double v) {
-    return HSVColor.fromAHSV(1, h * 360, s.clamp(0.0, 1.0), v.clamp(0.0, 1.0)).toColor();
-  }
-
-  void _onPickerTap(Offset localPos, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final dx = localPos.dx - center.dx;
-    final dy = localPos.dy - center.dy;
-    final distSq = dx * dx + dy * dy;
-    final radius = size.width / 2;
-
-    if (distSq > radius * radius) return;
-
-    final raw = atan2(dy, dx);
-    final angle = (raw < 0 ? raw + 2 * pi : raw) / (2 * pi);
-    final dist = sqrt(distSq) / radius;
-
-    setState(() {
-      hue = angle;
-      saturation = dist.clamp(0.0, 1.0);
-      currentColor = _hsvToColor(hue, saturation, brightness);
-      widget.onColorChanged(currentColor);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const double wheelSize = 260;
-
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: widget.cs.onSurfaceVariant.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text('取色器', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: widget.cs.onSurface)),
-          const SizedBox(height: 16),
-          Center(
-            child: SizedBox(
-              width: wheelSize, height: wheelSize,
-              child: GestureDetector(
-                onTapDown: (d) => _onPickerTap(d.localPosition, const Size(wheelSize, wheelSize)),
-                onPanUpdate: (d) => _onPickerTap(d.localPosition, const Size(wheelSize, wheelSize)),
-                child: RepaintBoundary(
-                  child: CustomPaint(
-                    painter: _RingPainter2(),
-                    child: Center(
-                      child: Container(
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                          color: currentColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 6)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text('明度', style: TextStyle(fontSize: 12, color: widget.cs.onSurfaceVariant)),
-              Expanded(
-                child: Slider(
-                  value: brightness, min: 0, max: 1,
-                  activeColor: currentColor,
-                  onChanged: (v) {
-                    setState(() {
-                      brightness = v;
-                      currentColor = _hsvToColor(hue, saturation, brightness);
-                      widget.onColorChanged(currentColor);
-                    });
-                  },
-                ),
-              ),
-              Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: widget.cs.outlineVariant),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: currentColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: widget.cs.outlineVariant, width: 2),
-                  boxShadow: [BoxShadow(color: currentColor.withValues(alpha: 0.4), blurRadius: 8)],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  '#${(currentColor.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}',
-                  style: TextStyle(fontSize: 14, fontFamily: 'monospace', color: widget.cs.onSurface),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: widget.onConfirm,
-                child: const Text('确定'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}
-
-class _RingPainter2 extends CustomPainter {
-  static const List<Color> hueStops = [
-    Color(0xFFFF0000), Color(0xFFFFFF00), Color(0xFF00FF00),
-    Color(0xFF00FFFF), Color(0xFF0000FF), Color(0xFFFF00FF), Color(0xFFFF0000),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    canvas.drawCircle(center, radius,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..shader = const SweepGradient(colors: hueStops).createShader(rect),
-    );
-
-    canvas.drawCircle(center, radius,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..shader = const RadialGradient(
-          colors: [Colors.white, Color(0x00FFFFFF)],
-          stops: [0.0, 0.99],
-        ).createShader(rect),
-    );
-
-    canvas.drawCircle(center, radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..color = Colors.grey.withValues(alpha: 0.3)
-        ..strokeWidth = 2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter2 oldDelegate) => false;
 }

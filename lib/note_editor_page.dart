@@ -35,6 +35,28 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 
   final GlobalKey _printKey = GlobalKey();
 
+  // 持久的格式状态：当用户通过工具栏设置格式（颜色、粗体等）后，
+  // 即使光标移动到其他位置，格式也不会丢失。
+  quill.Style _persistedFormat = const quill.Style();
+
+  void _initQuillController(quill.QuillController controller) {
+    _quillController = controller;
+    _quillController.addListener(() {
+      final current = _quillController.toggledStyle;
+      if (current.attributes.isEmpty) {
+        // toggledStyle 被 _updateSelection 清空（光标移动导致），
+        // 保留 _persistedFormat 不变
+        return;
+      }
+      // 用户通过工具栏显式切换了格式
+      final validAttrs = Map<String, quill.Attribute>.fromEntries(
+        current.attributes.entries
+            .where((e) => e.value.value != null),
+      );
+      _persistedFormat = quill.Style.attr(validAttrs);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,16 +69,44 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     if (widget.note != null && widget.note!.content.isNotEmpty) {
       try {
         final doc = quill.Document.fromJson(jsonDecode(widget.note!.content));
-        _quillController = quill.QuillController(
+        _initQuillController(quill.QuillController(
           document: doc,
           selection: const TextSelection.collapsed(offset: 0),
-        );
+          keepStyleOnNewLine: true,
+          onSelectionChanged: (_) {
+            _restorePersistedFormat();
+          },
+        ));
       } catch (e) {
-        _quillController = quill.QuillController.basic();
+        _initQuillController(quill.QuillController(
+          document: quill.Document(),
+          selection: const TextSelection.collapsed(offset: 0),
+          keepStyleOnNewLine: true,
+          onSelectionChanged: (_) {
+            _restorePersistedFormat();
+          },
+        ));
       }
     } else {
-      _quillController = quill.QuillController.basic();
+      _initQuillController(quill.QuillController(
+        document: quill.Document(),
+        selection: const TextSelection.collapsed(offset: 0),
+        keepStyleOnNewLine: true,
+        onSelectionChanged: (_) {
+          _restorePersistedFormat();
+        },
+      ));
     }
+  }
+
+  void _restorePersistedFormat() {
+    if (_persistedFormat.attributes.isEmpty) return;
+    // 延迟恢复，确保在 _updateSelection 清空 toggledStyle 之后执行
+    Future.microtask(() {
+      if (mounted && _persistedFormat.attributes.isNotEmpty) {
+        _quillController.forceToggledStyle(_persistedFormat);
+      }
+    });
   }
 
   @override
