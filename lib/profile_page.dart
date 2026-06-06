@@ -11,6 +11,7 @@ import 'package:mathmate/services/theme_service.dart';
 import 'package:mathmate/services/update_service.dart';
 import 'package:mathmate/services/user_profile_service.dart';
 import 'package:mathmate/tutorial_page.dart';
+import 'package:mathmate/pages/provider_settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -84,6 +85,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const AccountSettingsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _MenuCard(
+                    icon: Icons.smart_toy_outlined,
+                    title: 'AI模型配置',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderSettingsPage(),
                         ),
                       );
                     },

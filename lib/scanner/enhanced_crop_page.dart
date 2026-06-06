@@ -1,10 +1,12 @@
-import 'dart:io';
+import 'dart:io' show File;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 
 class EnhancedCropPage extends StatefulWidget {
-  final File imageFile;
+  final XFile imageFile;
 
   const EnhancedCropPage({super.key, required this.imageFile});
 
@@ -25,6 +27,18 @@ class _EnhancedCropPageState extends State<EnhancedCropPage> {
   double _lastTouchDy = 0;
 
   static const double _edgeThreshold = 0.04;
+
+  Uint8List? _imageBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.imageFile.readAsBytes().then((b) {
+      if (mounted) setState(() => _imageBytes = b);
+    }).catchError((_) {
+      if (mounted) setState(() => _imageBytes = Uint8List(0));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +160,9 @@ class _EnhancedCropPageState extends State<EnhancedCropPage> {
               children: [
                 // 1. 展示拍摄的原图
                 Center(
-                  child: Image.file(widget.imageFile, fit: BoxFit.contain),
+                  child: _imageBytes != null
+                      ? Image.memory(_imageBytes!, fit: BoxFit.contain)
+                      : const Center(child: CircularProgressIndicator()),
                 ),
                 // 2. 绘制矩形遮罩层
                 Positioned.fill(
@@ -231,6 +247,7 @@ class _EnhancedCropPageState extends State<EnhancedCropPage> {
 
   // 利用 image 库进行像素级裁剪
   Future<void> _processCrop() async {
+    try {
     final bytes = await widget.imageFile.readAsBytes();
     final decodedImage = img.decodeImage(bytes);
     if (decodedImage == null) return;
@@ -250,12 +267,22 @@ class _EnhancedCropPageState extends State<EnhancedCropPage> {
       height: height,
     );
 
-    // 保存并返回
-    final croppedFile = File(
-      widget.imageFile.path.replaceAll('.jpg', '_cropped.jpg'),
-    )..writeAsBytesSync(img.encodeJpg(croppedImage));
+    // 保存到文件再返回，避免 Navigator pop 丢失 in-memory bytes
+    final croppedBytes = Uint8List.fromList(img.encodeJpg(croppedImage));
+    final String srcPath = widget.imageFile.path;
+    final String outPath = '${srcPath.substring(0, srcPath.lastIndexOf('.'))}_cropped.jpg';
+    File(outPath).writeAsBytesSync(croppedBytes);
+    final croppedFile = XFile(outPath, bytes: croppedBytes);
 
     if (mounted) Navigator.pop(context, croppedFile);
+    } catch (e) {
+      debugPrint('_processCrop error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('裁剪失败: $e')),
+        );
+      }
+    }
   }
 }
 

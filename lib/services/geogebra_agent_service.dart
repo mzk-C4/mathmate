@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/provider_config_service.dart';
 
 import 'prompts/geogebra_agent_prompt.dart';
 
@@ -118,36 +118,13 @@ const List<AgentTool> geogebraTools = [
 /// 使用 DeepSeek API 的 function calling 能力，让 LLM 通过工具调用
 /// 操控 GeoGebra 画布。对外提供流式响应。
 class GeogebraAgentService {
-  final String _apiKeyEnv;
-  final String _modelEnv;
-  final String _baseUrlEnv;
-  final String _defaultBaseUrl;
-  final String _defaultModel;
-
   /// 工具执行回调 —— 由外部注入，桥接 JS Bridge。
   Future<String> Function(String toolName, Map<String, dynamic> args)? onToolCall;
 
-  GeogebraAgentService({
-    String apiKeyEnv = 'DEEPSEEK_API_KEY',
-    String modelEnv = 'DEEPSEEK_MODEL_ID',
-    String baseUrlEnv = 'DEEPSEEK_BASE_URL',
-    String defaultBaseUrl = 'https://api.deepseek.com/chat/completions',
-    String defaultModel = 'deepseek-chat',
-  })  : _apiKeyEnv = apiKeyEnv,
-        _modelEnv = modelEnv,
-        _baseUrlEnv = baseUrlEnv,
-        _defaultBaseUrl = defaultBaseUrl,
-        _defaultModel = defaultModel;
+  GeogebraAgentService();
 
-  static bool _dotenvLoaded = false;
   http.Client? _client;
   bool _cancelled = false;
-
-  Future<void> _ensureEnv() async {
-    if (_dotenvLoaded) return;
-    await dotenv.load(fileName: '.env');
-    _dotenvLoaded = true;
-  }
 
   void cancel() {
     _cancelled = true;
@@ -166,15 +143,15 @@ class GeogebraAgentService {
     required List<Map<String, String>> messages,
     int maxSteps = 10,
   }) async* {
-    await _ensureEnv();
     _cancelled = false;
 
-    final apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-    final model = (dotenv.env[_modelEnv] ?? _defaultModel).trim();
-    final baseUrl = (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+    final pc = ProviderConfigService.instance;
+    final apiKey = pc.reasoningApiKey;
+    final model = pc.reasoningModelId;
+    final baseUrl = pc.reasoningBaseUrl;
 
     if (apiKey.isEmpty) {
-      yield AgentStreamChunk(error: '缺少 API Key: $_apiKeyEnv');
+      yield AgentStreamChunk(error: '缺少 API Key: DEEPSEEK_API_KEY');
       return;
     }
 

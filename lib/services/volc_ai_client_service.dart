@@ -1,25 +1,27 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/services/app_logger.dart';
+import 'package:mathmate/services/provider_config_service.dart';
 
 class VolcAiClientService {
-  static const String _apiKeyEnv = 'VOLC_API_KEY';
-  static const String _baseUrlEnv = 'VOLC_BASE_URL';
-  static const String _defaultModelEnv = 'VOLC_MODEL_ID';
-  static const String _requestFormatEnv = 'VOLC_REQUEST_FORMAT';
-  static const String _defaultBaseUrl =
-      'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
-
   static bool _dotenvLoaded = false;
+
+  http.Client _createClient() {
+    final HttpClient client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 10);
+    return IOClient(client);
+  }
 
   Future<void> _ensureEnvLoaded() async {
     if (_dotenvLoaded) {
       return;
     }
-    await dotenv.load(fileName: '.env');
     _dotenvLoaded = true;
   }
 
@@ -28,10 +30,18 @@ class VolcAiClientService {
     required String prompt,
     required String modelEnv,
   }) async {
-    final List<int> bytes = await imageFile.readAsBytes();
+    List<int> bytes = await imageFile.readAsBytes();
+    AppLogger.instance.info('[VolcVision] 原始图片: ${bytes.length} 字节 (${(bytes.length / 1024).toStringAsFixed(1)} KB)');
+
+    // 压缩：max 1024px, JPEG quality 75
+    final img.Image? decoded = img.decodeImage(Uint8List.fromList(bytes));
+    if (decoded != null && (decoded.width > 1024 || decoded.height > 1024)) {
+      final img.Image resized = img.copyResize(decoded, width: 1024, height: 1024);
+      bytes = img.encodeJpg(resized, quality: 75);
+      AppLogger.instance.info('[VolcVision] 压缩后: ${bytes.length} 字节 (${(bytes.length / 1024).toStringAsFixed(1)} KB)');
+    }
+
     final String base64Image = base64Encode(bytes);
-    AppLogger.instance.info('[VolcVision] 图片大小: ${bytes.length} 字节 (${(bytes.length / 1024).toStringAsFixed(1)} KB)');
-    AppLogger.instance.info('[VolcVision] base64 长度: ${base64Image.length} 字符');
     AppLogger.instance.info('[VolcVision] system prompt 长度: ${prompt.length} 字符');
 
     return _request(
@@ -73,12 +83,11 @@ class VolcAiClientService {
   }) async {
     await _ensureEnvLoaded();
 
-    final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-    final String modelId =
-        (dotenv.env[modelEnv] ?? dotenv.env[_defaultModelEnv] ?? '').trim();
-    final String baseUrl = (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
-    final String requestFormat =
-        (dotenv.env[_requestFormatEnv] ?? 'auto').trim().toLowerCase();
+    final pc = ProviderConfigService.instance;
+    final String apiKey = pc.visionApiKey;
+    final String modelId = modelEnv == 'VOLC_OCR_MODEL_ID' ? pc.volcOcrModelId : pc.visionModelId;
+    final String baseUrl = pc.visionBaseUrl;
+    final String requestFormat = 'auto'; // 默认 auto，不再从 env 读取
 
     AppLogger.instance.info('[Volc] 模型 env: $modelEnv，实际 modelId: $modelId');
     AppLogger.instance.info('[Volc] 端点: $baseUrl');
@@ -88,7 +97,7 @@ class VolcAiClientService {
       throw Exception('Missing env config: VOLC_API_KEY');
     }
     if (modelId.isEmpty) {
-      throw Exception('Missing env config: $modelEnv or $_defaultModelEnv');
+      throw Exception('Missing model config: $modelEnv');
     }
 
     final Map<String, String> headers = <String, String>{
@@ -153,16 +162,31 @@ class VolcAiClientService {
     String modelId,
     List<Map<String, dynamic>> messages,
   ) {
-    return http.post(
-      Uri.parse(baseUrl),
-      headers: headers,
-      body: jsonEncode(<String, dynamic>{
-        'model': modelId,
-        'messages': messages,
-      }),
-    ).timeout(const Duration(seconds: 60), onTimeout: () {
-      throw Exception('Volc API 请求超时（60秒）');
+    final String body = jsonEncode(<String, dynamic>{
+      'model': modelId,
+      'messages': messages,
     });
+    AppLogger.instance.info('[Volc] POST $baseUrl, body: ${body.length} 字节');
+    final http.Client client = _createClient();
+    final Stopwatch sw = Stopwatch()..start();
+    return client.post(Uri.parse(baseUrl), headers: headers, body: body)
+        .then((http.Response r) {
+          sw.stop();
+          AppLogger.instance.info('[Volc] HTTP ${r.statusCode}, 耗时: ${sw.elapsedMilliseconds}ms');
+          return r;
+        })
+        .catchError((Object e, StackTrace st) {
+          sw.stop();
+          AppLogger.instance.error('[Volc] 网络异常 (${sw.elapsedMilliseconds}ms): ${e.runtimeType} - $e');
+          throw e;
+        })
+        .timeout(const Duration(seconds: 120), onTimeout: () {
+          sw.stop();
+          final String msg = 'Volc API 请求超时（120秒），已等待 ${sw.elapsedMilliseconds}ms';
+          AppLogger.instance.error('[Volc] $msg');
+          throw Exception(msg);
+        })
+        .whenComplete(() => client.close());
   }
 
   Future<http.Response> _postInput(
@@ -171,16 +195,31 @@ class VolcAiClientService {
     String modelId,
     List<Map<String, dynamic>> messages,
   ) {
-    return http.post(
-      Uri.parse(baseUrl),
-      headers: headers,
-      body: jsonEncode(<String, dynamic>{
-        'model': modelId,
-        'input': _toInputFormat(messages),
-      }),
-    ).timeout(const Duration(seconds: 60), onTimeout: () {
-      throw Exception('Volc API 请求超时（60秒）');
+    final String body = jsonEncode(<String, dynamic>{
+      'model': modelId,
+      'input': <String, dynamic>{'messages': messages},
     });
+    AppLogger.instance.info('[Volc] POST(input) $baseUrl, body: ${body.length} 字节');
+    final http.Client client = _createClient();
+    final Stopwatch sw = Stopwatch()..start();
+    return client.post(Uri.parse(baseUrl), headers: headers, body: body)
+        .then((http.Response r) {
+          sw.stop();
+          AppLogger.instance.info('[Volc] HTTP ${r.statusCode}, 耗时: ${sw.elapsedMilliseconds}ms');
+          return r;
+        })
+        .catchError((Object e, StackTrace st) {
+          sw.stop();
+          AppLogger.instance.error('[Volc] 网络异常 (${sw.elapsedMilliseconds}ms): ${e.runtimeType} - $e');
+          throw e;
+        })
+        .timeout(const Duration(seconds: 120), onTimeout: () {
+          sw.stop();
+          final String msg = 'Volc API 请求超时（120秒），已等待 ${sw.elapsedMilliseconds}ms';
+          AppLogger.instance.error('[Volc] $msg');
+          throw Exception(msg);
+        })
+        .whenComplete(() => client.close());
   }
 
   List<Map<String, dynamic>> _toInputFormat(List<Map<String, dynamic>> messages) {

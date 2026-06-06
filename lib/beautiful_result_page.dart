@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,18 +8,19 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/data/hive_models.dart';
 import 'package:mathmate/data/history_repository.dart';
-import 'package:mathmate/models/pipeline_models.dart';
-import 'package:mathmate/models/pipeline_stage.dart';
+import 'package:mathmate/models/pipeline_stream_event.dart';
 import 'package:mathmate/services/app_logger.dart';
-import 'package:mathmate/services/math_pipeline_service.dart';
+import 'package:mathmate/services/pipeline_stream_service.dart';
 import 'package:mathmate/visualization/geometry_validator.dart';
 import 'package:mathmate/visualization/geometry_painter.dart';
+import 'package:mathmate/visualization/geometry_svg_renderer.dart';
+import 'package:mathmate/visualization/response_extractor.dart';
 import 'package:mathmate/visualization/safe_json_parser.dart';
 import 'package:mathmate/visualization_page.dart';
 import 'package:mathmate/services/katex_pdf_service.dart';
 
 class BeautifulResultPage extends StatefulWidget {
-  final File image;
+  final XFile image;
   final MathHistory? history;
   final String? heroTag;
 
@@ -34,7 +36,8 @@ class BeautifulResultPage extends StatefulWidget {
 }
 
 class _BeautifulResultPageState extends State<BeautifulResultPage> {
-  final MathPipelineService _pipelineService = MathPipelineService();
+  final PipelineStreamService _streamService = PipelineStreamService();
+  StreamSubscription<PipelineStreamEvent>? _sub;
 
   bool _isAnalyzing = true;
   String _statusMessage = '准备开始处理...';
@@ -47,11 +50,31 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
   String? _geometryMessage;
   List<String> _stageErrors = <String>[];
 
+  // 流式缓冲区
+  String _ocrBuffer = '';
+  String _solutionBuffer = '';
+
+  // setState 外执行标记
+  bool _shouldStartStage2 = false;
+  bool _shouldFinalize = false;
+
+  // setState 节流：限制 ~15fps，避免每 token 都 rebuild
+  DateTime _lastRebuild = DateTime.now();
+  Timer? _throttleTimer;
+  bool _pendingRebuild = false;
+
   @override
   void initState() {
     super.initState();
-    _loadImageBytes();
     _bootstrapPage();
+  }
+
+  @override
+  void dispose() {
+    _throttleTimer?.cancel();
+    _sub?.cancel();
+    _streamService.cancel();
+    super.dispose();
   }
 
   Future<void> _bootstrapPage() async {
@@ -59,21 +82,13 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
       _restoreFromHistory(widget.history!);
       return;
     }
-    await _runPipeline();
+    await _loadImageBytes();
+    _startStreaming();
   }
 
   Future<void> _loadImageBytes() async {
     try {
       AppLogger.instance.info('[ResultPage] 尝试加载图片: ${widget.image.path}');
-      if (!await widget.image.exists()) {
-        AppLogger.instance.error('[ResultPage] 图片文件不存在: ${widget.image.path}');
-        if (mounted) {
-          setState(() {
-            _stageErrors.add('图片文件不存在: ${widget.image.path}');
-          });
-        }
-        return;
-      }
       _imageBytes = await widget.image.readAsBytes();
       AppLogger.instance.info('[ResultPage] 图片加载成功: ${_imageBytes!.length} 字节');
       if (!mounted) return;
@@ -83,88 +98,190 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
       AppLogger.instance.error('[ResultPage] 堆栈: $stack');
       if (mounted) {
         setState(() {
+          _isAnalyzing = false;
+          _statusMessage = '图片加载失败';
           _stageErrors.add('图片加载失败: $e');
         });
       }
     }
   }
 
-  Future<void> _runPipeline() async {
+  void _startStreaming() {
+    if (_imageBytes == null) {
+      setState(() {
+        _isAnalyzing = false;
+        _statusMessage = '无法开始：图片数据为空';
+        _stageErrors.add('图片数据为空，请返回重试');
+      });
+      return;
+    }
+
     setState(() {
       _isAnalyzing = true;
       _statusMessage = 'AI 正在解析题目...';
       _stageErrors = <String>[];
+      _ocrBuffer = '';
+      _solutionBuffer = '';
     });
 
-    try {
-      AppLogger.instance.info('[ResultPage] ========== 开始 Pipeline ==========');
-      AppLogger.instance.info('[ResultPage] 图片路径: ${widget.image.path}');
-      final PipelineResult result = await _pipelineService.runFromImage(
-        XFile(widget.image.path),
-        onStageChanged: (PipelineStage stage) {
-          if (!mounted) return;
-          setState(() {
-            _statusMessage = _messageForStage(stage);
-          });
-        },
-      );
+    // 阶段 1: vision 模型识别题目
+    _sub = _streamService.recognizeStream(_imageBytes!).listen(
+      (PipelineStreamEvent event) => _onStreamEvent(event, isStage1: true),
+      onError: (Object e) => _onStreamError(e),
+    );
+  }
 
-      if (!mounted) return;
+  void _startStage2() {
+    // 剥离 geometryjson：先尝试代码块，再尝试裸 JSON
+    String cleanQuestion = ResponseExtractor.removeGeometryJsonBlock(_questionMarkdown);
+    // 兜底：如果 _geometryBuffer 中已提取到 JSON，直接移除
+    if (_geometryBuffer.isNotEmpty && cleanQuestion.contains(_geometryBuffer)) {
+      cleanQuestion = cleanQuestion.replaceFirst(_geometryBuffer, '').trim();
+    }
+    // 移除残留的空代码块标记
+    cleanQuestion = cleanQuestion
+        .replaceAll(RegExp(r'```geometryjson\s*```'), '')
+        .replaceAll(RegExp(r'```json\s*```'), '')
+        .trim();
+    if (cleanQuestion != _questionMarkdown) {
+      _questionMarkdown = cleanQuestion; // 更新显示也用清洁版
+    }
 
-      final String questionMarkdown =
-          result.recognize?.questionMarkdown.trim() ?? '';
-      final String solutionMarkdown =
-          result.solve?.solutionMarkdown.trim() ?? '';
+    AppLogger.instance.info('[ResultPage] 阶段2 清洁题目: ${cleanQuestion.length} 字符 (原始 ${_questionMarkdown.length})');
 
-      AppLogger.instance.info('[ResultPage] 最终结果汇总:');
-      AppLogger.instance.info('[ResultPage]   - 识别: ${result.recognize != null ? "成功(${questionMarkdown.length}字符)" : "失败"}');
-      AppLogger.instance.info('[ResultPage]   - 解题: ${result.solve != null ? "成功(${solutionMarkdown.length}字符)" : "失败"}');
-      AppLogger.instance.info('[ResultPage]   - 可视化: ${result.visualize?.scene != null ? "有图形" : (result.visualize?.error ?? "无")}');
-      if (result.stageErrors.isNotEmpty) {
-        AppLogger.instance.warn('[ResultPage]   - 阶段错误: ${result.stageErrors.join("; ")}');
-      }
+    // 阶段 2: reasoning 模型解答
+    _sub?.cancel();
+    _sub = _streamService.solveStream(cleanQuestion).listen(
+      (PipelineStreamEvent event) => _onStreamEvent(event, isStage1: false),
+      onError: (Object e) => _onStreamError(e),
+    );
+  }
 
-      // 打印求解结果中的行内公式
-      final RegExp dollarPattern = RegExp(r'\$[^\$\n]+\$');
-      for (final Match m in dollarPattern.allMatches(solutionMarkdown)) {
-        final String f = m.group(0)!;
-        if (f.length < 80) AppLogger.instance.info('[SolveResult] 行内公式: $f');
-      }
-      final String formulaPreview = _extractFormulaPreview(
-        '$questionMarkdown\n$solutionMarkdown',
-      );
-      final String cleanedLatex = _cleanLatex(formulaPreview);
-
-      final VisualizeResult? visualize = result.visualize;
-      final String? geometryMessage = visualize?.scene != null
-          ? null
-          : visualize?.error ?? '当前未生成可视化数据。';
-
-      setState(() {
-        _isAnalyzing = false;
-        _questionMarkdown = questionMarkdown;
-        _solutionMarkdown = solutionMarkdown;
-        _formulaPreview = cleanedLatex.isEmpty ? null : cleanedLatex;
-        _geometryScene = visualize?.scene;
-        _geometryMessage = geometryMessage;
-        _stageErrors = List<String>.from(result.stageErrors);
-        _statusMessage = _stageErrors.isEmpty ? '处理完成' : '部分阶段失败，请检查下方提示';
+  /// 节流 rebuild：限制 ~30fps。
+  void _throttledRebuild() {
+    if (!mounted) return;
+    final int elapsed = DateTime.now().difference(_lastRebuild).inMilliseconds;
+    if (elapsed >= 33) {
+      _lastRebuild = DateTime.now();
+      _pendingRebuild = false;
+      setState(() {});
+      return;
+    }
+    if (!_pendingRebuild) {
+      _pendingRebuild = true;
+      _throttleTimer?.cancel();
+      _throttleTimer = Timer(Duration(milliseconds: 33 - elapsed), () {
+        if (!mounted) return;
+        _lastRebuild = DateTime.now();
+        _pendingRebuild = false;
+        setState(() {});
       });
+    }
+  }
 
-      if (result.recognize != null) {
-        _persistHistoryAsync();
-      }
-    } catch (e, stack) {
-      AppLogger.instance.error('[ResultPage] Pipeline 异常: $e');
-      AppLogger.instance.error('[ResultPage] 堆栈: $stack');
-      if (mounted) {
-        setState(() {
-          _isAnalyzing = false;
-          _statusMessage = '处理出错: $e';
-          _stageErrors = <String>['系统错误: ${e.toString()}'];
-        });
+  /// 立即 flush 待执行的 rebuild（阶段切换时使用）
+  void _flushRebuild() {
+    _throttleTimer?.cancel();
+    _pendingRebuild = false;
+    if (mounted) setState(() {});
+  }
+
+  void _onStreamEvent(PipelineStreamEvent event, {required bool isStage1}) {
+    if (!mounted) return;
+
+    // 状态直写（不需要 setState 包裹）
+    if (event.statusMessage != null) _statusMessage = event.statusMessage!;
+    if (event.error != null) {
+      _stageErrors.add(event.error!);
+      if (event.isDone) _isAnalyzing = false;
+      _flushRebuild(); // 错误立即显示
+      return;
+    }
+    if (event.isCancelled) {
+      _isAnalyzing = false;
+      _flushRebuild();
+      return;
+    }
+
+    if (event.content != null) {
+      if (isStage1) {
+        switch (event.type) {
+          case StreamContentType.ocrText:
+            _ocrBuffer += event.content!;
+            _questionMarkdown = _ocrBuffer;
+            break;
+          case StreamContentType.geometryJson:
+            _geometryBuffer = event.content!;
+            break;
+          default:
+            _ocrBuffer += event.content!;
+            _questionMarkdown = _ocrBuffer;
+        }
+      } else {
+        _solutionBuffer += event.content!;
+        _solutionMarkdown = _solutionBuffer;
       }
     }
+
+    if (event.isDone) {
+      if (isStage1) {
+        _shouldStartStage2 = true;
+      } else {
+        _isAnalyzing = false;
+        _statusMessage = _stageErrors.isEmpty ? '处理完成' : '部分阶段失败，请检查下方提示';
+        _shouldFinalize = true;
+      }
+    }
+
+    _throttledRebuild(); // 节流 UI 刷新
+
+    // setState 之外执行副作用
+    if (_shouldStartStage2) {
+      _shouldStartStage2 = false;
+      _parseGeometry();
+      if (_questionMarkdown.trim().isEmpty) {
+        AppLogger.instance.warn('[ResultPage] OCR 文本为空，跳过解题阶段');
+        _isAnalyzing = false;
+        _statusMessage = '未识别到题目文字，请确认图片清晰且包含数学题';
+        _flushRebuild();
+      } else {
+        AppLogger.instance.info('[ResultPage] 阶段1完成，OCR ${_questionMarkdown.length} 字符，启动阶段2');
+        _startStage2();
+      }
+    }
+    if (_shouldFinalize) {
+      _shouldFinalize = false;
+      _finalize();
+    }
+  }
+
+  void _onStreamError(Object e) {
+    AppLogger.instance.error('[ResultPage] 流异常: $e');
+    if (mounted) {
+      setState(() { _isAnalyzing = false; _stageErrors.add('系统错误: $e'); });
+    }
+  }
+
+  String _geometryBuffer = '';
+  void _parseGeometry() {
+    if (_geometryBuffer.isNotEmpty) {
+      try {
+        final Map<String, dynamic> scene = jsonDecode(_geometryBuffer) as Map<String, dynamic>;
+        final validation = const GeometryValidator().validate(scene);
+        _geometryScene = validation.isValid ? scene : null;
+        _geometryMessage = validation.isValid ? null : (validation.error ?? '几何数据校验失败');
+      } catch (e) {
+        AppLogger.instance.error('[ResultPage] 几何 JSON 解析失败: $e');
+        _geometryMessage = '几何 JSON 解析失败: $e';
+      }
+    }
+  }
+
+  void _finalize() {
+    final combined = '$_questionMarkdown\n$_solutionMarkdown';
+    _formulaPreview = _cleanLatex(_extractFormulaPreview(combined));
+    if (_formulaPreview?.isEmpty ?? true) _formulaPreview = null;
+    if (_questionMarkdown.isNotEmpty) _persistHistoryAsync();
   }
 
   void _restoreFromHistory(MathHistory history) {
@@ -295,23 +412,6 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
     return text;
   }
 
-  String _messageForStage(PipelineStage stage) {
-    switch (stage) {
-      case PipelineStage.idle:
-        return '等待开始';
-      case PipelineStage.recognizing:
-        return '正在识别题目文本...';
-      case PipelineStage.solving:
-        return '正在生成解答过程...';
-      case PipelineStage.visualizing:
-        return '正在生成可视化 JSON...';
-      case PipelineStage.completed:
-        return '处理完成';
-      case PipelineStage.failed:
-        return '流程失败';
-    }
-  }
-
   String _extractFormulaPreview(String input) {
     final RegExp displayMath = RegExp(r'\$\$([\s\S]*?)\$\$');
     final RegExp inlineMath = RegExp(r'\$([^\$\n]+)\$');
@@ -351,14 +451,43 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
   }
 
   Future<void> _exportPdf() async {
+    // 防御：再次剥离可能残留的 geometryjson 和代码块
+    String cleanQuestion = ResponseExtractor.removeGeometryJsonBlock(_questionMarkdown);
+    String cleanSolution = ResponseExtractor.removeGeometryJsonBlock(_solutionMarkdown);
+    // 兜底：移除残留在文本中的裸 JSON
+    if (_geometryBuffer.isNotEmpty) {
+      cleanQuestion = cleanQuestion.replaceAll(_geometryBuffer, '');
+      cleanSolution = cleanSolution.replaceAll(_geometryBuffer, '');
+    }
+    // 移除残留的空代码块标记和 thinking 相关内容
+    cleanQuestion = cleanQuestion
+        .replaceAll(RegExp(r'```\w*\s*```'), '')
+        .trim();
+    cleanSolution = cleanSolution
+        .replaceAll(RegExp(r'```\w*\s*```'), '')
+        .trim();
+
     final StringBuffer content = StringBuffer();
     content.writeln('## 题目内容');
     content.writeln();
-    content.writeln(_questionMarkdown.isNotEmpty ? _questionMarkdown : '（题目识别为空）');
+    content.writeln(cleanQuestion.isNotEmpty ? cleanQuestion : '（题目识别为空）');
     content.writeln();
     content.writeln('## 解答过程');
     content.writeln();
-    content.writeln(_solutionMarkdown.isNotEmpty ? _solutionMarkdown : '（解题阶段未返回内容）');
+    content.writeln(cleanSolution.isNotEmpty ? cleanSolution : '（解题阶段未返回内容）');
+
+    // 几何可视化 SVG
+    String? geometrySvg;
+    if (_geometryScene != null) {
+      try {
+        final scene = SafeJsonParser.parseSceneFromMap(_geometryScene!);
+        const renderer = GeometrySvgRenderer();
+        geometrySvg = renderer.render(scene);
+      } catch (e) {
+        AppLogger.instance.error('[ResultPage] SVG 生成失败: $e');
+      }
+    }
+
     if (_formulaPreview != null && _formulaPreview!.isNotEmpty) {
       content.writeln();
       content.writeln('## 公式预览');
@@ -371,6 +500,7 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
     final KatexPdfResult result = await pdfService.exportToPdf(
       title: 'MathMate 识别结果',
       content: content.toString(),
+      geometrySvg: geometrySvg,
     );
 
     if (!mounted) return;
@@ -911,6 +1041,7 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
                   color: cs.surface,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
+                clipBehavior: Clip.hardEdge,
                 child: SingleChildScrollView(
                   controller: controller,
                   padding: const EdgeInsets.all(24),
@@ -964,22 +1095,42 @@ class _BeautifulResultPageState extends State<BeautifulResultPage> {
                         ),
                       ],
                       const Divider(height: 24),
-                      if (_isAnalyzing)
-                        const Center(child: CircularProgressIndicator())
-                      else ...<Widget>[
+                      // 题目内容：有就显示，不等待完成
+                      if (_questionMarkdown.isNotEmpty)
                         _buildMarkdownBlock(
                           title: '题目内容',
                           content: _questionMarkdown,
                           emptyText: '题目识别为空',
                           accentColor: const Color(0xFF5C6BC0),
-                        ),
+                        )
+                      else if (_isAnalyzing)
+                        const Center(child: CircularProgressIndicator()),
+
+                      // 解答过程：有就显示，不等待完成
+                      if (_solutionMarkdown.isNotEmpty || _questionMarkdown.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         _buildMarkdownBlock(
                           title: '解答过程',
                           content: _solutionMarkdown,
-                          emptyText: '解题阶段未返回内容',
+                          emptyText: _isAnalyzing ? 'AI 正在生成解答...' : '解题阶段未返回内容',
                           accentColor: const Color(0xFF26A69A),
                         ),
+                      ],
+
+                      // 流式状态指示器
+                      if (_isAnalyzing && _questionMarkdown.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
+                              const SizedBox(width: 8),
+                              Text(_statusMessage, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                            ],
+                          ),
+                        ),
+
+                      if (!_isAnalyzing) ...[
                         const SizedBox(height: 20),
                         if (_formulaPreview != null) ...<Widget>[
                           Container(

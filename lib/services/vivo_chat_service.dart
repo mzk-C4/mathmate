@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/provider_config_service.dart';
 
 class VivoChatMessage {
   final String role;
@@ -24,28 +24,11 @@ class VivoChatResponse {
 }
 
 class VivoAiChatService {
-  static const String _apiKeyEnv = 'VIVO_API_KEY';
-  static const String _modelEnv = 'VIVO_MODEL_ID';
-  static const String _baseUrlEnv = 'VIVO_BASE_URL';
-  static const String _defaultModel = 'qwen-plus';
-  static const String _defaultBaseUrl =
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-
-  static bool _dotenvLoaded = false;
-
-  Future<void> _ensureEnvLoaded() async {
-    if (_dotenvLoaded) return;
-    await dotenv.load(fileName: '.env');
-    _dotenvLoaded = true;
-  }
-
   Future<VivoChatResponse> sendMessage(List<VivoChatMessage> messages, {String? modelId}) async {
-    await _ensureEnvLoaded();
-
-    final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-    final String resolvedModel = modelId ?? (dotenv.env[_modelEnv] ?? _defaultModel).trim();
-    final String baseUrl =
-        (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+    final pc = ProviderConfigService.instance;
+    final String apiKey = pc.chatApiKey;
+    final String resolvedModel = modelId ?? pc.chatModelId;
+    final String baseUrl = pc.chatBaseUrl;
 
     if (apiKey.isEmpty) {
       throw Exception('Missing env config: VIVO_API_KEY');

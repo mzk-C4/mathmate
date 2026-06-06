@@ -32,7 +32,10 @@ class ConversationRepository {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    conversation.id = DateTime.now().millisecondsSinceEpoch;
+    // Hive integer key 不能超过 0xFFFFFFFF（约 42.9 亿），
+    // millisecondsSinceEpoch 在 2026 年约 1.78 万亿，会溢出。
+    // 使用当前时间戳的低 32 位作为唯一 ID。
+    conversation.id = DateTime.now().millisecondsSinceEpoch & 0xFFFFFFFF;
     await _box!.put(conversation.id, conversation);
     return conversation;
   }

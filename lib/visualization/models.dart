@@ -46,13 +46,50 @@ abstract class GeometryElement {
   });
 }
 
+/// 点的约束类型——告诉渲染器用几何关系计算精确坐标，而不是相信模型估算的值。
+sealed class PointConstraint {
+  const PointConstraint();
+}
+
+/// 中点约束：point = midpoint of segment(pid1, pid2)
+class MidpointConstraint extends PointConstraint {
+  final String pid1;
+  final String pid2;
+  const MidpointConstraint({required this.pid1, required this.pid2}) : super();
+}
+
+/// 线段比例约束：point on segment(pid1, pid2) at ratio ∈ [0,1] from pid1
+class OnSegmentConstraint extends PointConstraint {
+  final String pid1;
+  final String pid2;
+  final double ratio;
+  const OnSegmentConstraint({required this.pid1, required this.pid2, required this.ratio}) : super();
+}
+
+/// 直线比例约束：point on line(pid1, pid2) at ratio from pid1
+class OnLineConstraint extends PointConstraint {
+  final String pid1;
+  final String pid2;
+  final double ratio;
+  const OnLineConstraint({required this.pid1, required this.pid2, required this.ratio}) : super();
+}
+
+/// 两线交点约束：point = intersection of line(lid1) and line(lid2)
+class IntersectionConstraint extends PointConstraint {
+  final String lid1;
+  final String lid2;
+  const IntersectionConstraint({required this.lid1, required this.lid2}) : super();
+}
+
 class PointElement extends GeometryElement {
   final double x;
   final double y;
+  final PointConstraint? constraint;
   const PointElement({
     required super.id,
     required this.x,
     required this.y,
+    this.constraint,
     super.label,
     super.colorArgb,
     super.style,

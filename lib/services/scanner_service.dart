@@ -8,25 +8,19 @@ class ScannerService {
 
   Future<dynamic> startScanning(BuildContext context) async {
     if (kIsWeb) {
-      // Web: 使用 image_picker 的 gallery 模式
       try {
         final XFile? photo = await _picker.pickImage(
           source: ImageSource.gallery,
           imageQuality: 90,
         );
-        if (photo != null) {
-          // Web 返回 blob URL 字符串
-          return photo.path;
-        }
+        if (photo != null) return photo;
       } catch (e) {
         debugPrint('ScannerService web pickImage error: $e');
       }
       return null;
     }
 
-    if (!context.mounted) {
-      return null;
-    }
+    if (!context.mounted) return null;
 
     final cameraStatus = await Permission.camera.request();
     if (!cameraStatus.isGranted) {
@@ -39,9 +33,7 @@ class ScannerService {
       return null;
     }
 
-    if (!context.mounted) {
-      return null;
-    }
+    if (!context.mounted) return null;
 
     final ImageSource? source = await _showSourcePicker(context);
     if (source == null) {
@@ -49,16 +41,11 @@ class ScannerService {
       return null;
     }
 
-    if (!context.mounted) {
-      return null;
-    }
+    if (!context.mounted) return null;
 
     XFile? photo;
     try {
-      photo = await _picker.pickImage(
-        source: source,
-        imageQuality: 90,
-      );
+      photo = await _picker.pickImage(source: source, imageQuality: 90);
     } catch (e) {
       debugPrint('ScannerService: pickImage error: $e');
       if (context.mounted) {
@@ -74,12 +61,10 @@ class ScannerService {
       return null;
     }
 
-    if (!context.mounted) {
-      return null;
-    }
+    if (!context.mounted) return null;
 
-    // 返回路径字符串，调用方根据平台自行处理
-    return photo.path;
+    // 直接返回 XFile，跨平台兼容
+    return photo;
   }
 
   Future<ImageSource?> _showSourcePicker(BuildContext context) async {

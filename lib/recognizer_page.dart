@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' show File;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/beautiful_result_page.dart';
 import 'package:mathmate/scanner/enhanced_crop_page.dart';
 import 'package:mathmate/services/app_logger.dart';
-import 'package:path_provider/path_provider.dart';
 
 class RecognizerPage extends StatefulWidget {
   const RecognizerPage({super.key});
@@ -19,15 +18,6 @@ class _RecognizerPageState extends State<RecognizerPage> {
   final ImagePicker _picker = ImagePicker();
   XFile? _image;
 
-  Future<File> _copyToTempFile(XFile xfile) async {
-    final dir = await getTemporaryDirectory();
-    final tempFile = File('${dir.path}/crop_input_${DateTime.now().millisecondsSinceEpoch}.jpg');
-    final bytes = await xfile.readAsBytes();
-    await tempFile.writeAsBytes(bytes);
-    AppLogger.instance.info('[Recognizer] copied ${bytes.length} bytes to ${tempFile.path}');
-    return tempFile;
-  }
-
   Future<void> _processImage(ImageSource source) async {
     try {
       AppLogger.instance.info('[Recognizer] picking image from $source...');
@@ -39,14 +29,12 @@ class _RecognizerPageState extends State<RecognizerPage> {
       AppLogger.instance.info('[Recognizer] picked: path=${selected.path}, name=${selected.name}');
       if (!mounted) return;
 
-      final imageFile = await _copyToTempFile(selected);
-
       if (!mounted) return;
       AppLogger.instance.info('[Recognizer] navigating to crop page...');
-      final File? croppedFile = await Navigator.push<File>(
+      final XFile? croppedFile = await Navigator.push<XFile>(
         context,
         MaterialPageRoute(
-          builder: (_) => EnhancedCropPage(imageFile: imageFile),
+          builder: (_) => EnhancedCropPage(imageFile: selected),
         ),
       );
 
@@ -99,7 +87,9 @@ class _RecognizerPageState extends State<RecognizerPage> {
                       borderRadius: BorderRadius.circular(12),
                       child: kIsWeb
                           ? Image.network(_image!.path, fit: BoxFit.contain)
-                          : Image.file(File(_image!.path), fit: BoxFit.contain),
+                          : (kIsWeb
+                              ? Image.network(_image!.path, fit: BoxFit.contain)
+                              : Image.file(File(_image!.path), fit: BoxFit.contain)),
                     ),
             ),
           ),

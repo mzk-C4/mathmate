@@ -16,11 +16,12 @@ class KatexPdfService {
     required String title,
     required String content,
     String subtitle = '由 MathMate 生成',
+    String? geometrySvg,
   }) async {
     try {
       await _ensureKatexLoaded();
 
-      final String htmlContent = _generateHtml(title, subtitle, content);
+      final String htmlContent = _generateHtml(title, subtitle, content, geometrySvg);
       final String filePath = await _saveHtmlFile(title, htmlContent);
       await _openAndShareFile(filePath);
 
@@ -59,8 +60,11 @@ class KatexPdfService {
   }
 
   /// 生成 HTML 内容（KaTeX 内嵌，零外部依赖）
-  String _generateHtml(String title, String subtitle, String content) {
+  String _generateHtml(String title, String subtitle, String content, String? geometrySvg) {
     final String processedContent = _processMarkdownLatex(content);
+    final String geometrySection = geometrySvg != null
+        ? '<h2>几何图形</h2><div style="text-align:center;margin:16px 0">$geometrySvg</div>'
+        : '';
 
     return '''
 <!DOCTYPE html>
@@ -120,6 +124,7 @@ class KatexPdfService {
     <div class="subtitle">$subtitle</div>
   </div>
   $processedContent
+  $geometrySection
   <script>$_cachedJs</script>
   <script>
     (function() {

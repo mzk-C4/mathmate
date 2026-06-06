@@ -60,6 +60,8 @@ class GeometryPainter extends CustomPainter {
     for (final e in scene.elements) {
       if (e is PointElement) map[e.id] = Offset(e.x, e.y);
     }
+    // 约束求解：覆盖有 constraint 的点的坐标
+    _resolveConstraints(map, byId);
     for (final e in scene.elements) {
       if (e is GliderElement) {
         final t = dragOverrides.containsKey(e.id)
@@ -70,6 +72,77 @@ class GeometryPainter extends CustomPainter {
       }
     }
     return map;
+  }
+
+  /// 对有约束的点重新计算精确坐标。
+  void _resolveConstraints(Map<String, Offset> positions, Map<String, GeometryElement> byId) {
+    for (final e in scene.elements) {
+      if (e is! PointElement || e.constraint == null) continue;
+      final c = e.constraint!;
+      Offset? resolved;
+      if (c is MidpointConstraint) {
+        final p1 = positions[c.pid1];
+        final p2 = positions[c.pid2];
+        if (p1 != null && p2 != null) {
+          resolved = Offset((p1.dx + p2.dx) / 2, (p1.dy + p2.dy) / 2);
+        }
+      } else if (c is OnSegmentConstraint) {
+        final p1 = positions[c.pid1];
+        final p2 = positions[c.pid2];
+        if (p1 != null && p2 != null) {
+          resolved = Offset(p1.dx + (p2.dx - p1.dx) * c.ratio, p1.dy + (p2.dy - p1.dy) * c.ratio);
+        }
+      } else if (c is OnLineConstraint) {
+        final p1 = positions[c.pid1];
+        final p2 = positions[c.pid2];
+        if (p1 != null && p2 != null) {
+          resolved = Offset(p1.dx + (p2.dx - p1.dx) * c.ratio, p1.dy + (p2.dy - p1.dy) * c.ratio);
+        }
+      } else if (c is IntersectionConstraint) {
+        resolved = _intersectLines(positions, byId, c.lid1, c.lid2);
+      }
+      if (resolved != null) {
+        positions[e.id] = resolved;
+      }
+    }
+  }
+
+  /// 计算两条直线的交点（数学坐标）。
+  Offset? _intersectLines(Map<String, Offset> positions, Map<String, GeometryElement> byId, String lid1, String lid2) {
+    Offset? a1, a2, b1, b2;
+    final l1 = byId[lid1];
+    final l2 = byId[lid2];
+    if (l1 is LineElement) {
+      a1 = _endpointPos(l1.p1, positions, byId);
+      a2 = _endpointPos(l1.p2, positions, byId);
+    }
+    if (l2 is LineElement) {
+      b1 = _endpointPos(l2.p1, positions, byId);
+      b2 = _endpointPos(l2.p2, positions, byId);
+    }
+    if (a1 == null || a2 == null || b1 == null || b2 == null) return null;
+
+    final x1 = a1.dx, y1 = a1.dy, x2 = a2.dx, y2 = a2.dy;
+    final x3 = b1.dx, y3 = b1.dy, x4 = b2.dx, y4 = b2.dy;
+    final denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (denom.abs() < 1e-10) return null; // 平行
+    final t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    return Offset(x1 + t * (x2 - x1), y1 + t * (y2 - y1));
+  }
+
+  Offset? _endpointPos(EndpointRef ep, Map<String, Offset> positions, Map<String, GeometryElement> byId) {
+    if (ep.isReference) {
+      return positions[ep.refId!] ?? (_findPoint(ep.refId!, byId) != null
+          ? Offset((_findPoint(ep.refId!, byId) as PointElement).x, (_findPoint(ep.refId!, byId) as PointElement).y)
+          : null);
+    }
+    if (ep.x != null && ep.y != null) return Offset(ep.x!, ep.y!);
+    return null;
+  }
+
+  PointElement? _findPoint(String id, Map<String, GeometryElement> byId) {
+    final e = byId[id];
+    return e is PointElement ? e : null;
   }
 
   /// 数学坐标 → Canvas 像素坐标，使用统一缩放系数（取 x/y 方向

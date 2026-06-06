@@ -1,6 +1,8 @@
-import 'dart:io';
+import 'dart:io' show File;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/beautiful_result_page.dart';
 import 'package:mathmate/data/hive_models.dart';
 import 'package:mathmate/data/history_repository.dart';
@@ -92,7 +94,7 @@ class _HistoryListPageState extends State<HistoryListPage> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => BeautifulResultPage(
-                          image: File(item.originalImagePath),
+                          image: XFile(item.originalImagePath),
                           history: item,
                           heroTag: heroTag,
                         ),
@@ -159,26 +161,21 @@ class _HistoryCard extends StatelessWidget {
                   tag: heroTag,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      File(item.originalImagePath),
-                      width: 86,
-                      height: 86,
-                      fit: BoxFit.cover,
-                      cacheWidth: 260,
-                      cacheHeight: 260,
-                      errorBuilder:
-                          (
-                            BuildContext context,
-                            Object error,
-                            StackTrace? stackTrace,
-                          ) {
-                            return Container(
-                              width: 86,
-                              height: 86,
-                              color: const Color(0xFFEAEFFB),
-                              child: const Icon(Icons.broken_image_outlined),
-                            );
-                          },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: kIsWeb
+                          ? Image.network(
+                              item.originalImagePath,
+                              width: 86, height: 86, fit: BoxFit.cover,
+                              cacheWidth: 260, cacheHeight: 260,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+                            )
+                          : Image.file(
+                              File(item.originalImagePath),
+                              width: 86, height: 86, fit: BoxFit.cover,
+                              cacheWidth: 260, cacheHeight: 260,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+                            ),
                     ),
                   ),
                 ),

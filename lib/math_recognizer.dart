@@ -1,31 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:mathmate/services/provider_config_service.dart';
 
 class MathRecognizer {
-  static const _apiKeyEnv = 'VOLC_API_KEY';
-  static const _modelIdEnv = 'VOLC_MODEL_ID';
-  static const _baseUrlEnv = 'VOLC_BASE_URL';
-  static const _defaultBaseUrl =
-      'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
-
-  static bool _dotenvLoaded = false;
-
-  Future<void> _ensureEnvLoaded() async {
-    if (_dotenvLoaded) return;
-    await dotenv.load(fileName: '.env');
-    _dotenvLoaded = true;
-  }
-
   Future<String?> recognizeFromImage(XFile imageFile) async {
     try {
-      await _ensureEnvLoaded();
-
-      final apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-      final modelId = (dotenv.env[_modelIdEnv] ?? '').trim();
-      final baseUrl = (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+      final pc = ProviderConfigService.instance;
+      final apiKey = pc.visionApiKey;
+      final modelId = pc.visionModelId;
+      final baseUrl = pc.visionBaseUrl;
 
       if (apiKey.isEmpty || modelId.isEmpty) {
         return 'Missing env config: VOLC_API_KEY / VOLC_MODEL_ID';

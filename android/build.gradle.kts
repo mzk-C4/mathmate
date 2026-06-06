@@ -1,11 +1,9 @@
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.api.tasks.compile.JavaCompile
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 allprojects {
     repositories {
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
         google()
         mavenCentral()
     }
@@ -83,47 +81,5 @@ subprojects {
                 enabled = false
             }
         }
-    }
-}
-
-fun Project.forceJvmTo18() {
-    tasks.withType<JavaCompile>().configureEach {
-        sourceCompatibility = JavaVersion.VERSION_1_8.toString()
-        targetCompatibility = JavaVersion.VERSION_1_8.toString()
-    }
-
-    tasks.withType<KotlinCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_1_8)
-        }
-    }
-
-    val androidExt = extensions.findByName("android")
-    if (androidExt != null) {
-        try {
-            val compileOptions = androidExt.javaClass
-                .getMethod("getCompileOptions")
-                .invoke(androidExt)
-
-            compileOptions.javaClass
-                .getMethod("setSourceCompatibility", JavaVersion::class.java)
-                .invoke(compileOptions, JavaVersion.VERSION_1_8)
-
-            compileOptions.javaClass
-                .getMethod("setTargetCompatibility", JavaVersion::class.java)
-                .invoke(compileOptions, JavaVersion.VERSION_1_8)
-        } catch (_: Exception) {
-            // Ignore non-Android projects or incompatible extension APIs.
-        }
-    }
-}
-
-subprojects {
-    val alignJvmAction: Project.() -> Unit = { forceJvmTo18() }
-
-    if (state.executed) {
-        alignJvmAction()
-    } else {
-        afterEvaluate { alignJvmAction() }
     }
 }

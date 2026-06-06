@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mathmate/services/provider_config_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
@@ -47,7 +48,7 @@ class HistoryRepository {
   }
 
   Future<void> saveHistory({
-    required File sourceImage,
+    required XFile sourceImage,
     required String ocrContent,
     required String solutionMarkdown,
     required String latexResult,
@@ -71,7 +72,7 @@ class HistoryRepository {
       entity.geometryScene = GeometrySceneEmbedded.fromMap(sceneMap, null);
     }
 
-    entity.id = DateTime.now().millisecondsSinceEpoch;
+    entity.id = DateTime.now().millisecondsSinceEpoch & 0xFFFFFFFF;
     await _box!.put(entity.id, entity);
   }
 
@@ -103,21 +104,13 @@ class HistoryRepository {
   }
 
   Future<String> _generateTitle(String ocrContent) async {
-    const String apiKeyEnv = 'VIVO_API_KEY';
-    const String modelEnv = 'VIVO_MODEL_ID';
-    const String baseUrlEnv = 'VIVO_BASE_URL';
-    const String defaultModel = 'qwen-plus';
-    const String defaultBaseUrl =
-        'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-
     try {
-      await dotenv.load(fileName: '.env');
-      final String apiKey = (dotenv.env[apiKeyEnv] ?? '').trim();
+      final pc = ProviderConfigService.instance;
+      final String apiKey = pc.chatApiKey;
       if (apiKey.isEmpty) return '数学问题';
 
-      final String modelId = (dotenv.env[modelEnv] ?? defaultModel).trim();
-      final String baseUrl =
-          (dotenv.env[baseUrlEnv] ?? defaultBaseUrl).trim();
+      final String modelId = pc.chatModelId;
+      final String baseUrl = pc.chatBaseUrl;
 
       const String prompt = '请根据以下数学题目内容，总结一个简洁的标题（不超过20个字），概括这道题目的知识点或题型。\n\n题目内容：\n';
 
@@ -163,7 +156,7 @@ class HistoryRepository {
     return '数学问题';
   }
 
-  Future<String> _persistImage(File sourceImage) async {
+  Future<String> _persistImage(XFile sourceImage) async {
     if (kIsWeb) {
       return sourceImage.path;
     }
@@ -174,6 +167,8 @@ class HistoryRepository {
       await imageDir.create(recursive: true);
     }
 
+    // XFile 没有 copy/exists/delete，转换为 File 操作（仅 native 有效）
+    final File source = File(sourceImage.path);
     final String ext = path.extension(sourceImage.path).isEmpty
         ? '.jpg'
         : path.extension(sourceImage.path);
@@ -181,11 +176,11 @@ class HistoryRepository {
         'history_${DateTime.now().millisecondsSinceEpoch}$ext';
     final String targetPath = path.join(imageDir.path, filename);
 
-    final File copied = await sourceImage.copy(targetPath);
+    final File copied = await source.copy(targetPath);
 
     try {
-      if (await sourceImage.exists()) {
-        await sourceImage.delete();
+      if (await source.exists()) {
+        await source.delete();
       }
     } catch (e) {
       debugPrint('cleanup temp image failed: $e');

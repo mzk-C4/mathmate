@@ -1,12 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/provider_config_service.dart';
 
 class HandwritingOcrService {
-  static const String _ocrModelEnv = 'VOLC_OCR_MODEL_ID';
-  static const String _defaultModelEnv = 'VOLC_MODEL_ID';
-
   static const String _handwritingPrompt = '''
 你是专业的手写数学公式识别工具，严格遵守以下规则：
 1. 识别所有手写内容，包括文字、数字、符号、数学公式
@@ -18,15 +15,10 @@ class HandwritingOcrService {
 ''';
 
   Future<String> recognize(Uint8List imageBytes) async {
-    await dotenv.load(fileName: '.env');
-
-    final String apiKey = (dotenv.env['VOLC_API_KEY'] ?? '').trim();
-    final String modelId = (dotenv.env[_ocrModelEnv] ??
-            dotenv.env[_defaultModelEnv] ?? '')
-        .trim();
-    final String baseUrl = (dotenv.env['VOLC_BASE_URL'] ??
-            'https://ark.cn-beijing.volces.com/api/v3/chat/completions')
-        .trim();
+    final pc = ProviderConfigService.instance;
+    final String apiKey = pc.visionApiKey;
+    final String modelId = pc.volcOcrModelId;
+    final String baseUrl = pc.visionBaseUrl;
 
     if (apiKey.isEmpty || modelId.isEmpty) {
       return '请配置 VOLC_API_KEY 和 VOLC_MODEL_ID';

@@ -69,10 +69,12 @@ class SafeJsonParser {
       case 'point':
         final pos = tryDoubleList(_get(e, 'pos'));
         if (pos == null || pos.length < 2) return null;
+        final constraint = _parsePointConstraint(e);
         return PointElement(
           id: id,
           x: pos[0],
           y: pos[1],
+          constraint: constraint,
           label: label,
           colorArgb: color,
           style: style,
@@ -187,6 +189,37 @@ class SafeJsonParser {
       default:
         return null;
     }
+  }
+
+  static PointConstraint? _parsePointConstraint(Map e) {
+    // midpoint: ["A", "B"]
+    final midpoint = tryStringList(_get(e, 'midpoint'));
+    if (midpoint != null && midpoint.length >= 2) {
+      return MidpointConstraint(pid1: midpoint[0], pid2: midpoint[1]);
+    }
+    // onSegment: ["A", "B"] + ratio
+    final onSegment = tryStringList(_get(e, 'onSegment'));
+    if (onSegment != null && onSegment.length >= 2) {
+      final ratio = tryDouble(_get(e, 'ratio')) ?? 0.5;
+      return OnSegmentConstraint(pid1: onSegment[0], pid2: onSegment[1], ratio: ratio);
+    }
+    // onLine: ["A", "B"] + ratio
+    final onLine = tryStringList(_get(e, 'onLine'));
+    if (onLine != null && onLine.length >= 2) {
+      final ratio = tryDouble(_get(e, 'ratio')) ?? 0.5;
+      return OnLineConstraint(pid1: onLine[0], pid2: onLine[1], ratio: ratio);
+    }
+    // intersection: ["l1", "l2"]
+    final intersection = tryStringList(_get(e, 'intersection'));
+    if (intersection != null && intersection.length >= 2) {
+      return IntersectionConstraint(lid1: intersection[0], lid2: intersection[1]);
+    }
+    return null;
+  }
+
+  static List<String>? tryStringList(dynamic v) {
+    if (v is! List) return null;
+    return v.map((e) => e.toString()).toList();
   }
 
   static EndpointRef? _parseEndpoint(dynamic v) {
