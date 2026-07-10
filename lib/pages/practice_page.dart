@@ -3,6 +3,7 @@ import 'package:mathmate/models/library_question.dart';
 import 'package:mathmate/models/user_radar_profile.dart';
 import 'package:mathmate/profile_radar_chart.dart';
 import 'package:mathmate/services/ability_score_service.dart';
+import 'package:mathmate/pages/exam_creation_page.dart';
 import 'package:mathmate/pages/question_solver_page.dart';
 import 'package:mathmate/services/library_question_service.dart';
 
@@ -178,8 +179,10 @@ class _PracticePageState extends State<PracticePage> {
               bottom: 20,
               child: FloatingActionButton.extended(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('自由组卷功能即将上线')),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ExamCreationPage(),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.post_add_rounded),

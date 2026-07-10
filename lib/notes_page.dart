@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:mathmate/library/presentation/library_page.dart';
 import 'note_editor_page.dart';
 import 'note_handwriting_editor_page.dart';
 import 'note_model.dart';
@@ -422,6 +423,23 @@ class _NotesPageState extends State<NotesPage> {
                     onTap: () {
                       Navigator.pop(ctx);
                       _importPdf();
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.folder_special_rounded,
+                      color: Color(0xFF22B07D),
+                    ),
+                    title: const Text("学习资料库"),
+                    subtitle: const Text("上传课件 / 真题 / 板书，AI 自动分类"),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const LibraryPage(),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 8),

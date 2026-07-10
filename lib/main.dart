@@ -34,7 +34,6 @@ import 'package:mathmate/services/update_service.dart';
 import 'package:mathmate/pages/geogebra_chat_entry.dart';
 import 'package:mathmate/agents/orchestrator.dart';
 import 'package:mathmate/agents/visualizer_agent.dart';
-import 'package:mathmate/library/presentation/library_page.dart';
 import 'package:mathmate/library/services/material_repository.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
 import 'package:mathmate/pages/practice_page.dart';
@@ -420,8 +419,6 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                   children: <Widget>[
                     _buildSearchBar(),
                     const SizedBox(height: 14),
-                    _buildLibraryEntry(),
-                    const SizedBox(height: 18),
                     _buildCameraHero(),
                     const SizedBox(height: 14),
                 _buildToolboxCard(),
@@ -454,71 +451,6 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
         ),
       ),
       ),
-      ),
-    );
-  }
-
-  /// 学习资料库入口卡（软件杯：个性化学习资料库）
-  Widget _buildLibraryEntry() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LibraryPage()),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 18, 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF22B07D), Color(0xFF1E9E6C)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.folder_special_rounded,
-                color: Colors.white,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    '我的学习资料库',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '上传课件 / 真题 / 板书，AI 自动分类整理',
-                    style: TextStyle(fontSize: 12, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-          ],
-        ),
       ),
     );
   }
