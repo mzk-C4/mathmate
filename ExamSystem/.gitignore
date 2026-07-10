@@ -1,0 +1,6 @@
+.env
+backend/uploads/
+db/*.tmp
+__pycache__/
+.pytest_cache/
+*.pyc

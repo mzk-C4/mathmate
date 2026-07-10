@@ -34,7 +34,6 @@ import 'package:mathmate/services/update_service.dart';
 import 'package:mathmate/pages/geogebra_chat_entry.dart';
 import 'package:mathmate/agents/orchestrator.dart';
 import 'package:mathmate/agents/visualizer_agent.dart';
-import 'package:mathmate/library/presentation/library_page.dart';
 import 'package:mathmate/library/services/material_repository.dart';
 import 'package:mathmate/exam/pages/question_bank_page.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';

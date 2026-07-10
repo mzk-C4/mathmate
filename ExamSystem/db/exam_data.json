@@ -1,0 +1,103 @@
+{
+  "counters": {
+    "questions": 7,
+    "exams": 1,
+    "exam_questions": 1,
+    "answer_records": 1,
+    "grading_logs": 1
+  },
+  "questions": [
+    {
+      "id": 1,
+      "question_code": "GEO-1001",
+      "content": "已知圆 C: (x-1)^2 + (y+2)^2 = 9，则圆 C 的半径为多少？",
+      "standard_answer": "B",
+      "explanation": "圆的标准方程为 (x-a)^2+(y-b)^2=r^2，因此 r=3。",
+      "difficulty": "0.30",
+      "board": "解析几何",
+      "question_type": "choice",
+      "options": {
+        "A": "2",
+        "B": "3",
+        "C": "6",
+        "D": "9"
+      },
+      "created_at": "2026-07-09T00:00:00",
+      "updated_at": "2026-07-09T00:00:00"
+    },
+    {
+      "id": 2,
+      "question_code": "GEO-1002",
+      "content": "直线 2x - y + 1 = 0 的斜率是多少？",
+      "standard_answer": "2",
+      "explanation": "化为 y=2x+1，所以斜率为 2。",
+      "difficulty": "0.35",
+      "board": "解析几何",
+      "question_type": "blank",
+      "options": null,
+      "created_at": "2026-07-09T00:00:00",
+      "updated_at": "2026-07-09T00:00:00"
+    },
+    {
+      "id": 3,
+      "question_code": "ALG-1001",
+      "content": "若 x^2 - 5x + 6 = 0，则 x 的取值为多少？",
+      "standard_answer": "x=2或x=3",
+      "explanation": "因式分解为 (x-2)(x-3)=0，因此 x=2 或 x=3。",
+      "difficulty": "0.45",
+      "board": "代数",
+      "question_type": "blank",
+      "options": null,
+      "created_at": "2026-07-09T00:00:00",
+      "updated_at": "2026-07-09T00:00:00"
+    },
+    {
+      "id": 4,
+      "question_code": "FUNC-1001",
+      "content": "函数 f(x)=x^2 在区间 [0,2] 上的最大值是？",
+      "standard_answer": "D",
+      "explanation": "f(x)=x^2 在 [0,2] 上单调递增，最大值为 f(2)=4。",
+      "difficulty": "0.40",
+      "board": "函数",
+      "question_type": "choice",
+      "options": {
+        "A": "1",
+        "B": "2",
+        "C": "3",
+        "D": "4"
+      },
+      "created_at": "2026-07-09T00:00:00",
+      "updated_at": "2026-07-09T00:00:00"
+    },
+    {
+      "id": 5,
+      "question_code": "GEO-2001",
+      "content": "请说明为什么圆的切线垂直于过切点的半径。",
+      "standard_answer": "连接圆心与切点，若切线不垂直于半径，则可作圆心到切线的垂线，垂足与切点不同且距离更短，会小于半径，与切线和圆只有一个公共点矛盾，所以切线垂直于过切点的半径。",
+      "explanation": "利用反证法或圆心到直线距离等于半径均可说明。",
+      "difficulty": "0.75",
+      "board": "解析几何",
+      "question_type": "short_answer",
+      "options": null,
+      "created_at": "2026-07-09T00:00:00",
+      "updated_at": "2026-07-09T00:00:00"
+    },
+    {
+      "id": 6,
+      "question_code": "PROB-1001",
+      "content": "抛一枚均匀硬币两次，恰好出现一次正面的概率是多少？",
+      "standard_answer": "1/2",
+      "explanation": "样本空间为 HH、HT、TH、TT，恰好一次正面有 HT、TH 两种，概率为 2/4=1/2。",
+      "difficulty": "0.42",
+      "board": "概率统计",
+      "question_type": "blank",
+      "options": null,
+      "created_at": "2026-07-09T00:00:00",
+      "updated_at": "2026-07-09T00:00:00"
+    }
+  ],
+  "exams": [],
+  "exam_questions": [],
+  "answer_records": [],
+  "grading_logs": []
+}
