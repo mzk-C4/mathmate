@@ -104,12 +104,12 @@ class HistoryRepository {
   }
 
   Future<String> _generateTitle(String ocrContent) async {
-    const String apiKeyEnv = 'DEEPSEEK_API_KEY';
-    const String modelEnv = 'DEEPSEEK_MODEL_ID';
-    const String baseUrlEnv = 'DEEPSEEK_BASE_URL';
-    const String defaultModel = 'deepseek-chat';
+    const String apiKeyEnv = 'VOLC_API_KEY';
+    const String modelEnv = 'VOLC_MODEL_ID';
+    const String baseUrlEnv = 'VOLC_BASE_URL';
+    const String defaultModel = 'deepseek-v4-flash';
     const String defaultBaseUrl =
-        'https://api.deepseek.com/chat/completions';
+        'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
     try {
       await dotenv.load(fileName: '.env');

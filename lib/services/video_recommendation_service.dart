@@ -8,12 +8,12 @@ import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/data/video_resources.dart';
 
 class VideoRecommendationService {
-  static const String _apiKeyEnv = 'DEEPSEEK_API_KEY';
-  static const String _modelEnv = 'DEEPSEEK_MODEL_ID';
-  static const String _baseUrlEnv = 'DEEPSEEK_BASE_URL';
-  static const String _defaultModel = 'deepseek-chat';
+  static const String _apiKeyEnv = 'VOLC_API_KEY';
+  static const String _modelEnv = 'VOLC_MODEL_ID';
+  static const String _baseUrlEnv = 'VOLC_BASE_URL';
+  static const String _defaultModel = 'deepseek-v4-flash';
   static const String _defaultBaseUrl =
-      'https://api.deepseek.com/chat/completions';
+      'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
   static bool _dotenvLoaded = false;
 

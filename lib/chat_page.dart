@@ -104,6 +104,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _switchConversation(int? id) async {
+    _chatService.cancel(); // 取消进行中的流式（防切换时 chunk 写已清空的 _messages 崩溃）
     _messages.clear();
     _historyMessages.clear();
     _conversationId = id;
@@ -159,29 +160,41 @@ class _ChatPageState extends State<ChatPage> {
         ? '${content.substring(0, 20)}...'
         : content;
 
-    if (_conversationId == null) {
-      final Conversation conversation =
-          await ConversationRepository.instance.createConversation(title);
-      _conversationId = conversation.id;
-      widget.onConversationCreated?.call(conversation.id);
-    } else if (!_titleSet) {
-      _titleSet = true;
-      await ConversationRepository.instance.updateTitle(_conversationId!, title);
-    } else {
-      _titleSet = true;
+    // bug 6: 会话创建/标题/用户消息持久化移入 try（Hive 故障时重置 _isLoading）
+    try {
+      if (_conversationId == null) {
+        final Conversation conversation =
+            await ConversationRepository.instance.createConversation(title);
+        _conversationId = conversation.id;
+        widget.onConversationCreated?.call(conversation.id);
+      } else if (!_titleSet) {
+        _titleSet = true;
+        await ConversationRepository.instance.updateTitle(_conversationId!, title);
+      } else {
+        _titleSet = true;
+      }
+
+      await ConversationRepository.instance.addMessage(
+        _conversationId!,
+        ChatMessageEmbedded()
+          ..role = 'user'
+          ..content = content
+          ..timestamp = now,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() { _isLoading = false; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('保存失败: $e')),
+        );
+      }
+      return;
     }
 
-    await ConversationRepository.instance.addMessage(
-      _conversationId!,
-      ChatMessageEmbedded()
-        ..role = 'user'
-        ..content = content
-        ..timestamp = now,
-    );
-
+    // bug 1: 局部存 convId，防流式中切换会话改 _conversationId 导致写错会话
+    final int? convId = _conversationId;
     final List<LlmMessage> trimmedHistory = _trimHistory(_historyMessages);
 
-    debugPrint('[ChatPage] 开始调用 chatService.sendMessage...');
     try {
       // 流式响应：先插入空 assistant 消息，逐 chunk 填充（打字机效果）
       final DateTime assistantNow = DateTime.now();
@@ -212,7 +225,8 @@ class _ChatPageState extends State<ChatPage> {
         if (chunk.reasoning != null && chunk.reasoning!.isNotEmpty) {
           reasoningBuf.write(chunk.reasoning);
         }
-        if (mounted) {
+        // bug 1: 检查 _messages 非空 + 最后是 assistant（防切换清空后越界）
+        if (mounted && _messages.isNotEmpty && _messages.last.role == 'assistant') {
           setState(() {
             _messages[_messages.length - 1] = ChatMessage(
               role: 'assistant',
@@ -231,30 +245,38 @@ class _ChatPageState extends State<ChatPage> {
       final String? reasoning =
           reasoningBuf.toString().isEmpty ? null : reasoningBuf.toString();
 
-      _historyMessages.add(
-        LlmMessage(role: 'assistant', content: assistantContent),
-      );
+      // bug 1: 仅当会话未切换时持久化（防写到错误的会话）
+      if (_conversationId == convId) {
+        _historyMessages.add(
+          LlmMessage(role: 'assistant', content: assistantContent),
+        );
+        await ConversationRepository.instance.addMessage(
+          _conversationId!,
+          ChatMessageEmbedded()
+            ..role = 'assistant'
+            ..content = assistantContent
+            ..reasoning = reasoning
+            ..timestamp = assistantNow,
+        );
+      }
 
-      await ConversationRepository.instance.addMessage(
-        _conversationId!,
-        ChatMessageEmbedded()
-          ..role = 'assistant'
-          ..content = assistantContent
-          ..reasoning = reasoning
-          ..timestamp = assistantNow,
-      );
-
-      if (mounted) {
+      if (mounted && _conversationId == convId) {
         setState(() { _isLoading = false; });
         _scrollToBottom();
       }
     } catch (e) {
+      // bug 7: 移除流式错误时的空 assistant 占位符
+      if (mounted && _messages.isNotEmpty &&
+          _messages.last.role == 'assistant' && _messages.last.content.isEmpty) {
+        setState(() { _messages.removeLast(); });
+      }
       if (mounted) {
         setState(() { _isLoading = false; });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('发送失败: $e'),
-            action: SnackBarAction(label: '重试', onPressed: _sendMessage),
+            // bug 5: 重试传 content（input 已清空，无 text 会静默失败）
+            action: SnackBarAction(label: '重试', onPressed: () => _sendMessage(text: content)),
           ),
         );
       }

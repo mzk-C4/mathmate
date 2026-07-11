@@ -128,11 +128,11 @@ class GeogebraAgentService {
   Future<String> Function(String toolName, Map<String, dynamic> args)? onToolCall;
 
   GeogebraAgentService({
-    String apiKeyEnv = 'DEEPSEEK_API_KEY',
-    String modelEnv = 'DEEPSEEK_MODEL_ID',
-    String baseUrlEnv = 'DEEPSEEK_BASE_URL',
-    String defaultBaseUrl = 'https://api.deepseek.com/chat/completions',
-    String defaultModel = 'deepseek-chat',
+    String apiKeyEnv = 'VOLC_API_KEY',
+    String modelEnv = 'VOLC_MODEL_ID',
+    String baseUrlEnv = 'VOLC_BASE_URL',
+    String defaultBaseUrl = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+    String defaultModel = 'deepseek-v4-flash',
   })  : _apiKeyEnv = apiKeyEnv,
         _modelEnv = modelEnv,
         _baseUrlEnv = baseUrlEnv,
