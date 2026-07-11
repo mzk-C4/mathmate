@@ -8,12 +8,12 @@ import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/data/video_resources.dart';
 
 class VideoRecommendationService {
-  static const String _apiKeyEnv = 'VIVO_API_KEY';
-  static const String _modelEnv = 'VIVO_MODEL_ID';
-  static const String _baseUrlEnv = 'VIVO_BASE_URL';
-  static const String _defaultModel = 'qwen-plus';
+  static const String _apiKeyEnv = 'DEEPSEEK_API_KEY';
+  static const String _modelEnv = 'DEEPSEEK_MODEL_ID';
+  static const String _baseUrlEnv = 'DEEPSEEK_BASE_URL';
+  static const String _defaultModel = 'deepseek-chat';
   static const String _defaultBaseUrl =
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+      'https://api.deepseek.com/chat/completions';
 
   static bool _dotenvLoaded = false;
 

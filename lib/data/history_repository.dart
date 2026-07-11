@@ -104,12 +104,12 @@ class HistoryRepository {
   }
 
   Future<String> _generateTitle(String ocrContent) async {
-    const String apiKeyEnv = 'VIVO_API_KEY';
-    const String modelEnv = 'VIVO_MODEL_ID';
-    const String baseUrlEnv = 'VIVO_BASE_URL';
-    const String defaultModel = 'qwen-plus';
+    const String apiKeyEnv = 'DEEPSEEK_API_KEY';
+    const String modelEnv = 'DEEPSEEK_MODEL_ID';
+    const String baseUrlEnv = 'DEEPSEEK_BASE_URL';
+    const String defaultModel = 'deepseek-chat';
     const String defaultBaseUrl =
-        'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+        'https://api.deepseek.com/chat/completions';
 
     try {
       await dotenv.load(fileName: '.env');

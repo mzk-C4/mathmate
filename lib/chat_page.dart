@@ -6,7 +6,7 @@ import 'package:mathmate/data/hive_conversation_models.dart';
 import 'package:mathmate/data/conversation_repository.dart';
 import 'package:mathmate/services/katex_pdf_service.dart';
 import 'package:mathmate/services/model_service.dart';
-import 'package:mathmate/services/vivo_chat_service.dart';
+import 'package:mathmate/services/chat_stream_service.dart';
 
 class ChatPage extends StatefulWidget {
   final int? conversationId;
@@ -20,11 +20,11 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final VivoAiChatService _chatService = VivoAiChatService();
+  final ChatStreamService _chatService = ChatStreamService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = <ChatMessage>[];
-  final List<VivoChatMessage> _historyMessages = <VivoChatMessage>[];
+  final List<LlmMessage> _historyMessages = <LlmMessage>[];
 
   bool _isLoading = false;
   final FocusNode _inputFocus = FocusNode();
@@ -60,7 +60,7 @@ class _ChatPageState extends State<ChatPage> {
       _loadConversation(_conversationId!);
     }
     _historyMessages.add(
-      VivoChatMessage(role: 'system', content: _systemPrompt),
+      LlmMessage(role: 'system', content: _systemPrompt),
     );
     _inputController.addListener(_onInputChanged);
     if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
@@ -87,7 +87,7 @@ class _ChatPageState extends State<ChatPage> {
         reasoning: msg.reasoning,
         timestamp: msg.timestamp,
       ));
-      _historyMessages.add(VivoChatMessage(role: msg.role, content: msg.content));
+      _historyMessages.add(LlmMessage(role: msg.role, content: msg.content));
     }
     _titleSet = loaded.isNotEmpty;
     setState(() {
@@ -109,7 +109,7 @@ class _ChatPageState extends State<ChatPage> {
     _conversationId = id;
     _titleSet = false;
     _historyMessages.add(
-      VivoChatMessage(role: 'system', content: _systemPrompt),
+      LlmMessage(role: 'system', content: _systemPrompt),
     );
     if (id != null) {
       await _loadConversation(id);
@@ -153,7 +153,7 @@ class _ChatPageState extends State<ChatPage> {
     });
     _scrollToBottom();
 
-    _historyMessages.add(VivoChatMessage(role: 'user', content: content));
+    _historyMessages.add(LlmMessage(role: 'user', content: content));
 
     final String title = content.length > 20
         ? '${content.substring(0, 20)}...'
@@ -179,34 +179,60 @@ class _ChatPageState extends State<ChatPage> {
         ..timestamp = now,
     );
 
-    final List<VivoChatMessage> trimmedHistory = _trimHistory(_historyMessages);
+    final List<LlmMessage> trimmedHistory = _trimHistory(_historyMessages);
 
     debugPrint('[ChatPage] 开始调用 chatService.sendMessage...');
     try {
-      final VivoChatResponse response = await _chatService.sendMessage(
-        trimmedHistory,
+      // 流式响应：先插入空 assistant 消息，逐 chunk 填充（打字机效果）
+      final DateTime assistantNow = DateTime.now();
+      final StringBuffer buf = StringBuffer();
+      final StringBuffer reasoningBuf = StringBuffer();
+      if (mounted) {
+        setState(() {
+          _messages.add(ChatMessage(
+            role: 'assistant',
+            content: '',
+            timestamp: assistantNow,
+          ));
+        });
+        _scrollToBottom();
+      }
+
+      await for (final StreamChunk chunk in _chatService.sendMessageStream(
+        messages: trimmedHistory,
         modelId: ModelService.instance.currentModelId,
-      );
-      debugPrint('[ChatPage] 收到响应: ${response.content.length} 字符');
-      // 调试：打印响应中所有 $ 包裹的内容
-      final RegExp dollarPattern = RegExp(r'\$[^\$\n]+\$');
-      final Iterable<Match> matches = dollarPattern.allMatches(response.content);
-      if (matches.isEmpty) {
-        debugPrint('[ChatPage] 响应中无不含换行的行内公式');
-      } else {
-        for (final Match m in matches) {
-          final String f = m.group(0)!;
-          if (f.length < 80) debugPrint('[ChatPage] 行内公式: $f');
+      )) {
+        if (chunk.error != null) {
+          throw Exception(chunk.error);
+        }
+        if (chunk.isDone) break;
+        if (chunk.content != null && chunk.content!.isNotEmpty) {
+          buf.write(chunk.content);
+        }
+        if (chunk.reasoning != null && chunk.reasoning!.isNotEmpty) {
+          reasoningBuf.write(chunk.reasoning);
+        }
+        if (mounted) {
+          setState(() {
+            _messages[_messages.length - 1] = ChatMessage(
+              role: 'assistant',
+              content: buf.toString(),
+              reasoning: reasoningBuf.toString().isEmpty
+                  ? null
+                  : reasoningBuf.toString(),
+              timestamp: assistantNow,
+            );
+          });
+          _scrollToBottom();
         }
       }
 
-      if (!mounted) return;
-
-      final DateTime assistantNow = DateTime.now();
-      final String assistantContent = response.content;
+      final String assistantContent = buf.toString();
+      final String? reasoning =
+          reasoningBuf.toString().isEmpty ? null : reasoningBuf.toString();
 
       _historyMessages.add(
-        VivoChatMessage(role: 'assistant', content: assistantContent),
+        LlmMessage(role: 'assistant', content: assistantContent),
       );
 
       await ConversationRepository.instance.addMessage(
@@ -214,20 +240,12 @@ class _ChatPageState extends State<ChatPage> {
         ChatMessageEmbedded()
           ..role = 'assistant'
           ..content = assistantContent
-          ..reasoning = response.reasoning
+          ..reasoning = reasoning
           ..timestamp = assistantNow,
       );
 
       if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: 'assistant',
-            content: assistantContent,
-            reasoning: response.reasoning,
-            timestamp: assistantNow,
-          ));
-          _isLoading = false;
-        });
+        setState(() { _isLoading = false; });
         _scrollToBottom();
       }
     } catch (e) {
@@ -246,10 +264,10 @@ class _ChatPageState extends State<ChatPage> {
   void _rebuildHistory() {
     _historyMessages.clear();
     _historyMessages.add(
-      VivoChatMessage(role: 'system', content: _systemPrompt),
+      LlmMessage(role: 'system', content: _systemPrompt),
     );
     for (final ChatMessage msg in _messages) {
-      _historyMessages.add(VivoChatMessage(role: msg.role, content: msg.content));
+      _historyMessages.add(LlmMessage(role: msg.role, content: msg.content));
     }
   }
 
@@ -336,9 +354,9 @@ class _ChatPageState extends State<ChatPage> {
     _sendMessage(text: userContent);
   }
 
-  List<VivoChatMessage> _trimHistory(List<VivoChatMessage> full) {
+  List<LlmMessage> _trimHistory(List<LlmMessage> full) {
     if (full.length <= 21) return full; // system + 10 rounds = 21 max
-    return <VivoChatMessage>[
+    return <LlmMessage>[
       full.first, // system prompt
       ...full.sublist(full.length - 20), // last 10 rounds
     ];
@@ -364,7 +382,7 @@ class _ChatPageState extends State<ChatPage> {
 
     final KatexPdfService pdfService = KatexPdfService();
     final KatexPdfResult result = await pdfService.exportToPdf(
-      title: '蓝心数学助手 — 解答',
+      title: 'MathMate 助手 — 解答',
       content: content,
     );
 
@@ -425,7 +443,7 @@ class _ChatPageState extends State<ChatPage> {
           ),
           const SizedBox(height: 20),
           Text(
-            '你好！我是蓝心数学助手',
+            '你好！我是MathMate 助手',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,

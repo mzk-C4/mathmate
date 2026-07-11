@@ -4,7 +4,17 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:mathmate/services/vivo_chat_service.dart';
+
+/// API 消息（发给 LLM 的消息，去 vivo 品牌，替代 VivoChatMessage）
+///
+/// 注意：和 hive_conversation_models.dart 的 ChatMessage（UI 模型）不同，
+/// 这里用 LlmMessage 避免命名冲突。
+class LlmMessage {
+  final String role;
+  final String content;
+  const LlmMessage({required this.role, required this.content});
+  Map<String, String> toMap() => <String, String>{'role': role, 'content': content};
+}
 
 class StreamChunk {
   final String? content;
@@ -12,15 +22,23 @@ class StreamChunk {
   final bool isDone;
   final String? error;
 
-  StreamChunk({this.content, this.reasoning, this.isDone = false, this.error});
+  const StreamChunk({this.content, this.reasoning, this.isDone = false, this.error});
 }
 
+/// 聊天流式服务（DeepSeek，SSE 流式打字机效果）
+///
+/// 接 MathMate 主力 LLM DeepSeek（DEEPSEEK_API_KEY/MODEL_ID/BASE_URL）。
+/// 兼容任何 OpenAI 协议的 chat/completions 端点（stream=true，SSE data: 解析）。
 class ChatStreamService {
-  static const String _apiKeyEnv = 'VIVO_API_KEY';
-  static const String _modelEnv = 'VIVO_MODEL_ID';
-  static const String _baseUrlEnv = 'VIVO_BASE_URL';
-  static const String _defaultModel = 'qwen-plus';
-  static const String _defaultBaseUrl =
+  // DeepSeek 端点
+  static const String _deepseekApiKeyEnv = 'DEEPSEEK_API_KEY';
+  static const String _deepseekBaseUrlEnv = 'DEEPSEEK_BASE_URL';
+  static const String _defaultDeepseekBaseUrl =
+      'https://api.deepseek.com/chat/completions';
+  // Qwen 端点（DashScope OpenAI 兼容模式）
+  static const String _qwenApiKeyEnv = 'QWEN_API_KEY';
+  static const String _qwenBaseUrlEnv = 'QWEN_BASE_URL';
+  static const String _defaultQwenBaseUrl =
       'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
   static bool _dotenvLoaded = false;
@@ -33,25 +51,31 @@ class ChatStreamService {
     _dotenvLoaded = true;
   }
 
+  /// 流式发送消息，逐 chunk yield（content/reasoning 增量，最后 isDone）
   Stream<StreamChunk> sendMessageStream({
-    required List<VivoChatMessage> messages,
+    required List<LlmMessage> messages,
     String? modelId,
   }) async* {
     await _ensureEnvLoaded();
     _cancelled = false;
 
-    final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-    final String model = (modelId ?? dotenv.env[_modelEnv] ?? _defaultModel).trim();
-    final String baseUrl =
-        (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+    // 按 modelId 选端点：qwen-* → QWEN_*，其余 → DEEPSEEK_*
+    final String model = (modelId ?? 'deepseek-chat').trim();
+    final bool isQwen = model.toLowerCase().startsWith('qwen');
+    final String apiKey =
+        (dotenv.env[isQwen ? _qwenApiKeyEnv : _deepseekApiKeyEnv] ?? '').trim();
+    final String defaultBaseUrl =
+        isQwen ? _defaultQwenBaseUrl : _defaultDeepseekBaseUrl;
+    final String baseUrl = (dotenv.env[isQwen ? _qwenBaseUrlEnv : _deepseekBaseUrlEnv] ?? defaultBaseUrl).trim();
 
     if (apiKey.isEmpty) {
-      yield StreamChunk(error: 'Missing env config: VIVO_API_KEY');
+      yield StreamChunk(
+          error: 'Missing env config: ${isQwen ? _qwenApiKeyEnv : _deepseekApiKeyEnv}');
       return;
     }
 
     final List<Map<String, String>> formattedMessages =
-        messages.map((VivoChatMessage m) => m.toMap()).toList();
+        messages.map((LlmMessage m) => m.toMap()).toList();
 
     final http.Request request = http.Request('POST', Uri.parse(baseUrl))
       ..headers.addAll(<String, String>{
@@ -78,8 +102,9 @@ class ChatStreamService {
         return;
       }
 
-      final Stream<String> lines =
-          response.stream.transform(utf8.decoder).transform(const LineSplitter());
+      final Stream<String> lines = response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
 
       await for (final String line in lines) {
         if (_cancelled) break;
@@ -87,7 +112,7 @@ class ChatStreamService {
 
         final String data = line.substring(5).trim();
         if (data == '[DONE]') {
-          yield StreamChunk(isDone: true);
+          yield const StreamChunk(isDone: true);
           break;
         }
 
@@ -96,13 +121,13 @@ class ChatStreamService {
           final dynamic delta = json['choices']?[0]?['delta'];
           if (delta == null) continue;
 
-          final String? content = (delta['content'] as String?);
-          final String? reasoning = (delta['reasoning_content'] as String?);
+          final String? content = delta['content'] as String?;
+          final String? reasoning = delta['reasoning_content'] as String?;
 
           if (content != null || reasoning != null) {
             yield StreamChunk(content: content, reasoning: reasoning);
           }
-        } catch (e) {
+        } catch (_) {
           // Skip malformed chunks
         }
       }

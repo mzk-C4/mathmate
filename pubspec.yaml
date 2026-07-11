@@ -84,6 +84,7 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/awesome_math.json
     - assets/app_icon_final.png
     - assets/fonts/simhei.ttf
     - assets/images/background.png

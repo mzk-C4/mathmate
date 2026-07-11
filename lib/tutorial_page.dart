@@ -52,10 +52,10 @@ class _TutorialPageState extends State<TutorialPage> {
     },
     {
       'icon': 'smart_toy',
-      'title': '蓝心助手',
+      'title': 'MathMate 助手',
       'subtitle': 'AI答疑',
-      'content': '点击搜索框旁的蓝心图标\n输入或语音提问\n获取AI步骤讲解',
-      'action': '点击搜索框旁的蓝心图标 → 开始对话',
+      'content': '点击搜索框旁的MathMate 图标\n输入或语音提问\n获取AI步骤讲解',
+      'action': '点击搜索框旁的MathMate 图标 → 开始对话',
     },
   ];
 

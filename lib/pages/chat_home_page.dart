@@ -20,7 +20,8 @@ class _ChatHomePageState extends State<ChatHomePage> {
   int? _currentConversationId;
   List<Conversation> _conversations = <Conversation>[];
   StreamSubscription<List<Conversation>>? _conversationSub;
-  String _currentModel = 'qwen-plus';
+  String _currentModel = 'deepseek-chat';
+  String _searchKeyword = '';
 
   @override
   void initState() {
@@ -110,7 +111,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
         title: const Text(
-          '蓝心数学助手',
+          'MathMate 助手',
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
@@ -174,6 +175,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildDrawerHeader(),
+          _buildSearchBox(),
           const Divider(height: 1),
           Expanded(child: _buildConversationList()),
         ],
@@ -214,7 +216,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
           ),
           const SizedBox(height: 12),
           Text(
-            '蓝心数学助手',
+            'MathMate 助手',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -251,12 +253,74 @@ class _ChatHomePageState extends State<ChatHomePage> {
     );
   }
 
+  /// 按关键词过滤会话（NextChat 风格会话搜索）
+  List<Conversation> get _filteredConversations {
+    if (_searchKeyword.isEmpty) return _conversations;
+    final String kw = _searchKeyword.toLowerCase();
+    return _conversations
+        .where((Conversation c) => c.title.toLowerCase().contains(kw))
+        .toList();
+  }
+
+  Widget _buildSearchBox() {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: '搜索对话...',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          suffixIcon: _searchKeyword.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () => setState(() => _searchKeyword = ''),
+                )
+              : null,
+        ),
+        onChanged: (String v) => setState(() => _searchKeyword = v),
+      ),
+    );
+  }
+
+  /// 长按会话 → 重命名对话框（NextChat 风格会话重命名）
+  Future<void> _showRenameDialog(Conversation conversation) async {
+    final TextEditingController controller =
+        TextEditingController(text: conversation.title);
+    final String? result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('重命名对话'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '输入新名称'),
+        ),
+        actions: <Widget>[
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty && result != conversation.title) {
+      await ConversationRepository.instance
+          .updateTitle(conversation.id, result);
+    }
+  }
+
   Widget _buildConversationList() {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    if (_conversations.isEmpty) {
+    final List<Conversation> conversations = _filteredConversations;
+    if (conversations.isEmpty) {
       return Center(
         child: Text(
-          '暂无对话记录',
+          _searchKeyword.isNotEmpty ? '未找到匹配对话' : '暂无对话记录',
           style: TextStyle(
             color: cs.onSurface.withValues(alpha: 0.4),
             fontSize: 13,
@@ -267,9 +331,9 @@ class _ChatHomePageState extends State<ChatHomePage> {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _conversations.length,
+      itemCount: conversations.length,
       itemBuilder: (BuildContext context, int index) {
-        final Conversation conversation = _conversations[index];
+        final Conversation conversation = conversations[index];
         final bool isActive = conversation.id == _currentConversationId;
 
         return Dismissible(
@@ -309,6 +373,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
                 ? Icon(Icons.chat_bubble, size: 16, color: cs.primary)
                 : null,
             onTap: () => _loadConversation(conversation.id),
+            onLongPress: () => _showRenameDialog(conversation),
           ),
         );
       },

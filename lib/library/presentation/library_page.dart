@@ -6,11 +6,13 @@ import 'package:mathmate/library/models/study_material.dart';
 import 'package:mathmate/library/presentation/material_upload_sheet.dart';
 import 'package:mathmate/library/services/ingestion_service.dart';
 import 'package:mathmate/library/services/material_repository.dart';
+import 'package:mathmate/library/presentation/resource_library_tab.dart';
 
-/// 资料库主页（底部导航「资料库」tab）
+/// 资料库入口 —— 顶部分段控件切换「我的资料」与「资源库」两个分区。
 ///
-/// 监听 MaterialRepository.watch 自动刷新。
-/// 含：统计头部 + 高校集合卡 + 关键词检索 + 资料卡（缩略图/角标/难度点）+ 空态引导。
+/// 数据隔离：我的资料 = 用户上传（MaterialRepository）；
+/// 资源库 = awesome-math 预置公共资源（CC0）。
+/// IndexedStack 保活两分区状态（对齐 responsive_shell.dart 范式）。
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
 
@@ -19,6 +21,55 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
+  int _tab = 0; // 0=我的资料 1=资源库
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('资料库'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: SegmentedButton<int>(
+              segments: const <ButtonSegment<int>>[
+                ButtonSegment<int>(
+                    value: 0,
+                    icon: Icon(Icons.folder_rounded),
+                    label: Text('我的资料')),
+                ButtonSegment<int>(
+                    value: 1,
+                    icon: Icon(Icons.public_rounded),
+                    label: Text('资源库')),
+              ],
+              selected: <int>{_tab},
+              onSelectionChanged: (Set<int> s) =>
+                  setState(() => _tab = s.first),
+            ),
+          ),
+        ),
+      ),
+      body: IndexedStack(
+        index: _tab,
+        children: const <Widget>[_MyMaterialsTab(), ResourceLibraryTab()],
+      ),
+    );
+  }
+}
+
+/// 「我的资料」分区（原 LibraryPage 主体，用户上传私有资料）
+///
+/// 监听 MaterialRepository.watch 自动刷新。
+/// 含：统计头部 + 高校集合卡 + 关键词检索 + 资料卡（缩略图/角标/难度点）+ 空态引导。
+class _MyMaterialsTab extends StatefulWidget {
+  const _MyMaterialsTab();
+
+  @override
+  State<_MyMaterialsTab> createState() => _MyMaterialsTabState();
+}
+
+class _MyMaterialsTabState extends State<_MyMaterialsTab> {
   ColorScheme get cs => Theme.of(context).colorScheme;
 
   StreamSubscription<List<StudyMaterial>>? _sub;
@@ -128,7 +179,6 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('我的学习资料库')),
       body: _busy
           ? _buildBusy()
           : CustomScrollView(

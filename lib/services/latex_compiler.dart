@@ -31,7 +31,7 @@ class LatexCompiler {
               pw.Header(
                 level: 0,
                 child: pw.Text(
-                  '蓝心数学助手 — 解答',
+                  'MathMate 助手 — 解答',
                   style: pw.TextStyle(
                     fontSize: 22,
                     fontWeight: pw.FontWeight.bold,
