@@ -1,11 +1,13 @@
 {
   "version": 1,
   "source": "rossant/awesome-math (master)",
-  "license": "CC0",
-  "count": 390,
+  "index_license": "CC0",
+  "content_license": "varies_by_resource",
+  "usage_mode": "external_link_only",
+  "count": 368,
   "items": [
     {
-      "id": "awm_001",
+      "id": "awm_ca8b90d9d9aa",
       "title": "Khan Academy",
       "url": "https://www.khanacademy.org/math",
       "type": "link",
@@ -19,7 +21,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_002",
+      "id": "awm_963cc34908e4",
       "title": "Coursera",
       "url": "https://www.coursera.org/courses?query=mathematics&languages=en",
       "type": "link",
@@ -33,7 +35,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_003",
+      "id": "awm_eb67664154bd",
       "title": "MIT OpenCourseWare",
       "url": "http://ocw.mit.edu/courses/mathematics/",
       "type": "link",
@@ -47,7 +49,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_004",
+      "id": "awm_ca90c01597d7",
       "title": "edX",
       "url": "https://www.edx.org/course/subject/math",
       "type": "link",
@@ -61,7 +63,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_005",
+      "id": "awm_af00f0ad0ffd",
       "title": "Brilliant",
       "url": "https://brilliant.org/courses/#math-foundational",
       "type": "link",
@@ -75,7 +77,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_006",
+      "id": "awm_1c73d5463e35",
       "title": "WooTube",
       "url": "https://misterwootube.com/",
       "type": "link",
@@ -89,7 +91,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_007",
+      "id": "awm_e17154b391b5",
       "title": "Mathigon",
       "url": "https://mathigon.org/",
       "type": "link",
@@ -103,7 +105,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_008",
+      "id": "awm_42450fe7c990",
       "title": "Calculus.org",
       "url": "http://calculus.org/",
       "type": "link",
@@ -117,7 +119,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_009",
+      "id": "awm_818c169b0e78",
       "title": "Ximera",
       "url": "https://ximera.osu.edu/",
       "type": "link",
@@ -131,7 +133,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_010",
+      "id": "awm_5001bc6da604",
       "title": "Almost Fun",
       "url": "https://www.almostfun.org/lessons/",
       "type": "link",
@@ -145,21 +147,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_011",
-      "title": "Oxford Mathematics",
-      "url": "https://www.youtube.com/c/OxfordMathematics",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Learning Platforms",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_012",
+      "id": "awm_bca20819b9cd",
       "title": "Math Academy",
       "url": "https://mathacademy.com/",
       "type": "link",
@@ -173,7 +161,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_013",
+      "id": "awm_dc6e6a1208ea",
       "title": "Derivative Calculus Solver",
       "url": "https://www.derivativecalculus.com",
       "type": "link",
@@ -187,7 +175,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_014",
+      "id": "awm_cc847a90c927",
       "title": "Understanding Mathematics",
       "url": "https://github.com/nelson-brochado/understanding-math",
       "type": "link",
@@ -201,287 +189,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_015",
-      "title": "Brandon Foltz",
-      "url": "https://www.youtube.com/@BrandonFoltz",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_016",
-      "title": "StatQuest",
-      "url": "https://www.youtube.com/channel/UCtYLUTtgS3k1Fg4y5tAhLbw",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_017",
-      "title": "3Blue1Brown",
-      "url": "https://www.youtube.com/@3blue1brown",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_018",
-      "title": "NPTEL",
-      "url": "https://www.youtube.com/@iit",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_019",
-      "title": "Numberphile",
-      "url": "https://www.youtube.com/@numberphile",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_020",
-      "title": "PatrickJMT",
-      "url": "https://www.youtube.com/@patrickjmt",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_021",
-      "title": "Professor Leonard",
-      "url": "https://www.youtube.com/@ProfessorLeonard",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_022",
-      "title": "Precalculus - College Algebra/Trigonometry",
-      "url": "https://www.youtube.com/playlist?list=PLDesaqWTN6ESsmwELdrzhcGiRhk5DjwLP",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "middle"
-    },
-    {
-      "id": "awm_023",
-      "title": "Calculus 1",
-      "url": "https://www.youtube.com/playlist?list=PLF797E961509B4EB5",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_024",
-      "title": "Calculus 2",
-      "url": "https://www.youtube.com/playlist?list=PLDesaqWTN6EQ2J4vgsN1HyBeRADEh4Cw-",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_025",
-      "title": "Calculus 3",
-      "url": "https://www.youtube.com/playlist?list=PLDesaqWTN6ESk16YRmzuJ8f6-rnuy0Ry7",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_026",
-      "title": "Differential Equations",
-      "url": "https://www.youtube.com/playlist?list=PLDesaqWTN6ESPaHy2QUKVaXNZuQNxkYQ_",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_027",
-      "title": "To The Point Math",
-      "url": "https://www.youtube.com/playlist?list=PLDesaqWTN6ETc1ZwHWijCBcZ2gOvS2tTN",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_028",
-      "title": "Crash Course",
-      "url": "https://www.youtube.com/@crashcourse",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_029",
-      "title": "Harvard",
-      "url": "https://www.youtube.com/@harvard",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_030",
-      "title": "MIT OpenCourseWare",
-      "url": "https://www.youtube.com/@mitocw",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_031",
-      "title": "Mathologer",
-      "url": "https://www.youtube.com/@Mathologer",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_032",
-      "title": "The Math District",
-      "url": "https://www.youtube.com/@TheMathDistrict",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_033",
-      "title": "Mathematical Monk",
-      "url": "https://www.youtube.com/@mathematicalmonk",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_034",
-      "title": "The Math Sorcerer",
-      "url": "https://www.youtube.com/@TheMathSorcerer",
-      "type": "link",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "",
-      "section1": "General Resources",
-      "section2": "Youtube Series",
-      "section3": null,
-      "stage": "general"
-    },
-    {
-      "id": "awm_035",
+      "id": "awm_f27a8e50424d",
       "title": "Symbolab",
       "url": "https://www.symbolab.com/",
       "type": "link",
@@ -495,7 +203,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_036",
+      "id": "awm_3011f73ae8fb",
       "title": "Desmos",
       "url": "https://www.desmos.com/calculator",
       "type": "link",
@@ -509,7 +217,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_037",
+      "id": "awm_3a14ee0b9eff",
       "title": "Math Words",
       "url": "http://www.mathwords.com/",
       "type": "link",
@@ -523,7 +231,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_038",
+      "id": "awm_bc69bb9ad798",
       "title": "Wolfram Alpha",
       "url": "http://www.wolframalpha.com/",
       "type": "link",
@@ -537,7 +245,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_039",
+      "id": "awm_225a0c3f5222",
       "title": "Maxima",
       "url": "https://maxima.sourceforge.io/",
       "type": "link",
@@ -551,7 +259,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_040",
+      "id": "awm_c144c7f9d3ef",
       "title": "Sympy",
       "url": "https://www.sympy.org/",
       "type": "link",
@@ -565,7 +273,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_041",
+      "id": "awm_e516cbe70c52",
       "title": "Sagemath",
       "url": "http://www.sagemath.org/",
       "type": "link",
@@ -579,7 +287,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_042",
+      "id": "awm_cf3650a8380c",
       "title": "MathFlow",
       "url": "https://github.com/Nonanti/MathFlow",
       "type": "link",
@@ -593,7 +301,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_043",
+      "id": "awm_988ec54c9bd6",
       "title": "Unit Converter",
       "url": "https://unitconverters.net",
       "type": "link",
@@ -607,7 +315,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_044",
+      "id": "awm_93a7600a98d4",
       "title": "GeoGebra",
       "url": "https://www.geogebra.org/?lang=en",
       "type": "link",
@@ -621,7 +329,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_045",
+      "id": "awm_39ddce095d3c",
       "title": "Macaulay2",
       "url": "http://www2.macaulay2.com/Macaulay2/",
       "type": "link",
@@ -635,7 +343,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_046",
+      "id": "awm_8abce3a9dcd2",
       "title": "Singular",
       "url": "https://www.singular.uni-kl.de/",
       "type": "link",
@@ -649,7 +357,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_047",
+      "id": "awm_c0ac67b0a6ae",
       "title": "GNU Octave",
       "url": "https://www.gnu.org/software/octave/",
       "type": "link",
@@ -663,7 +371,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_048",
+      "id": "awm_a4298e7f16d7",
       "title": "Magma",
       "url": "http://magma.maths.usyd.edu.au/magma/",
       "type": "link",
@@ -677,7 +385,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_049",
+      "id": "awm_77f9bcc13d0a",
       "title": "Maple",
       "url": "https://www.maplesoft.com/products/Maple/",
       "type": "link",
@@ -691,7 +399,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_050",
+      "id": "awm_c1cfb216ec13",
       "title": "Matlab",
       "url": "https://www.mathworks.com/products/matlab.html",
       "type": "link",
@@ -705,7 +413,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_051",
+      "id": "awm_8517b6fe1a05",
       "title": "Wolfram Mathematica",
       "url": "https://www.wolfram.com/mathematica/",
       "type": "link",
@@ -719,7 +427,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_052",
+      "id": "awm_d5f533d8080d",
       "title": "Free Math",
       "url": "https://freemathapp.org",
       "type": "link",
@@ -733,7 +441,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_053",
+      "id": "awm_de6f66770815",
       "title": "xhub",
       "url": "https://chrome.google.com/webstore/detail/xhub/anidddebgkllnnnnjfkmjcaallemhjee",
       "type": "link",
@@ -747,7 +455,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_054",
+      "id": "awm_73522289eadc",
       "title": "CopyPasteMathjax",
       "url": "https://www.copypastemathjax.com/",
       "type": "link",
@@ -761,7 +469,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_055",
+      "id": "awm_0d9eee50bd1e",
       "title": "Finance calculators",
       "url": "https://www.financecharts.com/pages/5724-retirement-calculators-and-stock-market-tips",
       "type": "link",
@@ -775,7 +483,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_056",
+      "id": "awm_6b417f443bfa",
       "title": "Mathcheap",
       "url": "https://mathcheap.xyz",
       "type": "link",
@@ -789,7 +497,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_057",
+      "id": "awm_2e5001aa40ee",
       "title": "Midpoint Calculator",
       "url": "https://midpointcalculator.co",
       "type": "link",
@@ -803,7 +511,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_058",
+      "id": "awm_3f460e6838ef",
       "title": "Quartiles Calculator",
       "url": "https://quartilecalculator.net",
       "type": "link",
@@ -817,7 +525,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_059",
+      "id": "awm_42fce6c0b66b",
       "title": "Corca Editor",
       "url": "https://corca.io/",
       "type": "link",
@@ -831,7 +539,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_060",
+      "id": "awm_e7e7debe2b5c",
       "title": "RunMat",
       "url": "https://github.com/runmat-org/runmat",
       "type": "link",
@@ -845,7 +553,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_061",
+      "id": "awm_25b2f4e0bda8",
       "title": "Structural Engineering Tools (SEPCO Engineering)",
       "url": "https://github.com/sepcostructural/structural-engineering-tools",
       "type": "link",
@@ -859,7 +567,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_062",
+      "id": "awm_c8502814a381",
       "title": "Mathematics Stack Exchange",
       "url": "http://math.stackexchange.com/",
       "type": "link",
@@ -873,7 +581,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_063",
+      "id": "awm_9a3b81212b94",
       "title": "MathOverflow",
       "url": "http://mathoverflow.net/",
       "type": "link",
@@ -887,7 +595,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_064",
+      "id": "awm_c438ee1a7d85",
       "title": "Encyclopedia of Mathematics",
       "url": "https://www.encyclopediaofmath.org",
       "type": "link",
@@ -901,7 +609,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_065",
+      "id": "awm_ac2d7803b56a",
       "title": "Planetmath",
       "url": "http://planetmath.org/",
       "type": "link",
@@ -915,7 +623,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_066",
+      "id": "awm_6a5330ca53bd",
       "title": "ProofWiki",
       "url": "https://proofwiki.org/wiki/Main_Page",
       "type": "link",
@@ -929,7 +637,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_067",
+      "id": "awm_07d1bd4bb19c",
       "title": "Wolfram Mathworld",
       "url": "http://mathworld.wolfram.com/",
       "type": "link",
@@ -943,7 +651,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_068",
+      "id": "awm_38c337c86272",
       "title": "The On-Line Encyclopedia of Integer Sequences",
       "url": "https://oeis.org",
       "type": "link",
@@ -957,7 +665,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_069",
+      "id": "awm_bc5853ad5cdb",
       "title": "The Princeton Companion to Mathematics",
       "url": "https://press.princeton.edu/books/hardcover/9780691118802/the-princeton-companion-to-mathematics",
       "type": "link",
@@ -971,7 +679,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_070",
+      "id": "awm_1b5f94fa1174",
       "title": "Encyclopedia of Distances (4th Edition)",
       "url": "https://link.springer.com/book/10.1007/978-3-662-52844-0",
       "type": "link",
@@ -985,10 +693,10 @@
       "stage": "general"
     },
     {
-      "id": "awm_071",
+      "id": "awm_8dba4c1f75ef",
       "title": "Calculus: Basic Concepts for High Schools",
       "url": "https://archive.org/details/TarasovCalculus",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -999,10 +707,10 @@
       "stage": "middle"
     },
     {
-      "id": "awm_072",
+      "id": "awm_9852412c1fe4",
       "title": "Basics of Algebra, Topology, and Differential Calculus",
       "url": "http://www.cis.upenn.edu/~jean/math-basics.pdf",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "Jean Gallier",
       "institution": "University of Pennsylvania",
@@ -1013,10 +721,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_073",
+      "id": "awm_9a73e03b3790",
       "title": "Multivariable Calculus",
       "url": "http://people.math.gatech.edu/%7Ecain/notes/calculus.html",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "G. Cain, J. Herod",
       "institution": "Georgia Tech",
@@ -1027,10 +735,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_074",
+      "id": "awm_b56d3c1e299a",
       "title": "Wikibooks",
       "url": "https://en.wikibooks.org/wiki/Wikibooks:Mathematics_bookshelf",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -1041,10 +749,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_075",
+      "id": "awm_baf58b3207b6",
       "title": "Online Mathematics Textbooks",
       "url": "https://people.math.gatech.edu/~cain/textbooks/onlinebooks.html",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -1055,10 +763,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_076",
+      "id": "awm_b9ee8d4026bd",
       "title": "Beginning and Intermediate Algebra",
       "url": "http://www.wallace.ccfaculty.org/book/Beginning_and_Intermediate_Algebra.pdf",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -1069,10 +777,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_077",
+      "id": "awm_04302511c473",
       "title": "Free Mathematics Books",
       "url": "https://github.com/EbookFoundation/free-programming-books/blob/master/books/free-programming-books-subjects.md#mathematics",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -1083,10 +791,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_078",
+      "id": "awm_2402a52106e4",
       "title": "Trigonometry",
       "url": "http://www.mecmath.net/trig/trigbook.pdf",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -1097,10 +805,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_079",
+      "id": "awm_90da460afc68",
       "title": "Math for Frontend Web Dev",
       "url": "https://www.manning.com/books/math-for-frontend-web-dev",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -1111,10 +819,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_080",
+      "id": "awm_0ebe2b8b8972",
       "title": "Grokking Statistics",
       "url": "https://www.manning.com/books/grokking-statistics",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "",
       "institution": "",
@@ -1125,10 +833,10 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_081",
+      "id": "awm_84ee8c29e076",
       "title": "The Math Behind Artificial Intelligence",
       "url": "https://www.freecodecamp.org/news/the-math-behind-artificial-intelligence-book",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "Tiago Capelo Monteiro",
       "institution": "freeCodeCamp",
@@ -1139,7 +847,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_082",
+      "id": "awm_966ff54c2d99",
       "title": "Quanta Magazine",
       "url": "https://www.quantamagazine.org/mathematics/",
       "type": "link",
@@ -1153,7 +861,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_083",
+      "id": "awm_ea60a668c494",
       "title": "Bulletin of the American Mathematical Society",
       "url": "https://www.ams.org/journals/bull/all_issues.html",
       "type": "link",
@@ -1167,7 +875,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_084",
+      "id": "awm_ae70dd01ae88",
       "title": "Notices of the American Mathematical Society",
       "url": "http://www.ams.org/cgi-bin/notices/amsnotices.pl?article_id=fullissue&article_type=gallery&gallery_type=fullissue",
       "type": "link",
@@ -1181,7 +889,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_085",
+      "id": "awm_584e64b53452",
       "title": "European Mathematical Society Magazine",
       "url": "https://euromathsoc.org/magazine",
       "type": "link",
@@ -1195,7 +903,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_086",
+      "id": "awm_e9d3dbcb050a",
       "title": "Mathematics Today by Institute of Mathematics and its Applications",
       "url": "https://ima.org.uk/publications/mathematics-today/",
       "type": "link",
@@ -1209,7 +917,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_087",
+      "id": "awm_c516e65aec4f",
       "title": "Crux Mathematicorum by Canadian Mathematical Society",
       "url": "https://cms.math.ca/publications/crux/",
       "type": "link",
@@ -1223,7 +931,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_088",
+      "id": "awm_94796612d577",
       "title": "BetterExplained",
       "url": "https://betterexplained.com/",
       "type": "link",
@@ -1237,7 +945,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_089",
+      "id": "awm_fa2ebdf5fff6",
       "title": "ILoveMaths",
       "url": "http://ilovemaths.com/",
       "type": "link",
@@ -1251,7 +959,7 @@
       "stage": "middle"
     },
     {
-      "id": "awm_090",
+      "id": "awm_60c0f15ea5e5",
       "title": "3blue1brown",
       "url": "https://www.3blue1brown.com/",
       "type": "link",
@@ -1265,7 +973,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_091",
+      "id": "awm_5f938bcfc8a9",
       "title": "Mathsisfun",
       "url": "https://www.mathsisfun.com",
       "type": "link",
@@ -1279,7 +987,7 @@
       "stage": "middle"
     },
     {
-      "id": "awm_092",
+      "id": "awm_37df47a0f902",
       "title": "MathematicsIsAScience",
       "url": "https://calculus123.com/wiki/Peter_Saveliev",
       "type": "link",
@@ -1293,7 +1001,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_093",
+      "id": "awm_688fdb0a6126",
       "title": "MathsJam",
       "url": "https://mathsjam.com/",
       "type": "link",
@@ -1307,7 +1015,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_094",
+      "id": "awm_31ac01a9b13a",
       "title": "Talking Maths in Public",
       "url": "https://talkingmathsinpublic.uk/",
       "type": "link",
@@ -1321,7 +1029,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_095",
+      "id": "awm_96016aa4f63f",
       "title": "Bridges",
       "url": "https://www.bridgesmathart.org/",
       "type": "link",
@@ -1335,7 +1043,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_096",
+      "id": "awm_78a6526ff779",
       "title": "Areas of mathematics on Wikipedia",
       "url": "https://en.wikipedia.org/wiki/Areas_of_mathematics",
       "type": "link",
@@ -1349,7 +1057,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_097",
+      "id": "awm_11d8c685a591",
       "title": "Paul's Online Math Notes",
       "url": "http://tutorial.math.lamar.edu/",
       "type": "link",
@@ -1363,7 +1071,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_098",
+      "id": "awm_4eb114ea9406",
       "title": "List of electronic textbooks",
       "url": "http://faculty.atu.edu/mfinan/nnotes.html",
       "type": "link",
@@ -1377,7 +1085,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_099",
+      "id": "awm_89e3128869f6",
       "title": "Topology Atlas",
       "url": "http://at.yorku.ca/topology/",
       "type": "link",
@@ -1391,10 +1099,10 @@
       "stage": "general"
     },
     {
-      "id": "awm_100",
+      "id": "awm_ec2832be0294",
       "title": "Recreations in Math",
       "url": "http://djm.cc/library/Recreations_in_Mathematics_Licks_edited.pdf",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "H. E. Licks",
       "institution": "1917",
@@ -1405,10 +1113,10 @@
       "stage": "general"
     },
     {
-      "id": "awm_101",
+      "id": "awm_6af9db914926",
       "title": "Magic Squares and Cubes",
       "url": "http://djm.cc/library/Magic_Squares_Cubes_Andrews_edited.pdf",
-      "type": "link",
+      "type": "book",
       "paid": false,
       "author": "W. S. Andrews",
       "institution": "1917",
@@ -1419,7 +1127,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_102",
+      "id": "awm_7694bdf60eb0",
       "title": "Convex Optimization",
       "url": "https://web.stanford.edu/~boyd/cvxbook/",
       "type": "link",
@@ -1433,7 +1141,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_103",
+      "id": "awm_7a98db7f3115",
       "title": "Fabrice Baudoin's Notes",
       "url": "https://fabricebaudoin.wordpress.com/",
       "type": "link",
@@ -1447,7 +1155,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_104",
+      "id": "awm_86d4ab1de212",
       "title": "Basic Concepts of Mathematics",
       "url": "http://www.trillia.com/zakon1.html",
       "type": "notes",
@@ -1461,7 +1169,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_105",
+      "id": "awm_877426d1b6c4",
       "title": "Book of Proof",
       "url": "https://richardhammack.github.io/BookOfProof/",
       "type": "notes",
@@ -1475,7 +1183,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_106",
+      "id": "awm_73706d0d2e78",
       "title": "How to Prove It: A Structured Approach (3rd Edition)",
       "url": "https://ia800501.us.archive.org/7/items/how-to-prove-it-a-structured-approach-daniel-j.-velleman/How%20to%20Prove%20It%20A%20Structured%20Approach%20%28Daniel%20J.%20Velleman%29.pdf",
       "type": "book",
@@ -1489,7 +1197,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_107",
+      "id": "awm_7c22612e3fd2",
       "title": "Sets, Relations, Functions",
       "url": "http://www.cosc.brocku.ca/~duentsch/papers/methprimer1.html",
       "type": "notes",
@@ -1503,7 +1211,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_108",
+      "id": "awm_2c337a7d4241",
       "title": "An Introduction to Set Theory",
       "url": "http://www.math.toronto.edu/weiss/set_theory.pdf",
       "type": "notes",
@@ -1517,7 +1225,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_109",
+      "id": "awm_746947dd77da",
       "title": "Set Theory and Foundations of Mathematics",
       "url": "http://www.settheory.net/",
       "type": "notes",
@@ -1531,7 +1239,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_110",
+      "id": "awm_43d7a9946adf",
       "title": "Set Theory on the Stanford Encyclopedia of Philosophy",
       "url": "http://plato.stanford.edu/entries/set-theory/",
       "type": "notes",
@@ -1545,7 +1253,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_111",
+      "id": "awm_e34b22db110a",
       "title": "Introduction to Logic",
       "url": "https://pdfs.semanticscholar.org/6967/f52773d9c2ccfc94658657a5761e0f00e95a.pdf",
       "type": "notes",
@@ -1559,7 +1267,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_112",
+      "id": "awm_c95c1510ddb7",
       "title": "An Introduction to Formal Logic",
       "url": "https://www.fecundity.com/codex/forallx.pdf",
       "type": "notes",
@@ -1573,7 +1281,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_113",
+      "id": "awm_27cee98cf0fc",
       "title": "forall x: Calgary (An Introduction to Formal Logic)",
       "url": "https://forallx.openlogicproject.org/",
       "type": "notes",
@@ -1587,7 +1295,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_114",
+      "id": "awm_e3c5bea27e90",
       "title": "A Problem Course in Mathematical Logic",
       "url": "http://euclid.trentu.ca/math/sb/pcml/pcml-16.pdf",
       "type": "notes",
@@ -1601,7 +1309,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_115",
+      "id": "awm_9b0e9cc18353",
       "title": "Computability - An introduction to recursive function theory",
       "url": "http://poincare.matf.bg.ac.rs/~zarkom/Book_Math__Cutland_Computability.pdf",
       "type": "notes",
@@ -1615,7 +1323,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_116",
+      "id": "awm_ba82780af935",
       "title": "Language, Proof, and Logic",
       "url": "http://homepages.uc.edu/~martinj/Symbolic_Logic/341%20Syllabus,%20Textbook,%20Handouts,%20Notes/LPL%20textbook.pdf",
       "type": "notes",
@@ -1629,7 +1337,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_117",
+      "id": "awm_4f5114131310",
       "title": "Mathematical Logic",
       "url": "http://www.mathematik.uni-muenchen.de/~schwicht/lectures/logic/ws03/ml.pdf",
       "type": "notes",
@@ -1643,7 +1351,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_118",
+      "id": "awm_5592ce2f4a53",
       "title": "Mathematical Logic",
       "url": "http://www.personal.psu.edu/t20/notes/logic.pdf",
       "type": "notes",
@@ -1657,7 +1365,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_119",
+      "id": "awm_0fcf0905401c",
       "title": "Formal Logic",
       "url": "http://maude.sip.ucm.es/~miguelpt/papers/flogic.pdf",
       "type": "notes",
@@ -1671,7 +1379,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_120",
+      "id": "awm_7b7340622942",
       "title": "Predictive Arithmetic",
       "url": "https://web.math.princeton.edu/~nelson/books/pa.pdf",
       "type": "notes",
@@ -1685,7 +1393,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_121",
+      "id": "awm_9075b5ae568c",
       "title": "Proofs and Concepts: the fundamentals of abstract mathematics",
       "url": "http://people.uleth.ca/~dave.morris/books/proofs+concepts.html",
       "type": "notes",
@@ -1699,7 +1407,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_122",
+      "id": "awm_f03bea0da6a4",
       "title": "Mathematical Reasoning: Writing and Proof",
       "url": "https://www.tedsundstrom.com/mathreasoning",
       "type": "notes",
@@ -1713,7 +1421,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_123",
+      "id": "awm_a4aa3084ad47",
       "title": "Logic and Proof",
       "url": "http://leanprover.github.io/logic_and_proof/",
       "type": "notes",
@@ -1727,7 +1435,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_124",
+      "id": "awm_c70d11f4ddb4",
       "title": "QED - an interactive textbook",
       "url": "https://teorth.github.io/QED",
       "type": "notes",
@@ -1741,7 +1449,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_125",
+      "id": "awm_5af703ab435c",
       "title": "Open Logic Textbook",
       "url": "http://builds.openlogicproject.org/",
       "type": "notes",
@@ -1755,7 +1463,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_126",
+      "id": "awm_6d7ced2fe8f9",
       "title": "Introduction to Category Theory and Categorical Logic",
       "url": "http://www.mathematik.tu-darmstadt.de/~streicher/CTCL.pdf",
       "type": "notes",
@@ -1769,7 +1477,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_127",
+      "id": "awm_f1561c7a81bf",
       "title": "An Introduction to Category Theory",
       "url": "http://www.cs.man.ac.uk/~hsimmons/zCATS.pdf",
       "type": "notes",
@@ -1783,7 +1491,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_128",
+      "id": "awm_5b27c89c9f5a",
       "title": "Category Theory",
       "url": "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.211.4754&rep=rep1&type=pdf",
       "type": "notes",
@@ -1797,7 +1505,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_129",
+      "id": "awm_7f0a18f8a15a",
       "title": "Category Theory",
       "url": "http://www.mathematik.uni-muenchen.de/~pareigis/Vorlesungen/04SS/Cats1.pdf",
       "type": "notes",
@@ -1811,7 +1519,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_130",
+      "id": "awm_afc36ede7815",
       "title": "Category Theory for Computing Science",
       "url": "https://web.archive.org/web/20181221233252/http://www.math.mcgill.ca/triples/Barr-Wells-ctcs.pdf",
       "type": "notes",
@@ -1825,7 +1533,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_131",
+      "id": "awm_e026609cafe1",
       "title": "Toposes, Triples and Theories",
       "url": "http://www.tac.mta.ca/tac/reprints/articles/12/tr12.pdf",
       "type": "notes",
@@ -1839,7 +1547,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_132",
+      "id": "awm_c377e45183f3",
       "title": "Abelian Categories",
       "url": "http://www.tac.mta.ca/tac/reprints/articles/3/tr3abs.html",
       "type": "notes",
@@ -1853,7 +1561,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_133",
+      "id": "awm_02e3c15d3dfa",
       "title": "Categories and Groupoids",
       "url": "http://www.tac.mta.ca/tac/reprints/articles/7/tr7abs.html",
       "type": "notes",
@@ -1867,7 +1575,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_134",
+      "id": "awm_73dbbe1c4f0d",
       "title": "Basic Concepts of Enriched Category Theory",
       "url": "http://www.tac.mta.ca/tac/reprints/articles/10/tr10abs.html",
       "type": "notes",
@@ -1881,7 +1589,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_135",
+      "id": "awm_9a22b5995f58",
       "title": "Abstract and Concrete Categories: The Joy of Cats",
       "url": "http://www.tac.mta.ca/tac/reprints/articles/17/tr17abs.html",
       "type": "notes",
@@ -1895,7 +1603,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_136",
+      "id": "awm_1e56a708f513",
       "title": "Seven Sketches in Compositionality: An Invitation to Applied Category Theory",
       "url": "http://math.mit.edu/~dspivak/teaching/sp18/7Sketches.pdf",
       "type": "notes",
@@ -1909,7 +1617,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_137",
+      "id": "awm_ccad095960cc",
       "title": "Category Theory in Context",
       "url": "http://www.math.jhu.edu/~eriehl/context/",
       "type": "notes",
@@ -1923,7 +1631,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_138",
+      "id": "awm_9e62bcfe94fc",
       "title": "Proofs and Types",
       "url": "http://www.paultaylor.eu/stable/prot.pdf",
       "type": "notes",
@@ -1937,7 +1645,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_139",
+      "id": "awm_be7973023aab",
       "title": "Intuitionistic Type Theory",
       "url": "https://archive-pml.github.io/martin-lof/pdfs/Bibliopolis-Book-retypeset-1984.pdf",
       "type": "notes",
@@ -1951,7 +1659,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_140",
+      "id": "awm_be4c6301059c",
       "title": "Type Theory and Functional Programming",
       "url": "https://www.cs.kent.ac.uk/people/staff/sjt/TTFP/",
       "type": "notes",
@@ -1965,7 +1673,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_141",
+      "id": "awm_fc7c934740c4",
       "title": "Programming in Martin-Lof’s Type Theory",
       "url": "http://www.cse.chalmers.se/research/group/logic/book/book.pdf",
       "type": "notes",
@@ -1979,7 +1687,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_142",
+      "id": "awm_7f25eeaed116",
       "title": "Homotopy Type Theory",
       "url": "https://hottheory.files.wordpress.com/2013/03/hott-online-611-ga1a258c.pdf",
       "type": "notes",
@@ -1993,7 +1701,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_143",
+      "id": "awm_cbc799ee7ee5",
       "title": "Surreal Numbers - How two ex-students turned on to pure mathematics and found total happiness",
       "url": "http://www.math.harvard.edu/~knill/teaching/mathe320_2015_fall/blog15/surreal1.pdf",
       "type": "notes",
@@ -2007,7 +1715,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_144",
+      "id": "awm_6b156f97bb9d",
       "title": "Surreal Numbers and Games",
       "url": "http://web.mit.edu/sp.268/www/2010/surreal.pdf",
       "type": "notes",
@@ -2021,7 +1729,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_145",
+      "id": "awm_38d2a689197c",
       "title": "Conway names, the simplicity hierarchy and the surreal number tree",
       "url": "http://www.ohio.edu/people/ehrlich/ConwayNames.pdf",
       "type": "notes",
@@ -2035,7 +1743,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_146",
+      "id": "awm_6132dd61f207",
       "title": "Elementary Number Theory: Primes, Congruences, and Secrets",
       "url": "http://wstein.org/ent/ent.pdf",
       "type": "notes",
@@ -2049,7 +1757,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_147",
+      "id": "awm_affa8bcaf169",
       "title": "Elementary Number Theory",
       "url": "http://math.utoledo.edu/~codenth/Spring_13/3200/ENT-books/Elementary_Number_Theory-Clark.pdf",
       "type": "notes",
@@ -2063,7 +1771,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_148",
+      "id": "awm_7f65b919dc49",
       "title": "A Course on Number Theory",
       "url": "http://www.maths.qmul.ac.uk/~pjc/notes/nt.pdf",
       "type": "notes",
@@ -2077,7 +1785,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_149",
+      "id": "awm_c721340efc65",
       "title": "A Computational Introduction to Number Theory and Algebra",
       "url": "http://shoup.net/ntb/ntb-v2.pdf",
       "type": "notes",
@@ -2091,7 +1799,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_150",
+      "id": "awm_25a6083b3dec",
       "title": "Number Theory: A Contemporary Introduction",
       "url": "http://alpha.math.uga.edu/~pete/4400FULL.pdf",
       "type": "notes",
@@ -2105,7 +1813,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_151",
+      "id": "awm_e47fd4142db5",
       "title": "An Introduction to the Theory of Numbers",
       "url": "http://www.trillia.com/moser-number.html",
       "type": "notes",
@@ -2119,7 +1827,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_152",
+      "id": "awm_89acabcd3517",
       "title": "Yet Another Introductory Number Theory Textbook",
       "url": "https://www.poritz.net/jonathan/share/yaintt/",
       "type": "notes",
@@ -2133,7 +1841,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_153",
+      "id": "awm_a8926c12fdb1",
       "title": "Introduction to Algebraic Number Theory",
       "url": "https://feog.github.io/ANT10.pdf",
       "type": "notes",
@@ -2147,7 +1855,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_154",
+      "id": "awm_67a133b5cfe3",
       "title": "Algebraic Number Theory",
       "url": "http://www.jmilne.org/math/CourseNotes/ANT.pdf",
       "type": "notes",
@@ -2161,7 +1869,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_155",
+      "id": "awm_fc7f5b6d5307",
       "title": "Algebraic Number Theory Course Notes",
       "url": "http://people.math.gatech.edu/~mbaker/pdf/ANTBook.pdf",
       "type": "notes",
@@ -2175,7 +1883,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_156",
+      "id": "awm_ff078d468243",
       "title": "A Course In Algebraic Number Theory",
       "url": "http://www.math.uiuc.edu/~r-ash/ANT.html",
       "type": "notes",
@@ -2189,7 +1897,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_157",
+      "id": "awm_d5a38883fc45",
       "title": "Introduction to Analytic Number Theory",
       "url": "http://www.math.uiuc.edu/~hildebr/ant/main.pdf",
       "type": "notes",
@@ -2203,7 +1911,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_158",
+      "id": "awm_33607a48c86c",
       "title": "Elements of Analytic Number Theory",
       "url": "http://math.nsc.ru/~vdovin/lectures/numth_eng.pdf",
       "type": "notes",
@@ -2217,7 +1925,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_159",
+      "id": "awm_8185be0296e1",
       "title": "Analytic Number Theory",
       "url": "http://www.mathematik.uni-muenchen.de/~forster/v/ann/annth_all.pdf",
       "type": "notes",
@@ -2231,7 +1939,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_160",
+      "id": "awm_c167458dab94",
       "title": "Analytic Number Theory - Lecture Notes based on Davenport’s book",
       "url": "http://www2.math.uu.se/~astrombe/analtalt08/www_notes.pdf",
       "type": "notes",
@@ -2245,7 +1953,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_161",
+      "id": "awm_915a88b86006",
       "title": "A Course in Universal Algebra",
       "url": "http://www.math.uwaterloo.ca/~snburris/htdocs/ualg.html",
       "type": "notes",
@@ -2259,7 +1967,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_162",
+      "id": "awm_cd9d2278395c",
       "title": "A Course in Commutative Algebra",
       "url": "https://faculty.math.illinois.edu/~r-ash/ComAlg.html",
       "type": "notes",
@@ -2273,7 +1981,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_163",
+      "id": "awm_a186e9173894",
       "title": "First Course in Algebra",
       "url": "http://djm.cc/library/First_Algebra_Hawkes_Luby_Touton_edited.pdf",
       "type": "notes",
@@ -2287,7 +1995,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_164",
+      "id": "awm_1735e39b0f87",
       "title": "Second Course in Algebra",
       "url": "http://djm.cc/library/Second_Algebra_Hawkes_Luby_Touton_edited.pdf",
       "type": "notes",
@@ -2301,7 +2009,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_165",
+      "id": "awm_091ef8bf0b6d",
       "title": "Algebra: An Elementary Text-Book, Part I",
       "url": "http://djm.cc/library/Algebra_Elementary_Text-Book_Part_I_Chrystal_edited.pdf",
       "type": "notes",
@@ -2315,7 +2023,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_166",
+      "id": "awm_292275b75d12",
       "title": "Algebra: An Elementary Text-Book, Part II",
       "url": "http://djm.cc/library/Algebra_Elementary_Text-Book_Part_II_Chrystal_edited02.pdf",
       "type": "notes",
@@ -2329,7 +2037,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_167",
+      "id": "awm_c00ded5d8e6d",
       "title": "Understanding Algebra",
       "url": "https://jamesbrennan.org/algebra",
       "type": "notes",
@@ -2343,7 +2051,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_168",
+      "id": "awm_bf42c62db3cd",
       "title": "Introduction to Abstract Algebra",
       "url": "https://zodml.org/sites/default/files/Introduction_to_Abstract_Algebra_0.pdf",
       "type": "notes",
@@ -2357,7 +2065,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_169",
+      "id": "awm_3ada0ffa1224",
       "title": "Introduction to Modern Algebra",
       "url": "http://aleph0.clarku.edu/~djoyce/ma225/algebra.pdf",
       "type": "notes",
@@ -2371,7 +2079,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_170",
+      "id": "awm_b25a1b1ef15f",
       "title": "Algebraic Methods",
       "url": "https://feog.github.io/AA11.pdf",
       "type": "notes",
@@ -2385,7 +2093,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_171",
+      "id": "awm_25081bd1fefe",
       "title": "Abstract Algebra : Theory and Applications",
       "url": "http://abstract.ups.edu/download/aata-20150812.pdf",
       "type": "notes",
@@ -2399,7 +2107,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_172",
+      "id": "awm_d26b65fcfe96",
       "title": "An Undergraduate Course in Abstract Algebra",
       "url": "http://www.maths.usyd.edu.au/u/bobh/UoS/rfwhole.pdf",
       "type": "notes",
@@ -2413,7 +2121,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_173",
+      "id": "awm_2543a6f55c65",
       "title": "Elements of Abstract and Linear Algebra",
       "url": "http://www.math.miami.edu/~ec/book",
       "type": "notes",
@@ -2427,7 +2135,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_174",
+      "id": "awm_f9eb0deec25b",
       "title": "Abstract Algebra: The Basic Graduate Year",
       "url": "http://www.math.uiuc.edu/~r-ash/Algebra.html",
       "type": "notes",
@@ -2441,7 +2149,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_175",
+      "id": "awm_129fd4867fe1",
       "title": "Abstract Algebra: Harvard Extension (Archived)",
       "url": "https://web.archive.org/web/20150528171650/extension.harvard.edu/open-learning-initiative/abstract-algebra",
       "type": "notes",
@@ -2455,21 +2163,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_176",
-      "title": "Abstract Algebra: Harvard Extension Videos",
-      "url": "https://www.youtube.com/playlist?list=PLA58AC5CABC1321A3",
-      "type": "notes",
-      "paid": false,
-      "author": "",
-      "institution": "",
-      "note": "Benedict Gross",
-      "section1": "Branches of Mathematics",
-      "section2": "Algebra",
-      "section3": "Abstract Algebra",
-      "stage": "undergrad"
-    },
-    {
-      "id": "awm_177",
+      "id": "awm_313fa924eca8",
       "title": "Notes on Group Theory",
       "url": "https://www2.bc.edu/mark-reeder/Groups.pdf",
       "type": "notes",
@@ -2483,7 +2177,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_178",
+      "id": "awm_86d7f3a41afb",
       "title": "Group Theory",
       "url": "http://www.jmilne.org/math/CourseNotes/GT.pdf",
       "type": "notes",
@@ -2497,7 +2191,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_179",
+      "id": "awm_50769be875e1",
       "title": "Notes on Finite Group Theory",
       "url": "http://www.maths.qmul.ac.uk/~pjc/notes/gt.pdf",
       "type": "notes",
@@ -2511,7 +2205,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_180",
+      "id": "awm_915f5b8eeeae",
       "title": "Group Theory",
       "url": "http://www.cns.gatech.edu/GroupTheory/index.html",
       "type": "notes",
@@ -2525,7 +2219,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_181",
+      "id": "awm_8a0d40aa9f37",
       "title": "Fundamentals of Linear Algebra",
       "url": "http://www.math.ubc.ca/~carrell/NB.pdf",
       "type": "notes",
@@ -2539,7 +2233,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_182",
+      "id": "awm_9c6bad1d8bf9",
       "title": "Linear Algebra and Matrices",
       "url": "https://web.archive.org/web/20140824074655/http://mathstat.helsinki.fi/~fluch/linear_algebra_1-sp07/la1.pdf",
       "type": "notes",
@@ -2553,7 +2247,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_183",
+      "id": "awm_187020ee9cc7",
       "title": "Vector Space Theory",
       "url": "http://www.maths.usyd.edu.au/u/bobh/UoS/MATH2902/vswhole.pdf",
       "type": "notes",
@@ -2567,7 +2261,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_184",
+      "id": "awm_fb578145d80e",
       "title": "Linear Algebra",
       "url": "http://joshua.smcvt.edu/linearalgebra",
       "type": "notes",
@@ -2581,7 +2275,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_185",
+      "id": "awm_353f299b55d5",
       "title": "MIT OpenCourseWare Lectures on Linear Algebra (18.06) as Jupyter Notebooks",
       "url": "https://github.com/juanklopper/MIT_OCW_Linear_Algebra_18_06",
       "type": "notes",
@@ -2595,7 +2289,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_186",
+      "id": "awm_b97adddc37f7",
       "title": "Elementary Linear Algebra",
       "url": "http://www.numbertheory.org/book/",
       "type": "notes",
@@ -2609,7 +2303,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_187",
+      "id": "awm_a6cac39502d5",
       "title": "A First Courses in Linear Algebra",
       "url": "http://linear.ups.edu/",
       "type": "notes",
@@ -2623,7 +2317,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_188",
+      "id": "awm_4c416d13b582",
       "title": "Linear Algebra",
       "url": "https://www.math.ucdavis.edu/~linear/",
       "type": "notes",
@@ -2637,7 +2331,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_189",
+      "id": "awm_992b0a6e21d4",
       "title": "Introduction to vectors and tensors, Vol 1: linear and multilinear algebra",
       "url": "http://oaktrust.library.tamu.edu/handle/1969.1/2502",
       "type": "notes",
@@ -2651,7 +2345,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_190",
+      "id": "awm_0febcd481f92",
       "title": "Introduction to vectors and tensors, Vol 2: vector and tensor analysis",
       "url": "http://oaktrust.library.tamu.edu/handle/1969.1/3609",
       "type": "notes",
@@ -2665,7 +2359,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_191",
+      "id": "awm_ff74b97399b1",
       "title": "Introduction to Applied Linear Algebra",
       "url": "https://web.stanford.edu/~boyd/vmls/vmls.pdf",
       "type": "notes",
@@ -2679,7 +2373,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_192",
+      "id": "awm_873be6b09d20",
       "title": "Linear Algebra Done Wrong",
       "url": "https://www.math.brown.edu/~treil/papers/LADW/LADW_2017-09-04.pdf",
       "type": "notes",
@@ -2693,7 +2387,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_193",
+      "id": "awm_29a8d798c900",
       "title": "Immersive Linear Algebra",
       "url": "http://immersivemath.com/ila/index.html",
       "type": "notes",
@@ -2707,7 +2401,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_194",
+      "id": "awm_eacea0f0ea84",
       "title": "Interactive Linear Algebra",
       "url": "https://textbooks.math.gatech.edu/ila/",
       "type": "notes",
@@ -2721,7 +2415,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_195",
+      "id": "awm_1a2c8f5e8552",
       "title": "Linear Algebra, Infinite Dimensions, and Maple",
       "url": "https://people.math.gatech.edu/~herod/Hspace/Hspace.html",
       "type": "notes",
@@ -2735,7 +2429,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_196",
+      "id": "awm_e76e49416a37",
       "title": "Linear Algebra Done Right",
       "url": "https://linear.axler.net/",
       "type": "book",
@@ -2749,7 +2443,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_197",
+      "id": "awm_4e2b509acde2",
       "title": "Foundations of Module and Ring Theory",
       "url": "http://www.math.uni-duesseldorf.de/~wisbauer/book.pdf",
       "type": "notes",
@@ -2763,7 +2457,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_198",
+      "id": "awm_ce64ae41a54b",
       "title": "An Introduction to Galois Theory",
       "url": "http://www.maths.gla.ac.uk/~ajb/dvi-ps/Galois.pdf",
       "type": "notes",
@@ -2777,7 +2471,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_199",
+      "id": "awm_25075bcb4196",
       "title": "Fields and Galois Theory",
       "url": "http://www.jmilne.org/math/CourseNotes/FT.pdf",
       "type": "notes",
@@ -2791,7 +2485,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_200",
+      "id": "awm_b5fb26c40ecf",
       "title": "Galois theory",
       "url": "http://homepages.warwick.ac.uk/~masda/MA3D5/Galois.pdf",
       "type": "notes",
@@ -2805,7 +2499,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_201",
+      "id": "awm_7c0681e462d0",
       "title": "Galois Theory",
       "url": "https://eclass.uoa.gr/modules/document/file.php/MATH594/Stewart%20Galois%204th%20edition.pdf",
       "type": "notes",
@@ -2819,7 +2513,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_202",
+      "id": "awm_b28e7a7530f0",
       "title": "Galois Theory",
       "url": "https://arxiv.org/pdf/2408.07499",
       "type": "notes",
@@ -2833,7 +2527,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_203",
+      "id": "awm_c6aa19d5de56",
       "title": "Lie Algebras",
       "url": "http://www.math.harvard.edu/~shlomo/docs/lie_algebras.pdf",
       "type": "notes",
@@ -2847,7 +2541,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_204",
+      "id": "awm_a4a8445de1b6",
       "title": "Basic Combinatorics",
       "url": "http://web.math.utk.edu/~wagner/papers/comb.pdf",
       "type": "notes",
@@ -2861,7 +2555,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_205",
+      "id": "awm_918e6b814d76",
       "title": "Applied Combinatorics",
       "url": "http://people.math.gatech.edu/~trotter/book.pdf",
       "type": "notes",
@@ -2875,7 +2569,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_206",
+      "id": "awm_6285414ddefd",
       "title": "Notes on Combinatorics",
       "url": "http://www.maths.qmul.ac.uk/~pjc/notes/comb.pdf",
       "type": "notes",
@@ -2889,7 +2583,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_207",
+      "id": "awm_2bfe0ba536db",
       "title": "Analytic Combinatorics",
       "url": "http://algo.inria.fr/flajolet/Publications/book.pdf",
       "type": "notes",
@@ -2903,7 +2597,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_208",
+      "id": "awm_50bdc54d934d",
       "title": "generatingfunctionology",
       "url": "http://www.math.upenn.edu/~wilf/DownldGF.html",
       "type": "notes",
@@ -2917,7 +2611,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_209",
+      "id": "awm_d62ce0a107eb",
       "title": "Graph Theory: Lecture Notes",
       "url": "http://www.personal.psu.edu/cxg286/Math485.pdf",
       "type": "notes",
@@ -2931,7 +2625,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_210",
+      "id": "awm_f7fb6f4c6ecc",
       "title": "Graph Theory",
       "url": "http://www.cs.unibo.it/babaoglu/courses/cas00-01/tutorials/GraphTheory.pdf",
       "type": "notes",
@@ -2945,7 +2639,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_211",
+      "id": "awm_f64bada25abc",
       "title": "Graph Theory : Interactive Algorithm Visualizer | Graph Theory Learning Platform",
       "url": "https://learngraphtheory.org/",
       "type": "notes",
@@ -2959,7 +2653,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_212",
+      "id": "awm_cf4dccbcb9f1",
       "title": "Fundamentals of Geometry",
       "url": "http://polly.phys.msu.ru/~belyaev/geometry.pdf",
       "type": "notes",
@@ -2973,7 +2667,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_213",
+      "id": "awm_6bc97dbb693c",
       "title": "A=B",
       "url": "https://www.math.upenn.edu/~wilf/AeqB.html",
       "type": "notes",
@@ -2987,7 +2681,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_214",
+      "id": "awm_73780b320ffe",
       "title": "Elements",
       "url": "http://aleph0.clarku.edu/~djoyce/java/elements/toc.html",
       "type": "notes",
@@ -3001,7 +2695,7 @@
       "stage": "middle"
     },
     {
-      "id": "awm_215",
+      "id": "awm_4849f8ddf982",
       "title": "Euclid's Elements Redux",
       "url": "http://starrhorse.com/euclid/",
       "type": "notes",
@@ -3015,7 +2709,7 @@
       "stage": "middle"
     },
     {
-      "id": "awm_216",
+      "id": "awm_09abf1636dca",
       "title": "Mathematical Illustrations",
       "url": "http://www.math.ubc.ca/~cass/graphics/manual/",
       "type": "notes",
@@ -3029,7 +2723,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_217",
+      "id": "awm_aae4023bfabb",
       "title": "Byrne's Euclid",
       "url": "https://www.c82.net/euclid/",
       "type": "notes",
@@ -3043,7 +2737,7 @@
       "stage": "middle"
     },
     {
-      "id": "awm_218",
+      "id": "awm_4b2741e0988d",
       "title": "Plane Geometry",
       "url": "http://djm.cc/library/Plane_Geometry_Wentworth_Smith_edited.pdf",
       "type": "notes",
@@ -3057,7 +2751,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_219",
+      "id": "awm_67606e471966",
       "title": "Planes and Spherical Trigonometry",
       "url": "http://djm.cc/library/Plane_Spherical_Trigonometry_Wentworth_Smith_edited_2.pdf",
       "type": "notes",
@@ -3071,7 +2765,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_220",
+      "id": "awm_c508692eac02",
       "title": "Coordinate Geometry",
       "url": "http://djm.cc/library/Coordinate_Geometry_Fine_Thompson_edited03.pdf",
       "type": "notes",
@@ -3085,7 +2779,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_221",
+      "id": "awm_fba152d2e828",
       "title": "Analytic Geometry",
       "url": "http://djm.cc/library/Analytic_Geometry_Siceloff_Wentworth_Smith_edited.pdf",
       "type": "notes",
@@ -3099,7 +2793,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_222",
+      "id": "awm_06772e033b73",
       "title": "Introduction to Differential Geometry",
       "url": "https://people.math.ethz.ch/~salamon/PREPRINTS/diffgeo.pdf",
       "type": "notes",
@@ -3113,7 +2807,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_223",
+      "id": "awm_32b188a307dc",
       "title": "Notes on Differential Geometry and Lie Groups",
       "url": "https://www.cis.upenn.edu/~jean/gbooks/manif.html",
       "type": "notes",
@@ -3127,7 +2821,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_224",
+      "id": "awm_b6515f0ada68",
       "title": "Topics in Differential Geometry",
       "url": "http://www.mat.univie.ac.at/~michor/dgbook.pdf",
       "type": "notes",
@@ -3141,7 +2835,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_225",
+      "id": "awm_1b9020e216d5",
       "title": "Lectures on Differential Geometry",
       "url": "http://mysite.science.uottawa.ca/rossmann/Differential%20Geometry%20book_files/Diffgeo.pdf",
       "type": "notes",
@@ -3155,7 +2849,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_226",
+      "id": "awm_b077f2d7e093",
       "title": "An Introduction to Riemannian Geometry",
       "url": "http://www.matematik.lu.se/matematiklu/personal/sigma/Riemann.pdf",
       "type": "notes",
@@ -3169,7 +2863,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_227",
+      "id": "awm_95df9eeae67b",
       "title": "The Geometry and Topology of Three-Manifolds",
       "url": "http://msri.org/publications/books/gt3m/",
       "type": "notes",
@@ -3183,7 +2877,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_228",
+      "id": "awm_9c413f8b9c8e",
       "title": "Semi-Riemann Geometry and General Relativity",
       "url": "http://www.math.harvard.edu/~shlomo/docs/semi_riemannian_geometry.pdf",
       "type": "notes",
@@ -3197,7 +2891,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_229",
+      "id": "awm_f11f7d2b74b0",
       "title": "Discrete Differential Geometry",
       "url": "http://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf",
       "type": "notes",
@@ -3211,7 +2905,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_230",
+      "id": "awm_027e4568b526",
       "title": "A Brief Introduction to Algebraic Geometry",
       "url": "https://ksda.ccny.cuny.edu/PostedPapers/rickksda1107.pdf",
       "type": "notes",
@@ -3225,7 +2919,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_231",
+      "id": "awm_7931c6e5250a",
       "title": "Introduction to Algebraic Geometry",
       "url": "http://www.math.lsa.umich.edu/~idolga/631.pdf",
       "type": "notes",
@@ -3239,7 +2933,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_232",
+      "id": "awm_99ab18df2efc",
       "title": "Foundations of Algebraic Geometry",
       "url": "http://math.stanford.edu/~vakil/216blog/FOAGjun1113public.pdf",
       "type": "notes",
@@ -3253,7 +2947,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_233",
+      "id": "awm_957c2fc42359",
       "title": "Algebraic Geometry",
       "url": "http://www.cis.upenn.edu/~jean/algeoms.pdf",
       "type": "notes",
@@ -3267,7 +2961,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_234",
+      "id": "awm_8400b9ccddd6",
       "title": "Algebraic Geometry",
       "url": "http://www.jmilne.org/math/CourseNotes/AG.pdf",
       "type": "notes",
@@ -3281,7 +2975,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_235",
+      "id": "awm_2da7a370135c",
       "title": "Algebraic Geometry",
       "url": "http://www.mathematik.uni-kl.de/~gathmann/class/alggeom-2002/main.pdf",
       "type": "notes",
@@ -3295,7 +2989,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_236",
+      "id": "awm_0d68c57cd7f9",
       "title": "The Stacks Project",
       "url": "https://stacks.math.columbia.edu/",
       "type": "notes",
@@ -3309,7 +3003,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_237",
+      "id": "awm_b74568e566b7",
       "title": "Lectures on Algebraic Statistics",
       "url": "https://math.berkeley.edu/~bernd/owl.pdf",
       "type": "notes",
@@ -3323,7 +3017,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_238",
+      "id": "awm_0e0fbe9277b9",
       "title": "An Introduction to Algebraic Statistics",
       "url": "https://www3.diism.unisi.it/~chiantini/did/00Book.pdf",
       "type": "notes",
@@ -3337,7 +3031,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_239",
+      "id": "awm_6a9bcfc5276d",
       "title": "Algebraic Statistics",
       "url": "https://tore.tuhh.de/dspace-cris-server/api/core/bitstreams/a0c378d5-ce8e-442a-8891-9e7f763b4279/content",
       "type": "notes",
@@ -3351,7 +3045,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_240",
+      "id": "awm_e9d977a4412f",
       "title": "Algebraic Statistics for Computational Biology",
       "url": "http://yaroslavvb.com/papers/pachter-algebraic.pdf",
       "type": "notes",
@@ -3365,7 +3059,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_241",
+      "id": "awm_20fb10d267c5",
       "title": "General Topology",
       "url": "https://www.rexresearch1.com/TopologyLibrary/GeneralTopologyWillard.pdf",
       "type": "notes",
@@ -3379,7 +3073,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_242",
+      "id": "awm_e7715cea63a3",
       "title": "Elementary Applied Topology",
       "url": "https://www.math.upenn.edu/~ghrist/notes.html",
       "type": "notes",
@@ -3393,7 +3087,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_243",
+      "id": "awm_49fe391b9f8a",
       "title": "Introduction to Topology",
       "url": "http://www.math.colostate.edu/~renzo/teaching/Topology10/Notes.pdf",
       "type": "notes",
@@ -3407,7 +3101,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_244",
+      "id": "awm_2bd506611874",
       "title": "Introduction to Topology",
       "url": "http://www.math.bme.hu/~kalex/Teaching/Spring10/Topology/TopNotes_Spring10.pdf",
       "type": "notes",
@@ -3421,7 +3115,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_245",
+      "id": "awm_b29f0115fa57",
       "title": "Introductory Topology",
       "url": "http://www.math.clemson.edu/~jimlb/Teaching/2009-10/Math986/Topology.pdf",
       "type": "notes",
@@ -3435,7 +3129,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_246",
+      "id": "awm_a524123092d5",
       "title": "General Topology",
       "url": "http://webusers.imj-prg.fr/~pierre.schapira/lectnotes/Topo.pdf",
       "type": "notes",
@@ -3449,7 +3143,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_247",
+      "id": "awm_8c9836615c82",
       "title": "Elementary Topology Problem Textbook",
       "url": "http://www.pdmi.ras.ru/~olegviro/topoman/eng-book-nopfs.pdf",
       "type": "notes",
@@ -3463,7 +3157,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_248",
+      "id": "awm_ccf350b0d946",
       "title": "General Topology",
       "url": "http://www.math.ku.dk/~moller/e03/3gt/notes/gtnotes.pdf",
       "type": "notes",
@@ -3477,7 +3171,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_249",
+      "id": "awm_b54de1ee203e",
       "title": "Topology Topics",
       "url": "http://mathonline.wikidot.com/topology",
       "type": "notes",
@@ -3491,7 +3185,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_250",
+      "id": "awm_99ed56b01463",
       "title": "Algebraic Topology",
       "url": "http://pi.math.cornell.edu/~hatcher/AT/AT.pdf",
       "type": "notes",
@@ -3505,7 +3199,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_251",
+      "id": "awm_1dc9d48d3799",
       "title": "A Concise Course in Algebraic Topology",
       "url": "http://www.math.uchicago.edu/~may/CONCISE/ConciseRevised.pdf",
       "type": "notes",
@@ -3519,7 +3213,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_252",
+      "id": "awm_a39ca4971b44",
       "title": "Introduction to Algebraic Topology",
       "url": "http://www.math.muni.cz/~cadek/at/at.pdf",
       "type": "notes",
@@ -3533,7 +3227,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_253",
+      "id": "awm_0a172eac2597",
       "title": "Algebra and Topology",
       "url": "http://webusers.imj-prg.fr/~pierre.schapira/lectnotes/AlTo.pdf",
       "type": "notes",
@@ -3547,7 +3241,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_254",
+      "id": "awm_fb07018b1fd0",
       "title": "Lecture Notes in Algebraic Topology",
       "url": "http://www.indiana.edu/~jfdavis/teaching/m623/book.pdf",
       "type": "notes",
@@ -3561,7 +3255,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_255",
+      "id": "awm_ee84ca5776e5",
       "title": "Algebraic Topology",
       "url": "https://www.ma.utexas.edu/ibl1/courses/resources/12_15_07_grad_alg_top_mooremethod.pdf",
       "type": "notes",
@@ -3575,7 +3269,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_256",
+      "id": "awm_cacd25aa8034",
       "title": "Lecture Notes on Algebraic Topology",
       "url": "http://www.math.nus.edu.sg/~matwujie/ma5209.pdf",
       "type": "notes",
@@ -3589,7 +3283,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_257",
+      "id": "awm_c2240b189f17",
       "title": "MIT OpenCourseWare Lectures on Calculus",
       "url": "https://ocw.mit.edu/resources/res-18-001-calculus-online-textbook-spring-2005/textbook/",
       "type": "notes",
@@ -3603,7 +3297,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_258",
+      "id": "awm_0f92d59d858e",
       "title": "Elementary Calculus: An Approach Using Infinitesimals",
       "url": "http://www.math.wisc.edu/~keisler/calc.html",
       "type": "notes",
@@ -3617,7 +3311,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_259",
+      "id": "awm_f2112f52b8cf",
       "title": "An Introduction to Real Analysis",
       "url": "https://www.math.ucdavis.edu/~hunter/intro_analysis_pdf/intro_analysis.pdf",
       "type": "notes",
@@ -3631,7 +3325,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_260",
+      "id": "awm_50a2737a7efa",
       "title": "Introduction to Real Analysis",
       "url": "http://ramanujan.math.trinity.edu/wtrench/texts/TRENCH_REAL_ANALYSIS.PDF",
       "type": "notes",
@@ -3645,7 +3339,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_261",
+      "id": "awm_7c75607a4b6f",
       "title": "Basic Analysis: Introduction to Real Analysis",
       "url": "http://www.jirka.org/ra/realanal.pdf",
       "type": "notes",
@@ -3659,7 +3353,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_262",
+      "id": "awm_62e93a9cf8da",
       "title": "Elementary Real Analysis",
       "url": "http://prac.im.pwr.wroc.pl/~kwasnicki/pl/stuff/tbb-hyper.pdf",
       "type": "notes",
@@ -3673,7 +3367,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_263",
+      "id": "awm_85d32c0f2c83",
       "title": "Lecture Notes in Real Analysis",
       "url": "http://ms.mcmaster.ca/~sawyer/Publications/Real_Analysis.pdf",
       "type": "notes",
@@ -3687,7 +3381,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_264",
+      "id": "awm_e916f0174c32",
       "title": "Real Analysis",
       "url": "http://math.harvard.edu/~ctm/papers/home/text/class/harvard/212a/course/course.pdf",
       "type": "notes",
@@ -3701,7 +3395,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_265",
+      "id": "awm_9080d8345bc0",
       "title": "Real Analysis for Graduate Students",
       "url": "http://bass.math.uconn.edu/3rd.pdf",
       "type": "notes",
@@ -3715,7 +3409,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_266",
+      "id": "awm_42c6312fc70d",
       "title": "Modern Real Analysis",
       "url": "http://www.math.purdue.edu/~torres/pubs/Modern-real-analysis.pdf",
       "type": "notes",
@@ -3729,7 +3423,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_267",
+      "id": "awm_e94686fe54d3",
       "title": "Mathematical Analysis Vol I",
       "url": "http://www.trillia.com/zakon-analysisI.html",
       "type": "notes",
@@ -3743,7 +3437,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_268",
+      "id": "awm_e6854fb041e7",
       "title": "Mathematical Analysis Vol II",
       "url": "http://www.trillia.com/zakon-analysisII.html",
       "type": "notes",
@@ -3757,7 +3451,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_269",
+      "id": "awm_6ae7b03a1056",
       "title": "Advanced Calculus",
       "url": "http://www.math.harvard.edu/~shlomo/docs/Advanced_Calculus.pdf",
       "type": "notes",
@@ -3771,7 +3465,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_270",
+      "id": "awm_524212f80457",
       "title": "Analysis of Functions of a Single Variable",
       "url": "http://spot.colorado.edu/~baggett/analysis.html",
       "type": "notes",
@@ -3785,7 +3479,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_271",
+      "id": "awm_83d8d69c15be",
       "title": "The Calculus of Functions of Several Variables",
       "url": "http://www.synechism.org/wp/the-calculus-of-functions-of-several-variables/",
       "type": "notes",
@@ -3799,7 +3493,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_272",
+      "id": "awm_e8151cd2b0a0",
       "title": "A ProblemText in Advanced Calculus",
       "url": "http://web.pdx.edu/~erdman/PTAC/problemtext_pdf.pdf",
       "type": "notes",
@@ -3813,7 +3507,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_273",
+      "id": "awm_9f6c294af1be",
       "title": "Calculus and Linear Algebra. Vol. 1",
       "url": "http://hdl.handle.net/2027/spo.5597602.0001.001",
       "type": "notes",
@@ -3827,7 +3521,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_274",
+      "id": "awm_e4049c445f6c",
       "title": "Calculus and Linear Algebra. Vol. 2",
       "url": "https://quod.lib.umich.edu/s/spobooks/5597602.0002.001",
       "type": "notes",
@@ -3841,7 +3535,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_275",
+      "id": "awm_23c6b44b635b",
       "title": "Introduction to Calculus I and II",
       "url": "http://www.math.odu.edu/~jhh/counter10.html",
       "type": "notes",
@@ -3855,7 +3549,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_276",
+      "id": "awm_00d221790edc",
       "title": "Active Calculus",
       "url": "http://faculty.gvsu.edu/boelkinm/Home/Active_Calculus.html",
       "type": "notes",
@@ -3869,7 +3563,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_277",
+      "id": "awm_30225d76c829",
       "title": "Supplements to the Exercises in Chapters 1-7 of Walter Rudin's \"Principles of Mathematical Analysis\"",
       "url": "https://math.berkeley.edu/~gbergman/ug.hndts/#Rudin",
       "type": "notes",
@@ -3883,7 +3577,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_278",
+      "id": "awm_cade3b3cc722",
       "title": "Calculus Made Easy",
       "url": "http://calculusmadeeasy.org/",
       "type": "notes",
@@ -3897,7 +3591,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_279",
+      "id": "awm_c300d7d38cf5",
       "title": "Elements of Differential and Integral Calculus",
       "url": "http://djm.cc/library/Elements_Differential_Integral_Calculus_Granville_edited_2.pdf",
       "type": "notes",
@@ -3911,7 +3605,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_280",
+      "id": "awm_26335b48be07",
       "title": "Precalculus",
       "url": "https://stitz-zeager.com/szprecalculus07042013.pdf",
       "type": "notes",
@@ -3925,7 +3619,7 @@
       "stage": "middle"
     },
     {
-      "id": "awm_281",
+      "id": "awm_6670aad31f06",
       "title": "Harmonic Analysis Lecture Notes",
       "url": "http://www.math.uiuc.edu/~laugesen/545/545Lectures.pdf",
       "type": "notes",
@@ -3939,7 +3633,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_282",
+      "id": "awm_1dd3b3d99a70",
       "title": "Harmonic Analysis",
       "url": "http://www.math.uchicago.edu/~schlag/harmonicnotes.pdf",
       "type": "notes",
@@ -3953,7 +3647,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_283",
+      "id": "awm_3ba8972ba7cc",
       "title": "Lecture Notes: Fourier Transform and its Applications",
       "url": "https://see.stanford.edu/materials/lsoftaee261/book-fall-07.pdf",
       "type": "notes",
@@ -3967,7 +3661,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_284",
+      "id": "awm_af9de44dda51",
       "title": "Fourier Analysis",
       "url": "http://www.reed.edu/physics/courses/Physics331.f08/pdf/Fourier.pdf",
       "type": "notes",
@@ -3981,7 +3675,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_285",
+      "id": "awm_24b7dbbd6c54",
       "title": "Mathematics of the Discrete Fourier Transform (DFT) with Audio Applications",
       "url": "https://ccrma.stanford.edu/~jos/mdft",
       "type": "notes",
@@ -3995,7 +3689,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_286",
+      "id": "awm_8677326f1c9c",
       "title": "Introduction to Complex Analysis",
       "url": "https://mtaylor.web.unc.edu/wp-content/uploads/sites/16915/2018/04/complex.pdf",
       "type": "notes",
@@ -4009,7 +3703,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_287",
+      "id": "awm_c7dfc2eebc7f",
       "title": "An Introduction to Complex Analysis and Geometry",
       "url": "http://www.math.uiuc.edu/~jpda/jpd-complex-geometry-book-5-refs-bip.pdf",
       "type": "notes",
@@ -4023,7 +3717,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_288",
+      "id": "awm_7491990ef297",
       "title": "A First Course in Complex Analysis",
       "url": "http://math.sfsu.edu/beck/papers/complex.pdf",
       "type": "notes",
@@ -4037,7 +3731,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_289",
+      "id": "awm_250eb605f47e",
       "title": "A Guide to Complex Variables",
       "url": "http://www.math.wustl.edu/~sk/books/guide.pdf",
       "type": "notes",
@@ -4051,7 +3745,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_290",
+      "id": "awm_b421f1af792c",
       "title": "Complex Analysis",
       "url": "http://www.maths.manchester.ac.uk/~cwalkden/complex-analysis/complex_analysis.pdf",
       "type": "notes",
@@ -4065,7 +3759,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_291",
+      "id": "awm_85323a499e2c",
       "title": "Complex Analysis",
       "url": "http://www.math.ku.dk/noter/filer/koman-12.pdf",
       "type": "notes",
@@ -4079,7 +3773,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_292",
+      "id": "awm_7a240fe94e8d",
       "title": "Complex Variables",
       "url": "http://people.math.sc.edu/girardi/m7034/book/AshComplexVariablesWithHyperlinks.pdf",
       "type": "notes",
@@ -4093,7 +3787,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_293",
+      "id": "awm_6a5a581f9fd8",
       "title": "Complex Analysis",
       "url": "http://www.maths.lth.se/matematiklu/personal/olofsson/CompHT06.pdf",
       "type": "notes",
@@ -4107,7 +3801,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_294",
+      "id": "awm_3b2bb2dd0786",
       "title": "Complex Analysis",
       "url": "https://web.archive.org/web/20150620124453/https://www.math.washington.edu/~marshall/math_536/Notes.pdf",
       "type": "notes",
@@ -4121,7 +3815,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_295",
+      "id": "awm_71c24b45221d",
       "title": "A Concise Course in Complex Analysis and Riemann Surfaces",
       "url": "https://gauss.math.yale.edu/~ws442/complex.pdf",
       "type": "notes",
@@ -4135,7 +3829,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_296",
+      "id": "awm_952c0b0f5314",
       "title": "Complex Analysis",
       "url": "http://people.math.gatech.edu/%7Ecain/winter99/complex.html",
       "type": "notes",
@@ -4149,7 +3843,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_297",
+      "id": "awm_c3acbf18bf48",
       "title": "Complex Analysis",
       "url": "https://complex-analysis.com/",
       "type": "notes",
@@ -4163,7 +3857,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_298",
+      "id": "awm_60acfc40ff23",
       "title": "An Introduction to Functional Analysis",
       "url": "https://www.math.uwaterloo.ca/~lwmarcou/notes/pmath453.pdf",
       "type": "notes",
@@ -4177,7 +3871,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_299",
+      "id": "awm_8ba66d9b810e",
       "title": "Functional Analysis: Lecture Notes",
       "url": "http://users.math.msu.edu/users/jeffrey/920/920notes.pdf",
       "type": "notes",
@@ -4191,7 +3885,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_300",
+      "id": "awm_35a25956bc9d",
       "title": "Functional Analysis Lecture Notes",
       "url": "https://archive.org/details/TB_Ward___Functional_analysis_lecture_notes",
       "type": "notes",
@@ -4205,7 +3899,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_301",
+      "id": "awm_b4b0910f3900",
       "title": "Functional Analysis",
       "url": "http://www.maths.lancs.ac.uk/~belton/www/notes/fa_notes.pdf",
       "type": "notes",
@@ -4219,7 +3913,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_302",
+      "id": "awm_810554be6ced",
       "title": "Topics in Real and Functional Analysis",
       "url": "https://www.mat.univie.ac.at/~gerald/ftp/book-fa/fa.pdf",
       "type": "notes",
@@ -4233,7 +3927,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_303",
+      "id": "awm_b13b588f53af",
       "title": "Functional Analysis",
       "url": "http://www2.math.ou.edu/~cremling/teaching/lecturenotes/fa-new/LN-I.pdf",
       "type": "notes",
@@ -4247,7 +3941,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_304",
+      "id": "awm_16abfc670137",
       "title": "Theory of Functions of a Real Variable",
       "url": "http://www.math.harvard.edu/~shlomo/docs/Real_Variables.pdf",
       "type": "notes",
@@ -4261,7 +3955,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_305",
+      "id": "awm_c603269f304e",
       "title": "Functional Analysis",
       "url": "http://spot.colorado.edu/~baggett/functional.html",
       "type": "notes",
@@ -4275,7 +3969,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_306",
+      "id": "awm_97e742748b05",
       "title": "An Introduction to Measure Theory",
       "url": "https://terrytao.files.wordpress.com/2012/12/gsm-126-tao5-measure-book.pdf",
       "type": "notes",
@@ -4289,7 +3983,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_307",
+      "id": "awm_eab3bc86a8d5",
       "title": "Lecture Notes on Measure Theory and Functional Analysis",
       "url": "http://www.mat.uniroma2.it/~cannarsa/cam_0607.pdf",
       "type": "notes",
@@ -4303,7 +3997,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_308",
+      "id": "awm_5f3d34815c19",
       "title": "Lecture Notes in Measure Theory",
       "url": "http://www.math.chalmers.se/~borell/MeasureTheory.pdf",
       "type": "notes",
@@ -4317,7 +4011,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_309",
+      "id": "awm_94f63c62c2a4",
       "title": "A Crash Course on the Lebesgue Integral and Measure Theory",
       "url": "http://www.gold-saucer.org/math/lebesgue/lebesgue.pdf",
       "type": "notes",
@@ -4331,7 +4025,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_310",
+      "id": "awm_03ba072de1c8",
       "title": "Measure Theory",
       "url": "https://www.math.ucdavis.edu/~hunter/measure_theory/measure_notes.pdf",
       "type": "notes",
@@ -4345,7 +4039,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_311",
+      "id": "awm_d3792a2277de",
       "title": "Measure and Integration",
       "url": "https://people.math.ethz.ch/~salamon/PREPRINTS/measure.pdf",
       "type": "notes",
@@ -4359,7 +4053,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_312",
+      "id": "awm_5e6f955a0553",
       "title": "Lecture notes: Measure Theory",
       "url": "http://www.math.ucsd.edu/~bdriver/240-00-01/Lecture_Notes/measurep.pdf",
       "type": "notes",
@@ -4373,7 +4067,7 @@
       "stage": "grad"
     },
     {
-      "id": "awm_313",
+      "id": "awm_13e8908f5551",
       "title": "Difference Equations To Differential Equations",
       "url": "http://www.synechism.org/wp/difference-equations-to-differential-equations/",
       "type": "notes",
@@ -4387,7 +4081,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_314",
+      "id": "awm_ea76638d1ce1",
       "title": "Ordinary Differential Equation",
       "url": "https://www.math.uni-bielefeld.de/~grigor/odelec2008.pdf",
       "type": "notes",
@@ -4401,7 +4095,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_315",
+      "id": "awm_36a2e4c81f8f",
       "title": "Ordinary Differential Equations: Lecture Notes",
       "url": "http://www.cs.bgu.ac.il/~leonid/ode_bio_files/Ionascu_LectNotes.pdf",
       "type": "notes",
@@ -4415,7 +4109,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_316",
+      "id": "awm_a55fefaa6abf",
       "title": "Ordinary Differential Equations",
       "url": "http://www.math.lmu.de/~philip/publications/lectureNotes/ODE.pdf",
       "type": "notes",
@@ -4429,7 +4123,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_317",
+      "id": "awm_49bcfd90d863",
       "title": "Ordinary Differential Equations",
       "url": "http://users.math.msu.edu/users/gnagy/teaching/ode.pdf",
       "type": "notes",
@@ -4443,7 +4137,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_318",
+      "id": "awm_4f30e5c5af72",
       "title": "Ordinary Differential Equations and Dynamical Systems",
       "url": "http://www.mat.univie.ac.at/~gerald/ftp/book-ode/ode.pdf",
       "type": "notes",
@@ -4457,7 +4151,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_319",
+      "id": "awm_3cb54d9e6829",
       "title": "Notes on Differential Equations",
       "url": "http://leipper.org/manuals/zip-fill/dn-difeq-notes.pdf",
       "type": "notes",
@@ -4471,7 +4165,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_320",
+      "id": "awm_ff1ec3534779",
       "title": "Elementary Differential Equations",
       "url": "http://digitalcommons.trinity.edu/mono/8/",
       "type": "notes",
@@ -4485,7 +4179,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_321",
+      "id": "awm_2c19eac23447",
       "title": "Elementary Differential Equations With Boundary Value Problems",
       "url": "http://digitalcommons.trinity.edu/mono/9/",
       "type": "notes",
@@ -4499,7 +4193,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_322",
+      "id": "awm_a46ae83aacfe",
       "title": "Notes on Diffy Qs: Differential Equations for Engineers",
       "url": "http://www.jirka.org/diffyqs/",
       "type": "notes",
@@ -4513,7 +4207,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_323",
+      "id": "awm_bb64540e699c",
       "title": "Differential Equations",
       "url": "http://djm.cc/library/Differential_Equations_Phillips_edited.pdf",
       "type": "notes",
@@ -4527,7 +4221,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_324",
+      "id": "awm_afd70792e6a4",
       "title": "Notes on Partial Differential Equations",
       "url": "https://www.math.ucdavis.edu/~hunter/pdes/pde_notes.pdf",
       "type": "notes",
@@ -4541,7 +4235,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_325",
+      "id": "awm_de3f084debe4",
       "title": "Partial Differential Equations: Lecture Notes",
       "url": "http://www.math.uni-leipzig.de/~miersemann/pdebook.pdf",
       "type": "notes",
@@ -4555,7 +4249,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_326",
+      "id": "awm_22be21e5cb42",
       "title": "Linear Methods of Applied Mathematics",
       "url": "http://www.mathphysics.com/pde/",
       "type": "notes",
@@ -4569,7 +4263,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_327",
+      "id": "awm_8be079ade838",
       "title": "Chaos: Making a New Science",
       "url": "https://archive.org/details/chaosmakingnewsc0000unse",
       "type": "notes",
@@ -4583,7 +4277,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_328",
+      "id": "awm_ba0626698ef1",
       "title": "Complexity: A Guided Tour",
       "url": "https://archive.org/details/complexityguided0000mitc?utm_source=chatgpt.com",
       "type": "notes",
@@ -4597,7 +4291,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_329",
+      "id": "awm_66d55686180e",
       "title": "Introduction to Probability",
       "url": "https://www.dartmouth.edu/~chance/teaching_aids/books_articles/probability_book/amsbook.mac.pdf",
       "type": "notes",
@@ -4611,7 +4305,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_330",
+      "id": "awm_b9a3a51774cd",
       "title": "Introduction to Probability",
       "url": "http://vfu.bg/en/e-Learning/Math--Bertsekas_Tsitsiklis_Introduction_to_probability.pdf",
       "type": "notes",
@@ -4625,7 +4319,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_331",
+      "id": "awm_cc114db85e4a",
       "title": "A Short Introduction to Probability",
       "url": "http://www.maths.uq.edu.au/~kroese/asitp.pdf",
       "type": "notes",
@@ -4639,7 +4333,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_332",
+      "id": "awm_0b4b7012245d",
       "title": "Probability: Theory and Examples",
       "url": "https://www.math.duke.edu/~rtd/PTE/PTE4_1.pdf",
       "type": "notes",
@@ -4653,7 +4347,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_333",
+      "id": "awm_bcaab51ac3bb",
       "title": "Probability and Statistics Cookbook",
       "url": "https://github.com/mavam/stat-cookbook/releases/download/0.2.3/stat-cookbook.pdf",
       "type": "notes",
@@ -4667,7 +4361,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_334",
+      "id": "awm_e7fcbc85b331",
       "title": "The Only Probability Cheatsheet You'll Ever Need",
       "url": "http://www.wzchen.com/probability-cheatsheet/",
       "type": "notes",
@@ -4681,7 +4375,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_335",
+      "id": "awm_58b7ac358a44",
       "title": "An Introduction to Probability and Random Processes",
       "url": "http://www.ellerman.org/Davids-Stuff/Maths/Rota-Baclawski-Prob-Theory-79.pdf",
       "type": "notes",
@@ -4695,7 +4389,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_336",
+      "id": "awm_e1f5a394e9e9",
       "title": "Foundations of Constructive Probability Theory",
       "url": "https://arxiv.org/pdf/1906.01803.pdf",
       "type": "notes",
@@ -4709,7 +4403,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_337",
+      "id": "awm_20e9cfd35084",
       "title": "Lecture Notes on Statistical Theory",
       "url": "http://homepages.math.uic.edu/~rgmartin/Teaching/Stat411/Notes/411notes.pdf",
       "type": "notes",
@@ -4723,7 +4417,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_338",
+      "id": "awm_d28957cee0b3",
       "title": "Introduction to Statistics and Data Analysis for Physicists",
       "url": "http://www-library.desy.de/preparch/books/vstatmp_engl.pdf",
       "type": "notes",
@@ -4737,7 +4431,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_339",
+      "id": "awm_51201f6280ac",
       "title": "Probability and Mathematical Statistics",
       "url": "http://www.iiserpune.ac.in/~ayan/MTH201/Sahoo_textbook.pdf",
       "type": "notes",
@@ -4751,7 +4445,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_340",
+      "id": "awm_04a5b304f0f3",
       "title": "Lectures on Statistics",
       "url": "http://math.arizona.edu/~faris/stat.pdf",
       "type": "notes",
@@ -4765,7 +4459,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_341",
+      "id": "awm_c337de55eda1",
       "title": "Statistical Theory",
       "url": "http://pages.pomona.edu/~ajr04747/Fall2009/Math152/Notes/Math152NotesFall09.pdf",
       "type": "notes",
@@ -4779,7 +4473,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_342",
+      "id": "awm_42f94145095c",
       "title": "Theory of Statistics",
       "url": "http://mason.gmu.edu/~jgentle/books/MathStat.pdf",
       "type": "notes",
@@ -4793,7 +4487,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_343",
+      "id": "awm_13fc57000421",
       "title": "Theory of Statistics",
       "url": "http://math.arizona.edu/~jwatkins/notests.pdf",
       "type": "notes",
@@ -4807,7 +4501,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_344",
+      "id": "awm_a46a199dd81a",
       "title": "Glossary of Data Modeling",
       "url": "https://web.archive.org/web/20130523134625/http://www.aiaccess.net/e_gm.htm",
       "type": "notes",
@@ -4821,7 +4515,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_345",
+      "id": "awm_44e44dfd9401",
       "title": "Statistics Papers",
       "url": "http://www.ats.ucla.edu/stat/papers/",
       "type": "notes",
@@ -4835,7 +4529,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_346",
+      "id": "awm_0ceaa8dfc24e",
       "title": "NIST Handbook of Statistical Methods",
       "url": "http://itl.nist.gov/div898/handbook/index.htm",
       "type": "notes",
@@ -4849,7 +4543,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_347",
+      "id": "awm_24f9ee683654",
       "title": "Concepts and Applications of Inferential Statistics",
       "url": "http://vassarstats.net/textbook/",
       "type": "notes",
@@ -4863,7 +4557,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_348",
+      "id": "awm_a09a5503952e",
       "title": "Rough set data analysis: A road to non-invasive knowledge discovery",
       "url": "http://www.cosc.brocku.ca/~duentsch/papers/methprimer2.html",
       "type": "notes",
@@ -4877,7 +4571,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_349",
+      "id": "awm_ede642095b31",
       "title": "Statistical Thinking for the 21st Century",
       "url": "https://statsthinking21.org/",
       "type": "notes",
@@ -4891,7 +4585,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_350",
+      "id": "awm_42b7792bea8b",
       "title": "Odds and Ends: Introducing Probability & Decision with a Visual Emphasis",
       "url": "https://jonathanweisberg.org/vip/",
       "type": "notes",
@@ -4905,7 +4599,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_351",
+      "id": "awm_d05ed3dbe65f",
       "title": "Seeing Theory",
       "url": "https://seeing-theory.brown.edu/",
       "type": "notes",
@@ -4919,7 +4613,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_352",
+      "id": "awm_5ec5dce24733",
       "title": "Statistics Done Wrong",
       "url": "https://www.statisticsdonewrong.com/",
       "type": "notes",
@@ -4933,7 +4627,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_353",
+      "id": "awm_19a9f43d9ce9",
       "title": "All of Statistics: A Concise Course in Statistical Inference",
       "url": "https://link.springer.com/book/10.1007/978-0-387-21736-9",
       "type": "notes",
@@ -4947,7 +4641,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_354",
+      "id": "awm_d90fc3feeca9",
       "title": "An Introduction to Statistical Learning with Applications in R",
       "url": "http://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf",
       "type": "notes",
@@ -4961,7 +4655,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_355",
+      "id": "awm_96a7144bfb54",
       "title": "The Elements of Statistical Learning",
       "url": "http://web.stanford.edu/~hastie/Papers/ESLII.pdf",
       "type": "notes",
@@ -4975,7 +4669,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_356",
+      "id": "awm_d319607bc0f6",
       "title": "Statistical Learning Theory",
       "url": "https://web.stanford.edu/class/cs229t/notes.pdf",
       "type": "notes",
@@ -4989,7 +4683,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_357",
+      "id": "awm_a3b5b8c496cd",
       "title": "Reinforcement Learning: An Introduction",
       "url": "https://webdocs.cs.ualberta.ca/~sutton/book/bookdraft2016sep.pdf",
       "type": "notes",
@@ -5003,7 +4697,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_358",
+      "id": "awm_bfba14e383e6",
       "title": "Lectures on Stochastic Processes",
       "url": "http://www.math.tifr.res.in/~publ/ln/tifr24.pdf",
       "type": "notes",
@@ -5017,7 +4711,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_359",
+      "id": "awm_a756ff330b7b",
       "title": "Probability and Stochastic Processes with Applications",
       "url": "http://www.math.harvard.edu/~knill/teaching/math144_1994/probability.pdf",
       "type": "notes",
@@ -5031,7 +4725,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_360",
+      "id": "awm_47c8be0edf90",
       "title": "Stochastic Processes",
       "url": "http://statweb.stanford.edu/~adembo/math-136/nnotes.pdf",
       "type": "notes",
@@ -5045,7 +4739,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_361",
+      "id": "awm_44b733ee1a0f",
       "title": "Lecture Notes on Stochastic Processes",
       "url": "http://www.mi.fu-berlin.de/wiki/pub/CompMolBio/MarkovKetten15/stochastic_processes_2011.pdf",
       "type": "notes",
@@ -5059,7 +4753,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_362",
+      "id": "awm_d035e3fce00e",
       "title": "Introduction to Stochastic Processes - Lecture Notes",
       "url": "https://www.ma.utexas.edu/users/gordanz/notes/introduction_to_stochastic_processes.pdf",
       "type": "notes",
@@ -5073,7 +4767,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_363",
+      "id": "awm_100d5d1b3089",
       "title": "Applied Stochastic Processes in science and engineering",
       "url": "https://www.math.uwaterloo.ca/~mscott/Little_Notes.pdf",
       "type": "notes",
@@ -5087,7 +4781,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_364",
+      "id": "awm_b32f1b24c533",
       "title": "An Introduction to Stochastic Processes in Continuous Time",
       "url": "http://www.math.leidenuniv.nl/~spieksma/colleges/sp-master/sp-hvz1.pdf",
       "type": "notes",
@@ -5101,7 +4795,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_365",
+      "id": "awm_d41264f008d3",
       "title": "Markov Chains and Mixing Times",
       "url": "http://pages.uoregon.edu/dlevin/MARKOV/markovmixing.pdf",
       "type": "notes",
@@ -5115,7 +4809,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_366",
+      "id": "awm_52fc91e74ae5",
       "title": "Convergence of Stochastic Processes",
       "url": "http://www.stat.yale.edu/~pollard/Books/1984book/pollard1984.pdf",
       "type": "notes",
@@ -5129,7 +4823,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_367",
+      "id": "awm_0b635d773415",
       "title": "Introduction to Numerical Analysis",
       "url": "http://www.math.umd.edu/~dlevy/resources/notes.pdf",
       "type": "notes",
@@ -5143,7 +4837,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_368",
+      "id": "awm_9402250df18b",
       "title": "A Concise Introduction to Numerical Analysis",
       "url": "http://www.ima.umn.edu/~arnold/597.00-01/nabook.pdf",
       "type": "notes",
@@ -5157,7 +4851,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_369",
+      "id": "awm_a44f341be9b9",
       "title": "Numerical Analysis",
       "url": "http://people.cs.uchicago.edu/~ridg/newna/nalrs.pdf",
       "type": "notes",
@@ -5171,7 +4865,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_370",
+      "id": "awm_7d28895c9c2a",
       "title": "Lectures In Basic Computational Numerical Analysis",
       "url": "https://uknowledge.uky.edu/cgi/viewcontent.cgi?article=1000&context=math_textbooks",
       "type": "notes",
@@ -5185,7 +4879,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_371",
+      "id": "awm_e82f217e475e",
       "title": "Advanced Numerical Methods and Their Applications to Industrial Problems: Adaptive Finite Element Methods",
       "url": "https://user.math.uni-bremen.de/schmi/SS04/YSU_Notes.pdf",
       "type": "notes",
@@ -5199,7 +4893,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_372",
+      "id": "awm_619bd94b0e39",
       "title": "Numerical Analysis for Engineers",
       "url": "https://ece.uwaterloo.ca/~dwharder/nm/",
       "type": "notes",
@@ -5213,7 +4907,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_373",
+      "id": "awm_373be5bc8fa6",
       "title": "Advanced Linear Algebra: Foundations to Frontiers",
       "url": "https://www.cs.utexas.edu/users/flame/laff/alaff/frontmatter.html",
       "type": "notes",
@@ -5227,7 +4921,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_374",
+      "id": "awm_a8aca7b7c482",
       "title": "Introduction to Signal Processing",
       "url": "http://www.ece.rutgers.edu/~orfanidi/intro2sp/orfanidis-i2sp.pdf",
       "type": "notes",
@@ -5241,7 +4935,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_375",
+      "id": "awm_e2675e61ce43",
       "title": "Foundations of Signal Processing",
       "url": "http://www.fourierandwavelets.org/FSP_v1.1_2014.pdf",
       "type": "notes",
@@ -5255,7 +4949,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_376",
+      "id": "awm_e9be62d8fd12",
       "title": "An Introduction to Statistical Signal Processing",
       "url": "https://ee.stanford.edu/~gray/sp.pdf",
       "type": "notes",
@@ -5269,7 +4963,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_377",
+      "id": "awm_55b1257e019a",
       "title": "Think DSP",
       "url": "https://greenteapress.com/wp/think-dsp/",
       "type": "notes",
@@ -5283,7 +4977,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_378",
+      "id": "awm_0585c9a20042",
       "title": "Linear algebra, signal processing, and wavelets. A unified approach.",
       "url": "https://www.uio.no/studier/emner/matnat/math/MAT-INF2360/v15/kompendium/applinalgpython.pdf",
       "type": "notes",
@@ -5297,7 +4991,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_379",
+      "id": "awm_0d30d9a9f156",
       "title": "Mathematics for Computer Science",
       "url": "https://people.csail.mit.edu/meyer/mcs.pdf",
       "type": "notes",
@@ -5311,7 +5005,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_380",
+      "id": "awm_9e458ffe084f",
       "title": "Algorithms and Complexity",
       "url": "http://www.math.upenn.edu/%7Ewilf/AlgComp3.html",
       "type": "notes",
@@ -5325,7 +5019,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_381",
+      "id": "awm_b62e0145f38e",
       "title": "Lecture Notes on Optimization",
       "url": "http://people.eecs.berkeley.edu/~varaiya/papers_ps.dir/NOO.pdf",
       "type": "notes",
@@ -5339,7 +5033,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_382",
+      "id": "awm_6c179933977b",
       "title": "Information Theory, Inference, and Learning Algorithms",
       "url": "http://www.inference.org.uk/mackay/itila/book.html",
       "type": "notes",
@@ -5353,7 +5047,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_383",
+      "id": "awm_00f07b9c0698",
       "title": "The Chaos Textbook: Mathematics in the age of the computer",
       "url": "https://hypertextbook.com/chaos/",
       "type": "notes",
@@ -5367,7 +5061,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_384",
+      "id": "awm_3b9020793661",
       "title": "Mathematical Biology",
       "url": "http://www.math.ust.hk/~machas/mathematical-biology.pdf",
       "type": "notes",
@@ -5381,7 +5075,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_385",
+      "id": "awm_7f36d24132fc",
       "title": "Introduction to Continuum Mechanics",
       "url": "http://oaktrust.library.tamu.edu/handle/1969.1/2501",
       "type": "notes",
@@ -5395,7 +5089,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_386",
+      "id": "awm_2c2f059d90cf",
       "title": "Mathematical Tools for Physics",
       "url": "http://www.physics.miami.edu/nearing/mathmethods/",
       "type": "notes",
@@ -5409,7 +5103,7 @@
       "stage": "general"
     },
     {
-      "id": "awm_387",
+      "id": "awm_7da9302cdffb",
       "title": "Mechanism of the Heavens (1831)",
       "url": "http://www.malaspina.com/etext/heavens.htm",
       "type": "notes",
@@ -5423,7 +5117,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_388",
+      "id": "awm_27b91a742276",
       "title": "Evan Chen",
       "url": "https://web.evanchen.cc/coursework.html",
       "type": "link",
@@ -5437,7 +5131,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_389",
+      "id": "awm_36c6dfebf6eb",
       "title": "Dexter Chua",
       "url": "https://dec41.user.srcf.net/notes/",
       "type": "link",
@@ -5451,7 +5145,7 @@
       "stage": "undergrad"
     },
     {
-      "id": "awm_390",
+      "id": "awm_6164db0740e9",
       "title": "Theoretical Computer Science",
       "url": "https://github.com/mostafatouny/awesome-theoretical-computer-science",
       "type": "link",

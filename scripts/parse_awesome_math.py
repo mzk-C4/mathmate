@@ -9,6 +9,7 @@
 用法: python scripts/parse_awesome_math.py
 """
 import json
+import hashlib
 import re
 import sys
 from collections import Counter
@@ -98,7 +99,7 @@ PAREN_RE = re.compile(r"^(.*?)\s*\(([^)]*)\)\s*$")
 
 
 def emoji_to_type(body):
-    """返回 (type, 去除emoji后的body)。type: book/video/notes/link"""
+    """返回 (type, 去除 emoji 后的 body)。视频会在解析阶段排除。"""
     m = EMOJI_RE.match(body)
     if m:
         e = m.group(2)
@@ -108,6 +109,30 @@ def emoji_to_type(body):
     if m2:
         return "link", body[m2.end():]
     return "link", body
+
+
+def infer_type(rtype, section2, url):
+    """在 README 未标 emoji 时，结合分类与 URL 推断资源类型。"""
+    if rtype != "link":
+        return rtype
+    section = (section2 or "").lower()
+    url_low = url.lower()
+    if section == "books" or url_low.endswith((".pdf", ".epub")):
+        return "book"
+    if section in {"students lecture notes", "transition to pure rigour math"}:
+        return "notes"
+    return "link"
+
+
+def is_video_resource(rtype, url):
+    url_low = url.lower()
+    return rtype == "video" or "youtube.com" in url_low or "youtu.be" in url_low
+
+
+def stable_id(url):
+    """URL 派生的稳定 ID；上游增删条目不会改变已有资源标识。"""
+    digest = hashlib.sha256(url.strip().lower().encode("utf-8")).hexdigest()[:12]
+    return f"awm_{digest}"
 
 
 def parse_line(body):
@@ -171,11 +196,13 @@ def main():
         parsed = parse_line(m.group(1))
         if not parsed:
             continue
+        if is_video_resource(parsed["type"], parsed["url"]):
+            continue
+        parsed["type"] = infer_type(parsed["type"], section2, parsed["url"])
         stage = classify_stage(section1, section2, section3,
                                parsed["title"], parsed["note"], parsed["url"])
-        n += 1
         items.append({
-            "id": f"awm_{n:03d}",
+            "id": stable_id(parsed["url"]),
             **parsed,
             "section1": section1 or "",
             "section2": section2,
@@ -186,7 +213,9 @@ def main():
     out = {
         "version": 1,
         "source": "rossant/awesome-math (master)",
-        "license": "CC0",
+        "index_license": "CC0",
+        "content_license": "varies_by_resource",
+        "usage_mode": "external_link_only",
         "count": len(items),
         "items": items,
     }

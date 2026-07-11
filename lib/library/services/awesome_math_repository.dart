@@ -5,7 +5,9 @@ import 'package:mathmate/library/models/awesome_resource.dart';
 
 /// awesome-math 预置资源仓储
 ///
-/// 静态公共数据（CC0），从 assets/awesome_math.json 一次性加载后常驻内存。
+/// awesome-math 的索引元数据采用 CC0；外链目标内容遵循各自许可证。
+/// 本模块只提供外链导航，不缓存或再分发目标内容。
+/// 数据从 assets/awesome_math.json 一次性加载后常驻内存。
 /// 与 MaterialRepository（用户私有上传、Hive 持久化）完全隔离。
 /// 加载模式对齐 katex_pdf_service 的 _cachedJs ??= 缓存。
 class AwesomeMathRepository {
@@ -16,15 +18,15 @@ class AwesomeMathRepository {
 
   List<AwesomeMathResource>? _cache;
   bool get isLoaded => _cache != null;
-  List<AwesomeMathResource> get all =>
-      _cache ?? const <AwesomeMathResource>[];
+  List<AwesomeMathResource> get all => _cache ?? const <AwesomeMathResource>[];
 
   /// 幂等加载
   Future<List<AwesomeMathResource>> load() async {
     if (_cache != null) return _cache!;
     final String raw = await rootBundle.loadString(_assetPath);
     final Map<String, dynamic> json = jsonDecode(raw) as Map<String, dynamic>;
-    _cache = (json['items'] as List<dynamic>)
+    final List<dynamic> items = json['items'] as List<dynamic>? ?? const [];
+    _cache = items
         .map((e) => AwesomeMathResource.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
     return _cache!;
@@ -65,8 +67,13 @@ class AwesomeMathRepository {
     if (kw.isNotEmpty) {
       list = list.where((r) {
         final String hay = <String>[
-          r.title, r.author, r.institution, r.note,
-          r.section1, r.section2 ?? '', r.section3 ?? '',
+          r.title,
+          r.author,
+          r.institution,
+          r.note,
+          r.section1,
+          r.section2 ?? '',
+          r.section3 ?? '',
         ].join(' ').toLowerCase();
         return hay.contains(kw);
       }).toList();

@@ -11,7 +11,7 @@ import 'package:mathmate/library/presentation/resource_library_tab.dart';
 /// 资料库入口 —— 顶部分段控件切换「我的资料」与「资源库」两个分区。
 ///
 /// 数据隔离：我的资料 = 用户上传（MaterialRepository）；
-/// 资源库 = awesome-math 预置公共资源（CC0）。
+/// 资源库 = awesome-math 的 CC0 索引元数据；外链内容遵循各自许可证。
 /// IndexedStack 保活两分区状态（对齐 responsive_shell.dart 范式）。
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -35,13 +35,15 @@ class _LibraryPageState extends State<LibraryPage> {
             child: SegmentedButton<int>(
               segments: const <ButtonSegment<int>>[
                 ButtonSegment<int>(
-                    value: 0,
-                    icon: Icon(Icons.folder_rounded),
-                    label: Text('我的资料')),
+                  value: 0,
+                  icon: Icon(Icons.folder_rounded),
+                  label: Text('我的资料'),
+                ),
                 ButtonSegment<int>(
-                    value: 1,
-                    icon: Icon(Icons.public_rounded),
-                    label: Text('资源库')),
+                  value: 1,
+                  icon: Icon(Icons.public_rounded),
+                  label: Text('资源库'),
+                ),
               ],
               selected: <int>{_tab},
               onSelectionChanged: (Set<int> s) =>
@@ -111,8 +113,11 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
       final String kw = _keyword.trim().toLowerCase();
       list = list.where((StudyMaterial m) {
         final String hay = <String>[
-          m.title, m.summary, m.subject,
-          ...m.knowledgePoints, ...m.keyConcepts,
+          m.title,
+          m.summary,
+          m.subject,
+          ...m.knowledgePoints,
+          ...m.keyConcepts,
         ].join(' ').toLowerCase();
         return hay.contains(kw);
       }).toList();
@@ -156,7 +161,11 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
           SnackBar(
             content: Row(
               children: <Widget>[
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 const Expanded(child: Text('资料已入库，AI 已自动分类')),
               ],
@@ -167,9 +176,9 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('上传失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('上传失败: $e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -200,11 +209,11 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
                       sliver: SliverGrid(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.70,
-                        ),
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.70,
+                            ),
                         delegate: SliverChildBuilderDelegate(
                           (BuildContext ctx, int i) =>
                               _MaterialCard(material: _filtered[i]),
@@ -227,7 +236,9 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
   Widget _buildStatHeader() {
     final int total = _materials.length;
     final int uniCount = MaterialRepository.instance.universities.length;
-    final StudyMaterial? latest = _materials.isNotEmpty ? _materials.first : null;
+    final StudyMaterial? latest = _materials.isNotEmpty
+        ? _materials.first
+        : null;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       padding: const EdgeInsets.all(16),
@@ -328,9 +339,7 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
           hintText: '搜索知识点 / 关键词…',
           prefixIcon: const Icon(Icons.search),
           isDense: true,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onChanged: (String v) => setState(() => _keyword = v),
       ),
@@ -376,9 +385,7 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: active ? cs.primary : cs.outlineVariant,
-          ),
+          border: Border.all(color: active ? cs.primary : cs.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,8 +393,11 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(Icons.school_rounded,
-                    size: 15, color: active ? cs.onPrimary : cs.primary),
+                Icon(
+                  Icons.school_rounded,
+                  size: 15,
+                  color: active ? cs.onPrimary : cs.primary,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -409,7 +419,9 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11,
-                color: active ? cs.onPrimary.withValues(alpha: 0.85) : cs.onSurfaceVariant,
+                color: active
+                    ? cs.onPrimary.withValues(alpha: 0.85)
+                    : cs.onSurfaceVariant,
               ),
             ),
             Row(
@@ -430,7 +442,9 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
                     '份',
                     style: TextStyle(
                       fontSize: 10,
-                      color: active ? cs.onPrimary.withValues(alpha: 0.85) : cs.onSurfaceVariant,
+                      color: active
+                          ? cs.onPrimary.withValues(alpha: 0.85)
+                          : cs.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -444,7 +458,8 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
 
   // ——— 激活的筛选标签（点 × 清除）———
   Widget _buildActiveFilterChip() {
-    final String label = '$_filterUni${_filterCourse.isNotEmpty ? ' · $_filterCourse' : ''}';
+    final String label =
+        '$_filterUni${_filterCourse.isNotEmpty ? ' · $_filterCourse' : ''}';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Align(
@@ -477,16 +492,26 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
                 color: cs.primaryContainer.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.folder_open_rounded, size: 48, color: cs.primary),
+              child: Icon(
+                Icons.folder_open_rounded,
+                size: 48,
+                color: cs.primary,
+              ),
             ),
             const SizedBox(height: 20),
-            const Text('资料库还是空的',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const Text(
+              '资料库还是空的',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 6),
             Text(
               '上传你的学习资料，AI 帮你自动分类整理\n期末复习一键找回，按高校归档',
               textAlign: TextAlign.center,
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, height: 1.6),
+              style: TextStyle(
+                color: cs.onSurfaceVariant,
+                fontSize: 13,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 24),
             _buildSteps(),
@@ -534,31 +559,31 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
   }
 
   Widget _arrow() => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 6),
-        child: Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Colors.grey),
-      );
+    padding: EdgeInsets.symmetric(horizontal: 6),
+    child: Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Colors.grey),
+  );
 
   Widget _buildNoResult() => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.search_off_rounded, size: 56, color: cs.outline),
-            const SizedBox(height: 8),
-            Text('没有匹配的资料', style: TextStyle(color: cs.onSurfaceVariant)),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(Icons.search_off_rounded, size: 56, color: cs.outline),
+        const SizedBox(height: 8),
+        Text('没有匹配的资料', style: TextStyle(color: cs.onSurfaceVariant)),
+      ],
+    ),
+  );
 
   Widget _buildBusy() => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(_busyText, style: TextStyle(color: cs.onSurfaceVariant)),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        const CircularProgressIndicator(),
+        const SizedBox(height: 16),
+        Text(_busyText, style: TextStyle(color: cs.onSurfaceVariant)),
+      ],
+    ),
+  );
 }
 
 /// 高校 × 课程 分组
@@ -602,7 +627,10 @@ class _MaterialCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           material.kind.displayName,
-                          style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: cs.onSurfaceVariant,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -614,7 +642,11 @@ class _MaterialCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       material.title,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.3),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                      ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -623,12 +655,20 @@ class _MaterialCard extends StatelessWidget {
                   if (material.university != null)
                     Row(
                       children: <Widget>[
-                        Icon(Icons.school_rounded, size: 10, color: cs.tertiary),
+                        Icon(
+                          Icons.school_rounded,
+                          size: 10,
+                          color: cs.tertiary,
+                        ),
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
                             material.university!,
-                            style: TextStyle(fontSize: 9.5, color: cs.tertiary, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              color: cs.tertiary,
+                              fontWeight: FontWeight.w600,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -655,9 +695,11 @@ class _MaterialCard extends StatelessWidget {
 
   /// 缩略图区：图片类型显示真图，其他显示类型色块 + 大图标
   Widget _buildThumb(ColorScheme cs) {
-    final String badgeLabel =
-        material.materialType.isNotEmpty ? material.materialType : material.kind.displayName;
-    if (material.kind == MaterialKind.image && File(material.localPath).existsSync()) {
+    final String badgeLabel = material.materialType.isNotEmpty
+        ? material.materialType
+        : material.kind.displayName;
+    if (material.kind == MaterialKind.image &&
+        File(material.localPath).existsSync()) {
       return Stack(
         fit: StackFit.expand,
         children: <Widget>[
@@ -672,7 +714,11 @@ class _MaterialCard extends StatelessWidget {
         fit: StackFit.expand,
         children: <Widget>[
           Center(
-            child: Icon(_kindIconData(), size: 40, color: cs.primary.withValues(alpha: 0.55)),
+            child: Icon(
+              _kindIconData(),
+              size: 40,
+              color: cs.primary.withValues(alpha: 0.55),
+            ),
           ),
           Positioned(left: 6, bottom: 6, child: _typeBadge(badgeLabel)),
         ],
@@ -680,7 +726,8 @@ class _MaterialCard extends StatelessWidget {
     );
   }
 
-  IconData _kindIconData() => <MaterialKind, IconData>{
+  IconData _kindIconData() =>
+      <MaterialKind, IconData>{
         MaterialKind.pdf: Icons.picture_as_pdf_rounded,
         MaterialKind.pptx: Icons.slideshow_rounded,
         MaterialKind.image: Icons.image_rounded,
@@ -688,7 +735,8 @@ class _MaterialCard extends StatelessWidget {
       }[material.kind] ??
       Icons.insert_drive_file_rounded;
 
-  Color _kindBg(ColorScheme cs) => <MaterialKind, Color>{
+  Color _kindBg(ColorScheme cs) =>
+      <MaterialKind, Color>{
         MaterialKind.pdf: Colors.red.withValues(alpha: 0.08),
         MaterialKind.pptx: Colors.orange.withValues(alpha: 0.08),
         MaterialKind.image: cs.primaryContainer,
@@ -697,23 +745,28 @@ class _MaterialCard extends StatelessWidget {
       cs.surfaceContainerHighest;
 
   Widget _typeBadge(String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w500),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: Colors.black.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(
+        fontSize: 9,
+        color: Colors.white,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  );
 
   Widget _difficultyDot() {
-    final Color color = <String, Color>{
-      '基础': Colors.green,
-      '中等': Colors.orange,
-      '挑战': Colors.red,
-    }[material.difficulty] ??
+    final Color color =
+        <String, Color>{
+          '基础': Colors.green,
+          '中等': Colors.orange,
+          '挑战': Colors.red,
+        }[material.difficulty] ??
         Colors.grey;
     return Container(
       width: 7,
@@ -723,16 +776,16 @@ class _MaterialCard extends StatelessWidget {
   }
 
   Widget _tag(String text, ColorScheme cs) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: cs.primaryContainer,
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(fontSize: 9.5, color: cs.onPrimaryContainer),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: cs.primaryContainer,
+      borderRadius: BorderRadius.circular(5),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 9.5, color: cs.onPrimaryContainer),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+  );
 }

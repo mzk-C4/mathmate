@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 /// 资源类型（由 awesome-math README 的 emoji 推导）
 enum ResourceType {
   book('书'), // 📖
-  video('视频'), // 🎥
   notes('讲义'), // 📝
   link('链接'); // 无 emoji
+
   const ResourceType(this.label);
   final String label;
 
@@ -17,11 +17,10 @@ enum ResourceType {
   }
 
   IconData get icon => const <ResourceType, IconData>{
-        ResourceType.book: Icons.menu_book_rounded,
-        ResourceType.video: Icons.play_circle_outline_rounded,
-        ResourceType.notes: Icons.description_outlined,
-        ResourceType.link: Icons.link_rounded,
-      }[this]!;
+    ResourceType.book: Icons.menu_book_rounded,
+    ResourceType.notes: Icons.description_outlined,
+    ResourceType.link: Icons.link_rounded,
+  }[this]!;
 }
 
 /// 学习学段（general = 工具/平台/百科等跨学段资源，筛选时任一学段都透出）
@@ -30,6 +29,7 @@ enum LearnStage {
   undergrad('本科'),
   grad('研究生'),
   general('通用');
+
   const LearnStage(this.label);
   final String label;
 
@@ -85,6 +85,7 @@ class AwesomeMathResource {
       final String? s = v?.toString();
       return (s == null || s.isEmpty || s == 'null') ? null : s;
     }
+
     return AwesomeMathResource(
       id: j['id'] as String? ?? '',
       title: j['title'] as String? ?? '',
