@@ -138,11 +138,11 @@ class ExamSystemConfig {
   /// 本地开发地址
   static const String localUrl = 'http://10.0.2.2:8000';
 
-  /// 生产环境地址（待部署）
-  static const String productionUrl = 'https://mathmate.top/api/exam';
+  /// 生产环境地址（已部署：Nginx /api/exams/ /api/grading/ → ExamSystem :8000）
+  static const String productionUrl = 'https://mathmate.top';
 
   /// 是否使用本地地址
-  static const bool useLocal = true;
+  static const bool useLocal = false;
 
   /// 当前生效的 baseUrl
   static String get baseUrl => useLocal ? localUrl : productionUrl;

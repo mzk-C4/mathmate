@@ -35,6 +35,9 @@ import 'package:mathmate/pages/geogebra_chat_entry.dart';
 import 'package:mathmate/agents/orchestrator.dart';
 import 'package:mathmate/agents/visualizer_agent.dart';
 import 'package:mathmate/library/services/material_repository.dart';
+import 'package:mathmate/learner/models/learner_profile.dart';
+import 'package:mathmate/learner/services/profile_repository.dart';
+import 'package:mathmate/learner/widgets/profile_setup_dialog.dart';
 import 'package:mathmate/exam/pages/question_bank_page.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
 import 'package:mathmate/pages/practice_page.dart';
@@ -217,7 +220,6 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _pages = <Widget>[
       const QuestionHomePage(),
-      const LibraryPage(),
       const NotesPage(),
       const PracticePage(),
       ProfilePage(radarTrigger: _radarTrigger),
@@ -245,7 +247,6 @@ class _MainScreenState extends State<MainScreen> {
       pages: _pages,
       tabs: const <NavTab>[
         NavTab(icon: Icons.grid_view_rounded, label: '题目'),
-        NavTab(icon: Icons.folder_special_rounded, label: '资料库'),
         NavTab(icon: Icons.bookmark_border_rounded, label: '笔记'),
         NavTab(icon: Icons.fitness_center_rounded, label: '练习'),
         NavTab(icon: Icons.account_circle_outlined, label: '我的'),
