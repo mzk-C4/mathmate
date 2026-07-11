@@ -88,6 +88,7 @@ flutter:
     - assets/app_icon_final.png
     - assets/fonts/simhei.ttf
     - assets/images/background.png
+    - assets/images/icon.png
     - assets/geogebra/
     - assets/katex/
     - assets/geogebra/css/

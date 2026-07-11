@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:math';
 
+// 引入我们的登录页和 AuthService
+import 'package:mathmate/services/auth_service.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -9,6 +12,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:mathmate/learner/models/learner_profile.dart';
+import 'package:mathmate/learner/services/profile_repository.dart';
+import 'package:mathmate/learner/widgets/profile_setup_dialog.dart';
+import 'package:mathmate/services/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mathmate/beautiful_result_page.dart';
 import 'package:mathmate/pages/chat_home_page.dart';
@@ -80,8 +87,11 @@ Future<void> main() async {
     AbilityScoreService().setGrade(grade);
   }
 
-  // 多智能体注册（软件杯参赛：多智能体协同架构）
+  // 多智能体注册
   Orchestrator.instance.register(VisualizerAgent());
+
+  // ---------- 核心修改 1：尝试恢复登录状态 ----------
+  final bool isLoggedIn = await AuthService().restore();
 
   final bool isFirst;
   if (kIsWeb) {
@@ -90,14 +100,16 @@ Future<void> main() async {
   } else {
     isFirst = await HistoryRepository.instance.isFirstLaunch();
   }
-  // Web 端跳过教程（避免选完年级又卡教程页）
+  // Web 端跳过教程
   final bool tutorialCompleted = kIsWeb ? true : await HistoryRepository.instance.isTutorialCompleted();
   // 已有年级但未完成能力自评的用户，引导至自评页
   final bool needsAssessment = !isFirst && !AbilityScoreService().hasAssessment;
+  
   runApp(MathMateApp(
     checkFirstLaunch: isFirst,
     showTutorial: !tutorialCompleted && !isFirst && !needsAssessment,
     showAssessment: needsAssessment,
+    isLoggedIn: isLoggedIn, // 传入登录状态
   ));
 }
 
@@ -105,12 +117,14 @@ class MathMateApp extends StatefulWidget {
   final bool checkFirstLaunch;
   final bool showTutorial;
   final bool showAssessment;
+  final bool isLoggedIn; // ---------- 核心修改 2：新增属性 ----------
 
   const MathMateApp({
     super.key,
     required this.checkFirstLaunch,
     this.showTutorial = false,
     this.showAssessment = false,
+    this.isLoggedIn = false,
   });
 
   @override
@@ -196,13 +210,19 @@ class _MathMateAppState extends State<MathMateApp> {
     );
   }
 
+  // ---------- 核心修改 3：路由分发 ----------
   Widget _getInitialPage() {
+    // 1. 如果没登录，强制跳转到登录页
+    if (!widget.isLoggedIn) return const LoginPage();
+
+    // 2. 如果已经登录了，走原本的业务逻辑
     if (widget.checkFirstLaunch) return const GradeSelectionPage();
     if (widget.showAssessment) {
-      // 已有年级但未完成能力自评 → 引导自评后进入主页
       return AbilityAssessmentPage(nextPage: const MainScreen());
     }
     if (widget.showTutorial) return const TutorialPage();
+    
+    // 3. 最终进入主屏幕
     return const MainScreen();
   }
 }
