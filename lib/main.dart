@@ -35,9 +35,6 @@ import 'package:mathmate/pages/geogebra_chat_entry.dart';
 import 'package:mathmate/agents/orchestrator.dart';
 import 'package:mathmate/agents/visualizer_agent.dart';
 import 'package:mathmate/library/services/material_repository.dart';
-import 'package:mathmate/learner/models/learner_profile.dart';
-import 'package:mathmate/learner/services/profile_repository.dart';
-import 'package:mathmate/learner/widgets/profile_setup_dialog.dart';
 import 'package:mathmate/exam/pages/question_bank_page.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
 import 'package:mathmate/pages/practice_page.dart';
@@ -234,7 +231,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 桌面端导航壳：宽屏自动切换为 NavigationRail，窄屏保持原底部导航外观。
+    // 桌面端导航壳：宽屏使用 NavigationRail，窄屏使用 Material 3 NavigationBar。
     return ResponsiveShell(
       currentIndex: _currentIndex,
       onTap: (int index) {
@@ -246,10 +243,26 @@ class _MainScreenState extends State<MainScreen> {
       },
       pages: _pages,
       tabs: const <NavTab>[
-        NavTab(icon: Icons.grid_view_rounded, label: '题目'),
-        NavTab(icon: Icons.bookmark_border_rounded, label: '笔记'),
-        NavTab(icon: Icons.fitness_center_rounded, label: '练习'),
-        NavTab(icon: Icons.account_circle_outlined, label: '我的'),
+        NavTab(
+          icon: Icons.grid_view_outlined,
+          selectedIcon: Icons.grid_view_rounded,
+          label: '题目',
+        ),
+        NavTab(
+          icon: Icons.bookmark_border_rounded,
+          selectedIcon: Icons.bookmark_rounded,
+          label: '笔记',
+        ),
+        NavTab(
+          icon: Icons.fitness_center_outlined,
+          selectedIcon: Icons.fitness_center_rounded,
+          label: '练习',
+        ),
+        NavTab(
+          icon: Icons.account_circle_outlined,
+          selectedIcon: Icons.account_circle_rounded,
+          label: '我的',
+        ),
       ],
     );
   }
@@ -437,8 +450,6 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     _buildSearchBar(),
-                    const SizedBox(height: 14),
-                    _buildProfileEntry(),
                     const SizedBox(height: 12),
                     _buildQuestionBankEntry(),
                     const SizedBox(height: 18),
@@ -477,63 +488,6 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
       ),
         ],
       ),
-    );
-  }
-
-  /// 学习画像入口（软件杯：对话式学习画像）
-  Widget _buildProfileEntry() {
-    return FutureBuilder<LearnerProfile?>(
-      future: ProfileRepository.instance.load(),
-      builder: (BuildContext context, AsyncSnapshot<LearnerProfile?> snapshot) {
-        final LearnerProfile? profile = snapshot.data;
-        final bool ready = profile != null && profile.isUsable;
-        final Color main = ready ? Colors.green : Colors.orange;
-        return GestureDetector(
-          onTap: () async {
-            await ProfileSetupDialog.show(context);
-            if (mounted) setState(() {});
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: ready ? Colors.green.shade50 : Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: main.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  ready ? Icons.person_rounded : Icons.person_add_alt_rounded,
-                  color: main,
-                  size: 22,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        ready ? '学习画像已就绪' : '构建你的学习画像',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        ready
-                            ? '完整度 ${(profile.completeness * 100).round()}% · 点击查看 / 随学随新'
-                            : 'AI 对话抽取 6 维特征，开启个性化学习',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 

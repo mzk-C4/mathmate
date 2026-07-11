@@ -35,10 +35,11 @@ class AppTheme {
         elevation: 0,
         shadowColor: Colors.transparent,
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
-        selectedItemColor: scheme.primary,
-        unselectedItemColor: Colors.blueGrey.shade300,
+        indicatorColor: scheme.secondaryContainer,
+        elevation: 0,
+        height: 72,
       ),
     );
   }
@@ -73,10 +74,11 @@ class AppTheme {
         elevation: 0,
         shadowColor: Colors.transparent,
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
-        selectedItemColor: scheme.primary,
-        unselectedItemColor: Colors.blueGrey.shade600,
+        indicatorColor: scheme.secondaryContainer,
+        elevation: 0,
+        height: 72,
       ),
     );
   }

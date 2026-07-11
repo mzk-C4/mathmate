@@ -40,6 +40,11 @@ class ChatStreamService {
   static const String _qwenBaseUrlEnv = 'QWEN_BASE_URL';
   static const String _defaultQwenBaseUrl =
       'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+  // 火山 Ark 端点（Doubao-Seed + DeepSeek-V4 系列）
+  static const String _volcApiKeyEnv = 'VOLC_API_KEY';
+  static const String _volcBaseUrlEnv = 'VOLC_BASE_URL';
+  static const String _defaultVolcBaseUrl =
+      'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
   static bool _dotenvLoaded = false;
   http.Client? _client;
@@ -59,18 +64,24 @@ class ChatStreamService {
     await _ensureEnvLoaded();
     _cancelled = false;
 
-    // 按 modelId 选端点：qwen-* → QWEN_*，其余 → DEEPSEEK_*
-    final String model = (modelId ?? 'deepseek-chat').trim();
-    final bool isQwen = model.toLowerCase().startsWith('qwen');
-    final String apiKey =
-        (dotenv.env[isQwen ? _qwenApiKeyEnv : _deepseekApiKeyEnv] ?? '').trim();
-    final String defaultBaseUrl =
-        isQwen ? _defaultQwenBaseUrl : _defaultDeepseekBaseUrl;
-    final String baseUrl = (dotenv.env[isQwen ? _qwenBaseUrlEnv : _deepseekBaseUrlEnv] ?? defaultBaseUrl).trim();
+    // 按 modelId 选端点：qwen-* → QWEN_*，doubao-*/deepseek-v4-* → VOLC_*(Ark)，其余 → DEEPSEEK_*
+    final String model = (modelId ?? 'deepseek-v4-flash').trim();
+    final String m = model.toLowerCase();
+    final bool isQwen = m.startsWith('qwen');
+    final bool isArk = m.startsWith('doubao') || m.startsWith('deepseek-v4') || m.startsWith('glm-');
+    final String apiKeyEnv =
+        isQwen ? _qwenApiKeyEnv : (isArk ? _volcApiKeyEnv : _deepseekApiKeyEnv);
+    final String baseUrlEnv = isQwen
+        ? _qwenBaseUrlEnv
+        : (isArk ? _volcBaseUrlEnv : _deepseekBaseUrlEnv);
+    final String defaultBaseUrl = isQwen
+        ? _defaultQwenBaseUrl
+        : (isArk ? _defaultVolcBaseUrl : _defaultDeepseekBaseUrl);
+    final String apiKey = (dotenv.env[apiKeyEnv] ?? '').trim();
+    final String baseUrl = (dotenv.env[baseUrlEnv] ?? defaultBaseUrl).trim();
 
     if (apiKey.isEmpty) {
-      yield StreamChunk(
-          error: 'Missing env config: ${isQwen ? _qwenApiKeyEnv : _deepseekApiKeyEnv}');
+      yield StreamChunk(error: 'Missing env config: $apiKeyEnv');
       return;
     }
 

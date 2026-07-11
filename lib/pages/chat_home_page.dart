@@ -20,7 +20,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
   int? _currentConversationId;
   List<Conversation> _conversations = <Conversation>[];
   StreamSubscription<List<Conversation>>? _conversationSub;
-  String _currentModel = 'deepseek-chat';
+  String _currentModel = 'deepseek-v4-flash';
   String _searchKeyword = '';
 
   @override

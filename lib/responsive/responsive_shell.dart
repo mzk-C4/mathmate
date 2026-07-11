@@ -3,7 +3,7 @@ import 'package:mathmate/responsive/breakpoints.dart';
 
 /// 单个导航 Tab 的描述（图标 + 文案）。
 ///
-/// 窄屏的 [BottomNavigationBar] 与宽屏的 [NavigationRail] 共用同一份描述，
+/// 窄屏的 [NavigationBar] 与宽屏的 [NavigationRail] 共用同一份描述，
 /// 避免维护两套 item 列表。
 class NavTab {
   final IconData icon;
@@ -19,8 +19,7 @@ class NavTab {
 
 /// 响应式导航壳。
 ///
-/// - 窄屏（宽度 < [kDesktopBreakpoint]）：底部 [BottomNavigationBar]，
-///   保持与原移动端完全一致的外观与交互。
+/// - 窄屏（宽度 < [kDesktopBreakpoint]）：Material 3 [NavigationBar]。
 /// - 宽屏：左侧 [NavigationRail]（展开态）+ 右侧内容区，中间一条分隔线。
 ///
 /// 两端共用同一份 [pages]，通过 [IndexedStack] 保留各 Tab 的状态，
@@ -63,16 +62,21 @@ class ResponsiveShell extends StatelessWidget {
       );
     }
 
-    // 窄屏：保持原有 BottomNavigationBar 行为，外观零变化。
+    // 窄屏：Material 3 底部导航，始终显示标签并区分选中图标。
     return Scaffold(
       body: content,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: onTap,
-        type: BottomNavigationBarType.fixed,
-        items: <BottomNavigationBarItem>[
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: onTap,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: <NavigationDestination>[
           for (final NavTab tab in tabs)
-            BottomNavigationBarItem(icon: Icon(tab.icon), label: tab.label),
+            NavigationDestination(
+              icon: Icon(tab.icon),
+              selectedIcon: Icon(tab.selectedIcon),
+              label: tab.label,
+              tooltip: tab.label,
+            ),
         ],
       ),
     );
