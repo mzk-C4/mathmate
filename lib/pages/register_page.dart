@@ -91,14 +91,13 @@ class _RegisterPageState extends State<RegisterPage> {
       final password = _passwordController.text.trim();
       final code = _codeController.text.trim();
 
-      // 注意这里：为了迎合目前的后端接口限制，我们把账号当做 username 传进去，
-      // 并传入一个占位的 inviteCode。后续后端改了接口，这里可以调整。
+      final isEmail = account.contains('@');
       final response = await AuthService().register(
-        username: account, 
-        email: account.contains('@') ? account : '',
+        username: account,
+        email: isEmail ? account : '',
+        phone: isEmail ? '' : account,
         password: password,
         code: code,
-        inviteCode: 'DEFAULT', // 提醒后端去掉邀请码限制
       );
 
       setState(() => _isLoading = false);

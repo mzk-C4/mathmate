@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,8 +53,10 @@ class AuthResponse {
 ///
 /// 与服务端 auth_server.js 通信，Token 存储在 SharedPreferences。
 class AuthService {
-  // 修改 1：将地址改为本地的 Node.js 服务器
-  static const String _baseUrl = 'http://127.0.0.1:3000/api/auth';
+  // 本地开发：Web 用 localhost，Android 模拟器用 10.0.2.2（真机请改局域网 IP）
+  static final String _baseUrl = kIsWeb
+      ? 'http://localhost:3002/api/auth'
+      : 'http://10.0.2.2:3002/api/auth';
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
 
@@ -160,27 +163,21 @@ class AuthService {
     }
   }
 
-  /// 注册（优化版：去掉强制邀请码，完美对接新注册页面）
-  // 修改 2：将 inviteCode 改为可选参数，并设置默认值
+  /// 注册（邮箱/手机 + 验证码 + 密码，无邀请码）
   Future<AuthResponse> register({
     required String username,
     required String password,
     String email = '',
-    String inviteCode = 'DEFAULT', 
+    String phone = '',
     String code = '',
   }) {
     return _post('register', {
       'username': username,
       'password': password,
       'email': email,
-      'inviteCode': inviteCode,
+      'phone': phone,
       'code': code,
     });
-  }
-
-  /// 开发者直登（邀请码免注册）
-  Future<AuthResponse> devLogin({required String inviteCode}) {
-    return _post('dev-login', {'inviteCode': inviteCode});
   }
 
   /// 发送验证码到邮箱/手机
