@@ -4,6 +4,7 @@ import 'package:mathmate/data/history_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mathmate/main.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
+import 'package:mathmate/services/ability_score_service.dart';
 import 'package:mathmate/tutorial_page.dart';
 
 class GradeSelectionPage extends StatefulWidget {
@@ -74,9 +75,11 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
     if (kIsWeb) {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setInt('web_grade', grade);
-      return;
+    } else {
+      await HistoryRepository.instance.setGradeLevel(grade);
     }
-    await HistoryRepository.instance.setGradeLevel(grade);
+    // 通知能力评分服务切换维度体系
+    AbilityScoreService().setGrade(grade);
   }
 
   String _getGradeDisplayText() {

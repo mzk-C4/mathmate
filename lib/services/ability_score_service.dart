@@ -44,10 +44,8 @@ class DimensionStats {
 ///
 /// 结果范围：1.0 ~ 5.0
 ///
-/// **维度 0（计算能力）特殊处理**：
-/// 题库中没有"计算"类型标签，因此该维度不接收独立的答题统计。
-/// 其分数由其他 5 个维度的总做题量和总正确率综合计算，
-/// 使用更慢的增长曲线（λ=60），且不低于自评分数（只升不降）。
+/// 支持两套维度体系（K-12 / 大学），按用户年级自动切换。
+/// 两套体系的自评与答题统计分别存储，切换年级不会丢失数据。
 class AbilityScoreService extends ChangeNotifier {
   static final AbilityScoreService _instance = AbilityScoreService._();
   factory AbilityScoreService() => _instance;
@@ -57,73 +55,158 @@ class AbilityScoreService extends ChangeNotifier {
   static const double n0 = 5.0; // 初始虚拟样本量
   static const double lambda = 30.0; // 题量成长半衰期
 
-  /// 用户自评分数（1~5）
-  UserRadarProfile? _selfAssessment;
+  /// K-12 自评画像
+  UserRadarProfile? _selfAssessmentK12;
+  /// 大学自评画像
+  UserRadarProfile? _selfAssessmentUni;
 
-  /// 各维度答题统计
-  final List<DimensionStats> _stats = List<DimensionStats>.generate(
-    UserRadarProfile.dimensionNames.length,
+  /// K-12 各维度答题统计
+  final List<DimensionStats> _statsK12 = List<DimensionStats>.generate(
+    UserRadarProfile.k12DimensionNames.length,
+    (_) => DimensionStats(),
+  );
+  /// 大学各维度答题统计
+  final List<DimensionStats> _statsUni = List<DimensionStats>.generate(
+    UserRadarProfile.universityDimensionNames.length,
     (_) => DimensionStats(),
   );
 
-  UserRadarProfile? get selfAssessment => _selfAssessment;
-  List<DimensionStats> get stats => _stats;
+  /// 当前年级（由外部设置，默认 null=K-12 行为）
+  int? _currentGrade;
+  int? get currentGrade => _currentGrade;
 
-  /// 是否已完成自评
-  bool get hasAssessment => _selfAssessment != null;
+  /// 根据当前年级取对应的自评画像
+  UserRadarProfile? get selfAssessment =>
+      UserRadarProfile.isUniversity(_currentGrade) ? _selfAssessmentUni : _selfAssessmentK12;
 
-  /// 保存自评分数
-  Future<void> saveSelfAssessment(UserRadarProfile profile) async {
-    _selfAssessment = profile;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('ability_self_assessment', jsonEncode(profile.toJson()));
+  /// 根据当前年级取对应的答题统计
+  List<DimensionStats> get stats =>
+      UserRadarProfile.isUniversity(_currentGrade) ? _statsUni : _statsK12;
+
+  /// 当前维度名称列表
+  List<String> get currentDimensionNames =>
+      UserRadarProfile.dimensionNamesFor(_currentGrade);
+
+  /// 是否已完成自评（当前维度体系）
+  bool get hasAssessment => selfAssessment != null;
+
+  /// 设置当前年级并重新通知监听者
+  void setGrade(int? grade) {
+    if (_currentGrade == grade) return;
+    _currentGrade = grade;
     notifyListeners();
   }
 
-  /// 加载已保存的自评
+  /// 保存自评分数（自动关联到对应维度体系）
+  Future<void> saveSelfAssessment(UserRadarProfile profile) async {
+    if (profile.dimensionSet == 'university') {
+      _selfAssessmentUni = profile;
+    } else {
+      _selfAssessmentK12 = profile;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ability_self_assessment', jsonEncode(profile.toJson()));
+    // 同时按维度体系分存一份，避免互相覆盖
+    await prefs.setString(
+      'ability_sa_${profile.dimensionSet}',
+      jsonEncode(profile.toJson()),
+    );
+    notifyListeners();
+  }
+
+  /// 加载已保存的自评和答题统计
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? raw = prefs.getString('ability_self_assessment');
-    if (raw != null) {
+
+    // 加载 K-12 自评
+    final String? rawK12 = prefs.getString('ability_sa_k12');
+    if (rawK12 != null) {
       try {
-        _selfAssessment = UserRadarProfile.fromJson(
-          jsonDecode(raw) as Map<String, dynamic>,
+        _selfAssessmentK12 = UserRadarProfile.fromJson(
+          jsonDecode(rawK12) as Map<String, dynamic>,
         );
-      } catch (_) {
-        _selfAssessment = null;
-      }
-    }
-    // 加载答题统计
-    final String? statsRaw = prefs.getString('ability_stats');
-    if (statsRaw != null) {
-      try {
-        final List<dynamic> list = jsonDecode(statsRaw) as List<dynamic>;
-        for (int i = 0; i < list.length && i < _stats.length; i++) {
-          _stats[i] = DimensionStats.fromJson(list[i] as Map<String, dynamic>);
-        }
       } catch (_) {}
     }
+    // 加载大学自评
+    final String? rawUni = prefs.getString('ability_sa_university');
+    if (rawUni != null) {
+      try {
+        _selfAssessmentUni = UserRadarProfile.fromJson(
+          jsonDecode(rawUni) as Map<String, dynamic>,
+        );
+      } catch (_) {}
+    }
+    // 兼容旧版：没有按维度体系分存时，从公共 key 加载并推断
+    if (_selfAssessmentK12 == null && _selfAssessmentUni == null) {
+      final String? raw = prefs.getString('ability_self_assessment');
+      if (raw != null) {
+        try {
+          final profile = UserRadarProfile.fromJson(
+            jsonDecode(raw) as Map<String, dynamic>,
+          );
+          // 旧版没有 dimensionSet 字段，默认归入 K-12
+          if (profile.dimensionSet == 'university') {
+            _selfAssessmentUni = profile;
+          } else {
+            _selfAssessmentK12 = profile;
+          }
+        } catch (_) {}
+      }
+    }
+
+    // 加载 K-12 答题统计
+    final String? statsRawK12 = prefs.getString('ability_stats_k12');
+    if (statsRawK12 != null) {
+      _loadStatsInto(statsRawK12, _statsK12);
+    } else {
+      // 兼容旧版 key
+      final String? statsRaw = prefs.getString('ability_stats');
+      if (statsRaw != null) _loadStatsInto(statsRaw, _statsK12);
+    }
+
+    // 加载大学答题统计
+    final String? statsRawUni = prefs.getString('ability_stats_university');
+    if (statsRawUni != null) {
+      _loadStatsInto(statsRawUni, _statsUni);
+    }
+
     notifyListeners();
+  }
+
+  void _loadStatsInto(String raw, List<DimensionStats> target) {
+    try {
+      final List<dynamic> list = jsonDecode(raw) as List<dynamic>;
+      for (int i = 0; i < list.length && i < target.length; i++) {
+        target[i] = DimensionStats.fromJson(list[i] as Map<String, dynamic>);
+      }
+    } catch (_) {}
   }
 
   /// 保存答题统计
   Future<void> _saveStats() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-      'ability_stats',
-      jsonEncode(_stats.map((s) => s.toJson()).toList()),
+      'ability_stats_k12',
+      jsonEncode(_statsK12.map((s) => s.toJson()).toList()),
+    );
+    await prefs.setString(
+      'ability_stats_university',
+      jsonEncode(_statsUni.map((s) => s.toJson()).toList()),
     );
   }
 
   /// 更新某维度的答题统计（供题库模块调用）
+  ///
+  /// [dimensionIndex] 在当前维度体系中的索引
   Future<void> recordAnswer({
     required int dimensionIndex,
     required bool isCorrect,
     double difficulty = 3.0,
   }) async {
-    if (dimensionIndex < 0 || dimensionIndex >= _stats.length) return;
+    final List<DimensionStats> activeStats = stats;
+    if (dimensionIndex < 0 || dimensionIndex >= activeStats.length) return;
 
-    final DimensionStats s = _stats[dimensionIndex];
+    final DimensionStats s = activeStats[dimensionIndex];
     // 指数移动平均更新难度
     s.avgDifficulty = s.avgDifficulty * 0.9 + difficulty * 0.1;
     s.totalQuestions++;
@@ -135,19 +218,20 @@ class AbilityScoreService extends ChangeNotifier {
 
   /// 计算某个维度的最终能力分（核心算法）
   ///
-  /// [dimensionIndex] 维度索引（0~5，对应六个数学能力维度）。
+  /// [dimensionIndex] 维度索引（0~5，对应当前维度体系的六个维度）。
   /// 所有维度统一使用标准三阶算法计算。
   ///
   /// 返回 1.0 ~ 5.0 的分数
   double calculateScore(int dimensionIndex) {
-    if (dimensionIndex < 0 ||
-        dimensionIndex >= UserRadarProfile.dimensionNames.length) {
+    final List<String> dimNames = currentDimensionNames;
+    if (dimensionIndex < 0 || dimensionIndex >= dimNames.length) {
       return 1.0;
     }
 
-    final double self =
-        _selfAssessment?.scores[dimensionIndex] ?? 1.0;
-    final DimensionStats s = _stats[dimensionIndex];
+    final UserRadarProfile? sa = selfAssessment;
+    final List<DimensionStats> activeStats = stats;
+    final double self = sa?.scores[dimensionIndex] ?? 1.0;
+    final DimensionStats s = activeStats[dimensionIndex];
     final int N = s.totalQuestions;
     final double R = s.correctRate;
     final double D = s.avgDifficulty.clamp(1.0, 5.0);
@@ -192,26 +276,40 @@ class AbilityScoreService extends ChangeNotifier {
     return finalScore.clamp(1.0, 5.0);
   }
 
-  /// 获取所有维度的当前计算分数
+  /// 获取当前维度体系的所有维度计算分数
   UserRadarProfile get computedProfile {
+    final List<String> dimNames = currentDimensionNames;
     final List<double> scores = <double>[];
-    for (int i = 0; i < UserRadarProfile.dimensionNames.length; i++) {
+    for (int i = 0; i < dimNames.length; i++) {
       scores.add(calculateScore(i));
     }
-    return UserRadarProfile(scores: scores);
+    return UserRadarProfile(
+      scores: scores,
+      dimensionSet: UserRadarProfile.dimensionSetFor(_currentGrade),
+    );
   }
 
   /// 重置所有数据
   Future<void> reset() async {
-    _selfAssessment = null;
-    for (final DimensionStats s in _stats) {
+    _selfAssessmentK12 = null;
+    _selfAssessmentUni = null;
+    for (final DimensionStats s in _statsK12) {
+      s.totalQuestions = 0;
+      s.correctQuestions = 0;
+      s.avgDifficulty = 3.0;
+    }
+    for (final DimensionStats s in _statsUni) {
       s.totalQuestions = 0;
       s.correctQuestions = 0;
       s.avgDifficulty = 3.0;
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('ability_self_assessment');
+    await prefs.remove('ability_sa_k12');
+    await prefs.remove('ability_sa_university');
     await prefs.remove('ability_stats');
+    await prefs.remove('ability_stats_k12');
+    await prefs.remove('ability_stats_university');
     notifyListeners();
   }
 }
