@@ -91,7 +91,10 @@ class _ResourceLibraryTabState extends State<ResourceLibraryTab> {
         if (_hasFilter) SliverToBoxAdapter(child: _buildActiveFilters()),
         SliverToBoxAdapter(child: _buildCountBar(list.length)),
         if (list.isEmpty)
-          const SliverFillRemaining(hasScrollBody: false, child: _EmptyResult())
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _EmptyResult(onClearFilters: _clearFilters),
+          )
         else
           SliverList(
             delegate: SliverChildBuilderDelegate(
@@ -244,6 +247,16 @@ class _ResourceLibraryTabState extends State<ResourceLibraryTab> {
       ),
     );
   }
+
+  void _clearFilters() {
+    setState(() {
+      _stage = null;
+      _type = null;
+      _category = null;
+      _keyword = '';
+      _searchController.clear();
+    });
+  }
 }
 
 class _ChipItem<T> {
@@ -253,7 +266,9 @@ class _ChipItem<T> {
 }
 
 class _EmptyResult extends StatelessWidget {
-  const _EmptyResult();
+  final VoidCallback onClearFilters;
+  const _EmptyResult({required this.onClearFilters});
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
@@ -262,8 +277,22 @@ class _EmptyResult extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(Icons.search_off_rounded, size: 56, color: cs.outline),
-          const SizedBox(height: 8),
-          Text('没有匹配的资源', style: TextStyle(color: cs.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          Text(
+            '没有匹配的资源',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '试试减少筛选条件或更换关键词',
+            style: TextStyle(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onClearFilters,
+            icon: const Icon(Icons.filter_alt_off_rounded),
+            label: const Text('清除筛选'),
+          ),
         ],
       ),
     );

@@ -38,7 +38,7 @@ class AwesomeResourceTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               color: cs.onSurfaceVariant.withValues(alpha: 0.8),
             ),
           ),
@@ -53,39 +53,52 @@ class AwesomeResourceTile extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: <Widget>[
-        _stageChip(),
+        _stageChip(cs),
         if (resource.paid)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 2),
-            child: Text('💲', style: TextStyle(fontSize: 11)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.paid_outlined, size: 13, color: cs.tertiary),
+                const SizedBox(width: 2),
+                Text(
+                  '付费',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );
   }
 
-  Widget _stageChip() {
+  Widget _stageChip(ColorScheme cs) {
     final Color bg;
     final Color fg;
     switch (resource.stage) {
       case LearnStage.middle:
-        bg = Colors.green.shade50;
-        fg = Colors.green.shade700;
+        bg = cs.tertiaryContainer;
+        fg = cs.onTertiaryContainer;
       case LearnStage.undergrad:
-        bg = Colors.blue.shade50;
-        fg = Colors.blue.shade700;
+        bg = cs.primaryContainer;
+        fg = cs.onPrimaryContainer;
       case LearnStage.grad:
-        bg = Colors.purple.shade50;
-        fg = Colors.purple.shade700;
+        bg = cs.secondaryContainer;
+        fg = cs.onSecondaryContainer;
       case LearnStage.general:
-        bg = Colors.grey.shade100;
-        fg = Colors.grey.shade700;
+        bg = cs.surfaceContainerHighest;
+        fg = cs.onSurfaceVariant;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
       child: Text(
         resource.stage.label,
-        style: TextStyle(fontSize: 9.5, color: fg, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w600),
       ),
     );
   }
