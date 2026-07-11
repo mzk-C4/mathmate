@@ -71,6 +71,14 @@ Future<void> main() async {
   await ThemeService.instance.init();
   await MaterialRepository.instance.init();
   await AbilityScoreService().load();
+  // 同步年级到能力评分服务（决定使用 K-12 还是大学维度体系）
+  if (kIsWeb) {
+    final int? webGrade = prefs.getInt('web_grade');
+    AbilityScoreService().setGrade(webGrade);
+  } else {
+    final int? grade = await HistoryRepository.instance.getGradeLevel();
+    AbilityScoreService().setGrade(grade);
+  }
 
   // 多智能体注册（软件杯参赛：多智能体协同架构）
   Orchestrator.instance.register(VisualizerAgent());
@@ -308,6 +316,8 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
 
   Future<void> _loadGradeLevelAndVideos() async {
     final int? grade = await HistoryRepository.instance.getGradeLevel();
+    // 同步年级到能力评分服务（K-12 / 大学维度切换）
+    AbilityScoreService().setGrade(grade);
     _currentGrade = grade != null
         ? (grade >= 1 && grade <= 6 ? '小学' : grade >= 7 && grade <= 9 ? '初中' : grade >= 10 && grade <= 12 ? '高中' : '大学')
         : '高中';

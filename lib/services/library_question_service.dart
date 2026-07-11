@@ -63,14 +63,20 @@ class LibraryQuestionService {
   /// 核心推荐算法：根据用户能力画像，从服务器题库推荐题目
   ///
   /// 返回 (题目列表, 各维度评分详情) 供 UI 展示。
+  /// [profile] 能力画像（携带 dimensionSet 信息）
+  /// [grade] 用户年级（用于确定维度→section 标签映射），null 视为 K-12
   /// [targetCount] 期望推荐的题目总数，默认 10 题。
   Future<RecommendationResult> recommend({
     required UserRadarProfile profile,
+    int? grade,
     int targetCount = 10,
   }) async {
+    final List<String> dimNames = profile.names;
+    final Map<String, List<String>> dimTags = UserRadarProfile.dimensionTagsFor(grade);
+
     final Map<String, double> dimensionScores = <String, double>{};
-    for (int i = 0; i < UserRadarProfile.dimensionNames.length; i++) {
-      dimensionScores[UserRadarProfile.dimensionNames[i]] = profile.scores[i];
+    for (int i = 0; i < dimNames.length; i++) {
+      dimensionScores[dimNames[i]] = profile.scores[i];
     }
 
     // 1. 计算每个维度的权重（弱项权重大 = 多出题）
@@ -89,11 +95,11 @@ class LibraryQuestionService {
     final Map<String, DimensionRecommendDetail> details =
         <String, DimensionRecommendDetail>{};
 
-    for (final String dim in UserRadarProfile.dimensionNames) {
+    for (final String dim in dimNames) {
       final int needed = allocations[dim] ?? 0;
       if (needed <= 0) continue;
 
-      final List<String> sections = UserRadarProfile.dimensionTags[dim] ?? <String>[dim];
+      final List<String> sections = dimTags[dim] ?? <String>[dim];
       final DifficultyRange range = difficultyRanges[dim]!;
 
       final List<LibraryQuestion> candidates = await _fetchCandidates(

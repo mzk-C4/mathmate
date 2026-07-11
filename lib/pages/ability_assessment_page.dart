@@ -30,6 +30,9 @@ class _AbilityAssessmentPageState extends State<AbilityAssessmentPage> {
   late List<int> _levels;
   final AbilityScoreService _abilityService = AbilityScoreService();
 
+  /// 当前有效的维度名称列表（根据年级动态确定）
+  List<String> get _dimNames => _abilityService.currentDimensionNames;
+
   @override
   void initState() {
     super.initState();
@@ -38,7 +41,7 @@ class _AbilityAssessmentPageState extends State<AbilityAssessmentPage> {
     if (existing != null) {
       _levels = existing.scores.map((double s) => s.round()).toList();
     } else {
-      _levels = List<int>.filled(UserRadarProfile.dimensionNames.length, 3);
+      _levels = List<int>.filled(_dimNames.length, 3);
     }
   }
 
@@ -145,6 +148,7 @@ class _AbilityAssessmentPageState extends State<AbilityAssessmentPage> {
           size: const Size(300, 300),
           painter: _InteractiveHexagonPainter(
             levels: _levels,
+            dimNames: _dimNames,
             colorScheme: cs,
           ),
         ),
@@ -191,7 +195,7 @@ class _AbilityAssessmentPageState extends State<AbilityAssessmentPage> {
   /// 构建 6 个维度的档位选择行
   List<Widget> _buildDimensionRows(ColorScheme cs) {
     final List<Widget> rows = <Widget>[];
-    for (int i = 0; i < UserRadarProfile.dimensionNames.length; i++) {
+    for (int i = 0; i < _dimNames.length; i++) {
       rows.add(_buildDimensionRow(cs, i));
       if (i < 5) rows.add(const SizedBox(height: 10));
     }
@@ -199,7 +203,7 @@ class _AbilityAssessmentPageState extends State<AbilityAssessmentPage> {
   }
 
   Widget _buildDimensionRow(ColorScheme cs, int index) {
-    final String name = UserRadarProfile.dimensionNames[index];
+    final String name = _dimNames[index];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -295,10 +299,12 @@ class _AbilityAssessmentPageState extends State<AbilityAssessmentPage> {
 /// 绘制网格、轴线、5 档位圆点、当前选择的高亮多边形和选中档位高亮。
 class _InteractiveHexagonPainter extends CustomPainter {
   final List<int> levels;
+  final List<String> dimNames;
   final ColorScheme colorScheme;
 
   _InteractiveHexagonPainter({
     required this.levels,
+    required this.dimNames,
     required this.colorScheme,
   });
 
@@ -346,8 +352,8 @@ class _InteractiveHexagonPainter extends CustomPainter {
       );
 
       // 维度标签
-      final String label = i < UserRadarProfile.dimensionNames.length
-          ? UserRadarProfile.dimensionNames[i]
+      final String label = i < dimNames.length
+          ? dimNames[i]
           : '?';
       final TextPainter tp = TextPainter(
         text: TextSpan(
@@ -456,6 +462,6 @@ class _InteractiveHexagonPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _InteractiveHexagonPainter oldDelegate) {
-    return oldDelegate.levels != levels;
+    return oldDelegate.levels != levels || oldDelegate.dimNames != dimNames;
   }
 }

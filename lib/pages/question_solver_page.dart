@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:mathmate/models/library_question.dart';
 import 'package:mathmate/models/user_radar_profile.dart';
 import 'package:mathmate/services/ability_score_service.dart';
@@ -180,9 +181,10 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
       ),
-      child: Text(
-        q.content,
-        style: const TextStyle(fontSize: 16, height: 1.6),
+      child: _LatexRenderer(
+        text: q.content,
+        cs: cs,
+        baseFontSize: 16,
       ),
     );
   }
@@ -263,9 +265,10 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      text,
-                      style: const TextStyle(fontSize: 15),
+                    child: _LatexRenderer(
+                      text: text,
+                      cs: cs,
+                      baseFontSize: 15,
                     ),
                   ),
                   if (showCorrect)
@@ -356,14 +359,22 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               const SizedBox(width: 4),
               Expanded(
-                child: Text(
-                  q.answer,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: cs.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child: _isChoice
+                    ? Text(
+                        q.answer,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: cs.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      )
+                    : _LatexRenderer(
+                        text: q.answer,
+                        cs: cs,
+                        baseFontSize: 14,
+                        bold: true,
+                        color: cs.primary,
+                      ),
               ),
             ],
           ),
@@ -373,13 +384,11 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
           const Text('解析：',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
           const SizedBox(height: 6),
-          Text(
-            q.solution,
-            style: TextStyle(
-              fontSize: 14,
-              color: cs.onSurfaceVariant,
-              height: 1.6,
-            ),
+          _LatexRenderer(
+            text: q.solution,
+            cs: cs,
+            baseFontSize: 14,
+            color: cs.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
 
@@ -402,5 +411,150 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
         ],
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// LaTeX 公式渲染组件（复用项目已有 flutter_math_fork）
+// ---------------------------------------------------------------------------
+
+/// 渲染混合普通文本 + $...$ 内联公式 + $$...$$ 块级公式的组件
+///
+/// 移动端 Android 已验证可用。解析逻辑兼容：
+/// - `$...$` 内联公式 → `Math.tex()` inline
+/// - `$$...$$` 块级公式 → `Math.tex()` display
+/// - `\(...\)` / `\[...\]` 备选分隔符
+/// - 无 $ 包裹的纯 LaTeX 命令（如 `\frac{a}{b}`）→ 整体渲染
+class _LatexRenderer extends StatelessWidget {
+  final String text;
+  final ColorScheme cs;
+  final double baseFontSize;
+  final bool bold;
+  final Color? color;
+
+  const _LatexRenderer({
+    required this.text,
+    required this.cs,
+    this.baseFontSize = 14,
+    this.bold = false,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color effectiveColor = color ?? cs.onSurface;
+    final FontWeight weight = bold ? FontWeight.w700 : FontWeight.w400;
+
+    // 空文本
+    if (text.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // 含 $，走混合解析
+    if (text.contains(r'$')) {
+      return _buildMixed();
+    }
+
+    // 无 $ 但含 LaTeX 命令，尝试整体 Math.tex 渲染
+    if (_hasLatexCommands(text)) {
+      return Math.tex(
+        text,
+        mathStyle: MathStyle.text,
+        textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+        onErrorFallback: (err) => Text(
+          text,
+          style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight, height: 1.6),
+        ),
+      );
+    }
+
+    // 纯文本
+    return Text(
+      text,
+      style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight, height: 1.6),
+    );
+  }
+
+  bool _hasLatexCommands(String s) => RegExp(r'\\[a-zA-Z]+').hasMatch(s);
+
+  /// 混合模式：逐字符解析 $...$ 和 $$...$$，其余为普通文本
+  Widget _buildMixed() {
+    final String t = text;
+    final List<InlineSpan> spans = <InlineSpan>[];
+    final Color effectiveColor = color ?? cs.onSurface;
+    final FontWeight weight = bold ? FontWeight.w700 : FontWeight.w400;
+
+    int i = 0;
+    while (i < t.length) {
+      // 检查 $$ 块级公式开始
+      if (i + 1 < t.length && t.substring(i).startsWith(r'$$')) {
+        final end = t.indexOf(r'$$', i + 2);
+        if (end != -1) {
+          final formula = t.substring(i + 2, end).trim();
+          if (formula.isNotEmpty) {
+            spans.add(WidgetSpan(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Math.tex(
+                  formula,
+                  mathStyle: MathStyle.display,
+                  textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor),
+                  onErrorFallback: (err) => Text(formula,
+                      style: TextStyle(fontSize: baseFontSize, color: effectiveColor)),
+                ),
+              ),
+            ));
+          }
+          i = end + 2;
+          continue;
+        }
+      }
+
+      // 检查 $ 内联公式
+      if (t[i] == r'$') {
+        final end = t.indexOf(r'$', i + 1);
+        if (end != -1) {
+          final formula = t.substring(i + 1, end);
+          if (formula.trim().isNotEmpty) {
+            spans.add(WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Math.tex(
+                formula,
+                mathStyle: MathStyle.text,
+                textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+                onErrorFallback: (err) => Text(formula,
+                    style: TextStyle(fontSize: baseFontSize, color: effectiveColor)),
+              ),
+            ));
+          }
+          i = end + 1;
+          continue;
+        }
+      }
+
+      // 普通文本：累积到下一个 $ 或 $$
+      final next1 = t.indexOf(r'$$', i);
+      final next2 = t.indexOf(r'$', i);
+      int next = -1;
+      if (next1 != -1 && next2 != -1) {
+        next = next1 < next2 ? next1 : next2;
+      } else if (next1 != -1) {
+        next = next1;
+      } else if (next2 != -1) {
+        next = next2;
+      }
+
+      final String plain = next == -1 ? t.substring(i) : t.substring(i, next);
+      if (plain.isNotEmpty) {
+        spans.add(TextSpan(
+          text: plain,
+          style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight, height: 1.6),
+        ));
+      }
+      if (next == -1) break;
+      i = next;
+    }
+
+    return Text.rich(TextSpan(children: spans));
   }
 }

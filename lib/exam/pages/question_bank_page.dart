@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:mathmate/exam/models/question.dart';
 import 'package:mathmate/exam/services/question_api.dart';
 
@@ -356,11 +356,11 @@ class _QuestionTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text(
-              q.content.replaceAll(RegExp(r'\$+'), '').trim(),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, height: 1.4),
+            ClipRect(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 42),
+                child: _TexContent(q.content, cs, fontSize: 13),
+              ),
             ),
             if (q.knowledgePoints.isNotEmpty) ...<Widget>[
               const SizedBox(height: 6),
@@ -422,7 +422,7 @@ class _QuestionDetailSheet extends StatelessWidget {
             const Text('题干',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
             const SizedBox(height: 6),
-            MarkdownBody(data: q.content),
+            _TexContent(q.content, cs, fontSize: 15),
             if (options.isNotEmpty) ...<Widget>[
               const SizedBox(height: 14),
               const Text('选项',
@@ -434,8 +434,8 @@ class _QuestionDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text('${o.letter}. ',
-                            style: const TextStyle(fontWeight: FontWeight.w600)),
-                        Expanded(child: MarkdownBody(data: o.text)),
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                        Expanded(child: _TexContent(o.text, cs, fontSize: 15)),
                       ],
                     ),
                   )),
@@ -454,7 +454,7 @@ class _QuestionDetailSheet extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.w700, color: Colors.green)),
                   const SizedBox(height: 4),
-                  MarkdownBody(data: q.answer.isNotEmpty ? q.answer : '（暂无）'),
+                  _TexContent(q.answer.isNotEmpty ? q.answer : '（暂无）', cs, fontSize: 14),
                 ],
               ),
             ),
@@ -463,7 +463,7 @@ class _QuestionDetailSheet extends StatelessWidget {
               const Text('解析',
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
               const SizedBox(height: 6),
-              MarkdownBody(data: q.solution),
+              _TexContent(q.solution, cs, fontSize: 14),
             ],
           ],
         ),
@@ -478,4 +478,86 @@ class _QuestionDetailSheet extends StatelessWidget {
         child:
             Text(text, style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w600)),
       );
+}
+
+// ---------------------------------------------------------------------------
+// LaTeX 公式渲染组件（与 question_solver_page.dart 的 _LatexRenderer 同逻辑）
+// ---------------------------------------------------------------------------
+
+/// 渲染混合普通文本 + $...$ 内联公式 + $$...$$ 块级公式
+class _TexContent extends StatelessWidget {
+  final String text;
+  final ColorScheme cs;
+  final double fontSize;
+
+  const _TexContent(this.text, this.cs, {this.fontSize = 14});
+
+  bool get _hasLatex => RegExp(r'\\[a-zA-Z]+').hasMatch(text);
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.trim().isEmpty) return const SizedBox.shrink();
+
+    // 无 $ 无 LaTeX 命令 → 纯文本
+    if (!text.contains(r'$') && !_hasLatex) {
+      return Text(text, style: TextStyle(fontSize: fontSize, color: cs.onSurface, height: 1.6));
+    }
+
+    // 整体 $$...$$ 单行块级公式
+    if (text.startsWith(r'$$') && text.endsWith(r'$$') && text.length > 4) {
+      final formula = text.substring(2, text.length - 2).trim();
+      return Math.tex(formula,
+          mathStyle: MathStyle.display,
+          textStyle: TextStyle(fontSize: fontSize, color: cs.onSurface),
+          onErrorFallback: (err) =>
+              Text(formula, style: TextStyle(fontSize: fontSize, color: cs.onSurface)));
+    }
+
+    // 无 $ 但含 LaTeX 命令 → 整体渲染
+    if (!text.contains(r'$') && _hasLatex) {
+      return Math.tex(text,
+          mathStyle: MathStyle.text,
+          textStyle: TextStyle(fontSize: fontSize, color: cs.onSurface),
+          onErrorFallback: (err) =>
+              Text(text, style: TextStyle(fontSize: fontSize, color: cs.onSurface)));
+    }
+
+    // 内联 $...$ 混合解析
+    return _buildMixed();
+  }
+
+  Widget _buildMixed() {
+    final List<InlineSpan> spans = <InlineSpan>[];
+    int i = 0;
+    while (i < text.length) {
+      if (text[i] == r'$') {
+        final end = text.indexOf(r'$', i + 1);
+        if (end != -1) {
+          final formula = text.substring(i + 1, end);
+          if (formula.trim().isNotEmpty) {
+            spans.add(WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Math.tex(formula,
+                  mathStyle: MathStyle.text,
+                  textStyle: TextStyle(fontSize: fontSize, color: cs.onSurface),
+                  onErrorFallback: (err) => Text(formula,
+                      style: TextStyle(fontSize: fontSize, color: cs.onSurface))),
+            ));
+          }
+          i = end + 1;
+          continue;
+        }
+      }
+      final next = text.indexOf(r'$', i);
+      final String plain = next == -1 ? text.substring(i) : text.substring(i, next);
+      if (plain.isNotEmpty) {
+        spans.add(TextSpan(
+            text: plain,
+            style: TextStyle(fontSize: fontSize, color: cs.onSurface, height: 1.6)));
+      }
+      if (next == -1) break;
+      i = next;
+    }
+    return Text.rich(TextSpan(children: spans));
+  }
 }

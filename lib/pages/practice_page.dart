@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/models/library_question.dart';
 import 'package:mathmate/models/user_radar_profile.dart';
 import 'package:mathmate/profile_radar_chart.dart';
@@ -31,13 +34,31 @@ class _PracticePageState extends State<PracticePage> {
   /// 错误信息
   String? _errorMessage;
 
+  /// 当前年级（用于维度→section 匹配）
+  int? _grade;
+
   ColorScheme get cs => Theme.of(context).colorScheme;
 
   @override
   void initState() {
     super.initState();
     _abilityService.addListener(_onAbilityChanged);
-    _loadRecommendations();
+    _loadGradeAndRecommend();
+  }
+
+  Future<void> _loadGradeAndRecommend() async {
+    final int? grade;
+    if (kIsWeb) {
+      // Web 端从 HistoryRepository 获取（内部走 SharedPreferences）
+      grade = await HistoryRepository.instance.getGradeLevel();
+    } else {
+      grade = await HistoryRepository.instance.getGradeLevel();
+    }
+    if (mounted) {
+      setState(() => _grade = grade);
+    }
+    _abilityService.setGrade(grade);
+    await _loadRecommendations();
   }
 
   @override
@@ -61,6 +82,7 @@ class _PracticePageState extends State<PracticePage> {
       final UserRadarProfile profile = _abilityService.computedProfile;
       final RecommendationResult result = await _questionService.recommend(
         profile: profile,
+        grade: _grade,
         targetCount: 10,
       );
 
@@ -256,7 +278,8 @@ class _PracticePageState extends State<PracticePage> {
         return _QuestionCard(
           question: _questions[index],
           index: index,
-          detail: _details[_questions[index].dimensionFromSection],
+          grade: _grade,
+          detail: _details[_questions[index].dimensionFromSectionFor(_grade)],
         );
       },
     );
@@ -340,15 +363,17 @@ class _PracticePageState extends State<PracticePage> {
   }
 }
 
-/// 题目卡片组件（显示服务器题库真实题目）
+/// 题目卡片组件（显示服务器题库真实题目，LaTeX 公式渲染）
 class _QuestionCard extends StatelessWidget {
   final LibraryQuestion question;
   final int index;
+  final int? grade;
   final DimensionRecommendDetail? detail;
 
   const _QuestionCard({
     required this.question,
     required this.index,
+    this.grade,
     this.detail,
   });
 
@@ -370,8 +395,9 @@ class _QuestionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            // 题号 + 题型 + 难度星级
+            // 题号 + 题目内容（LaTeX 渲染） + 难度星级
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Container(
                   width: 32,
@@ -392,14 +418,15 @@ class _QuestionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    question.content,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                  child: ClipRect(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 48),
+                      child: _buildLatexContent(
+                        question.content,
+                        cs,
+                        fontSize: 14,
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -414,7 +441,7 @@ class _QuestionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            // 选项（如有）
+            // 选项（如有），label 用纯文本，内容走 LaTeX
             if (question.options != null && question.options!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -422,12 +449,30 @@ class _QuestionCard extends StatelessWidget {
                   spacing: 16,
                   runSpacing: 4,
                   children: question.options!.map((opt) {
-                    return Text(
-                      opt,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: cs.onSurfaceVariant,
-                      ),
+                    // 拆分 "A. content" → label "A." + content
+                    final int dotIdx = opt.indexOf('.');
+                    final String prefix = dotIdx >= 0 && dotIdx <= 2
+                        ? '${opt.substring(0, dotIdx + 1)} '
+                        : '';
+                    final String body = dotIdx >= 0 && dotIdx <= 2
+                        ? opt.substring(dotIdx + 1).trim()
+                        : opt;
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        if (prefix.isNotEmpty)
+                          Text(
+                            prefix,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        Flexible(
+                          child: _buildLatexContent(body, cs, fontSize: 12),
+                        ),
+                      ],
                     );
                   }).toList(),
                 ),
@@ -504,11 +549,92 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
-/// LibraryQuestion 扩展：根据 section 反查所属维度名
+// ---------------------------------------------------------------------------
+// 内联 LaTeX 渲染辅助
+// ---------------------------------------------------------------------------
+
+/// 渲染混合普通文本 + $...$ 内联公式 + $$...$$ 块级公式的文本
+Widget _buildLatexContent(String text, ColorScheme cs, {double fontSize = 14}) {
+  if (!text.contains(r'$')) {
+    // 纯文本，但可能包含不带 $ 的 LaTeX 命令，尝试用 Math.tex 渲染
+    if (_containsLatexCommands(text)) {
+      return Math.tex(
+        text,
+        mathStyle: MathStyle.text,
+        textStyle: TextStyle(fontSize: fontSize, color: cs.onSurface),
+        onErrorFallback: (err) =>
+            Text(text, style: TextStyle(fontSize: fontSize, color: cs.onSurface)),
+      );
+    }
+    return Text(text, style: TextStyle(fontSize: fontSize, color: cs.onSurface));
+  }
+
+  // 匹配 $$...$$ 块级公式（单行情况下）
+  if (text.startsWith(r'$$') && text.endsWith(r'$$') && text.length > 4) {
+    final formula = text.substring(2, text.length - 2).trim();
+    return Math.tex(
+      formula,
+      mathStyle: MathStyle.display,
+      textStyle: TextStyle(fontSize: fontSize, color: cs.onSurface),
+      onErrorFallback: (err) =>
+          Text(formula, style: TextStyle(fontSize: fontSize, color: cs.onSurface)),
+    );
+  }
+
+  // 内联 $...$ 混合解析
+  final List<InlineSpan> spans = <InlineSpan>[];
+  int i = 0;
+  while (i < text.length) {
+    if (text[i] == r'$') {
+      final end = text.indexOf(r'$', i + 1);
+      if (end != -1) {
+        final formula = text.substring(i + 1, end);
+        if (formula.trim().isNotEmpty) {
+          spans.add(WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Math.tex(
+              formula,
+              mathStyle: MathStyle.text,
+              textStyle: TextStyle(fontSize: fontSize, color: cs.onSurface),
+              onErrorFallback: (err) =>
+                  Text(formula, style: TextStyle(fontSize: fontSize, color: cs.onSurface)),
+            ),
+          ));
+        }
+        i = end + 1;
+        continue;
+      }
+    }
+    // 普通文本，累积到下一个 $
+    final nextDollar = text.indexOf(r'$', i);
+    final String plainText = nextDollar == -1 ? text.substring(i) : text.substring(i, nextDollar);
+    if (plainText.isNotEmpty) {
+      spans.add(TextSpan(
+        text: plainText,
+        style: TextStyle(fontSize: fontSize, color: cs.onSurface),
+      ));
+    }
+    if (nextDollar == -1) break;
+    i = nextDollar;
+  }
+
+  return Text.rich(
+    TextSpan(children: spans),
+    maxLines: fontSize <= 13 ? 2 : null,
+    overflow: fontSize <= 13 ? TextOverflow.ellipsis : null,
+  );
+}
+
+/// 检测文本中是否包含 LaTeX 命令（\frac, \sqrt, \sum 等）
+bool _containsLatexCommands(String text) {
+  return RegExp(r'\\[a-zA-Z]+').hasMatch(text);
+}
+
+/// LibraryQuestion 扩展：根据 section 反查所属维度名（需传入年级以匹配正确维度体系）
 extension LibraryQuestionDimension on LibraryQuestion {
-  String get dimensionFromSection {
-    for (final MapEntry<String, List<String>> e
-        in UserRadarProfile.dimensionTags.entries) {
+  String dimensionFromSectionFor(int? grade) {
+    final Map<String, List<String>> tags = UserRadarProfile.dimensionTagsFor(grade);
+    for (final MapEntry<String, List<String>> e in tags.entries) {
       if (e.value.contains(section)) {
         return e.key;
       }
