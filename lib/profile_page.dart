@@ -6,11 +6,11 @@ import 'package:mathmate/grade_selection_page.dart';
 import 'package:mathmate/help_support_page.dart';
 import 'package:mathmate/history_list_page.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
-import 'package:mathmate/pages/login_page.dart';
 import 'package:mathmate/profile_radar_chart.dart';
 import 'package:mathmate/responsive/breakpoints.dart';
 import 'package:mathmate/services/ability_score_service.dart';
 import 'package:mathmate/services/auth_service.dart';
+import 'package:mathmate/services/login_page.dart';
 import 'package:mathmate/services/theme_service.dart';
 import 'package:mathmate/services/update_service.dart';
 import 'package:mathmate/services/user_profile_service.dart';
@@ -276,6 +276,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                     value: mode,
+                    // ignore: deprecated_member_use
                     groupValue: ts.mode,
                     onChanged: (AppThemeMode? v) {
                       if (v != null) {

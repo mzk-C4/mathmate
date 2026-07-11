@@ -52,7 +52,8 @@ class AuthResponse {
 ///
 /// 与服务端 auth_server.js 通信，Token 存储在 SharedPreferences。
 class AuthService {
-  static const String _baseUrl = 'https://mathmate.top/api/auth';
+  // 修改 1：将地址改为本地的 Node.js 服务器
+  static const String _baseUrl = 'http://127.0.0.1:3000/api/auth';
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
 
@@ -159,12 +160,13 @@ class AuthService {
     }
   }
 
-  /// 注册（需要验证码 + 邀请码）
+  /// 注册（优化版：去掉强制邀请码，完美对接新注册页面）
+  // 修改 2：将 inviteCode 改为可选参数，并设置默认值
   Future<AuthResponse> register({
     required String username,
     required String password,
     String email = '',
-    required String inviteCode,
+    String inviteCode = 'DEFAULT', 
     String code = '',
   }) {
     return _post('register', {
