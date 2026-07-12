@@ -11,9 +11,9 @@
   [![Dart](https://img.shields.io/badge/Dart-^3.11.3-blue?logo=dart)](https://dart.dev)
   [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
   [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-lightgrey)](https://github.com/mzk-C4/mathmate)
-  [![Version](https://img.shields.io/badge/v2.3.2-purple)](https://github.com/mzk-C4/mathmate/releases)
+  [![Version](https://img.shields.io/badge/v2.4.1-purple)](https://github.com/mzk-C4/mathmate/releases)
 
-  **拍照搜题 · 几何可视化 · AI 对话助手 · 数学工具箱**
+  **拍照搜题 · 几何可视化 · AI 对话助手 · 学习画像 · 智能考试系统**
 
   [官网](https://mathmate.top) · [技术详解](https://mathmate.top/tech.html) · [演示视频](https://www.bilibili.com/video/BV1EfLJ6bEnw/) · [在线体验](https://mathmate.top/app)
 
@@ -59,6 +59,20 @@
 ### 🎬 个性化视频推荐
 
 基于 DeepSeek AI 推荐算法 + 本地关键词匹配的 B 站数学视频推荐系统。
+
+### 📚 Awesome Math 资源库
+
+收录 5000+ 高质量数学资源，涵盖代数、分析、几何、拓扑、数论等领域。支持按学科分类浏览、关键词搜索，打造专属数学学习资料库。
+
+### 🎯 学习画像体系
+
+6 维能力评估模型（计算能力、逻辑推理、空间想象、抽象思维、应用能力、数学建模），自动生成个性化学习雷达图，精准定位薄弱环节，智能推荐学习路径。
+
+### 📝 智能考试系统
+
+- **自由组卷**：按知识点/难度/题型灵活组卷，绑定个人学习画像
+- **在线答题**：支持单选/多选/填空/解答题型，实时倒计时
+- **AI 评分**：后端 FastAPI + LLM 自动评分，错题解析与知识点分析
 
 ---
 
@@ -114,8 +128,9 @@
 | 分类 | 技术 |
 |:-----|:-----|
 | **前端框架** | Flutter 3.x (Dart ^3.11.3) |
-| **AI 模型** | DeepSeek API / 火山引擎多模态 / Qwen-PLUS |
-| **数据库** | Hive (本地 NoSQL) |
+| **AI 模型** | DeepSeek API / 火山引擎 Ark / Qwen-PLUS |
+| **数据库** | Hive (本地 NoSQL) / SQLite (后端) |
+| **后端** | FastAPI (考试系统) / Node.js (认证服务) |
 | **可视化** | 自研 GeometryPainter + GeoGebra WebView |
 | **公式渲染** | KaTeX / flutter_math_fork |
 | **富文本** | flutter_quill |
@@ -206,6 +221,9 @@ lib/
 | **几何可视化** | ✅ 交互式图形 | ❌ 静态图片 | ❌ 无 |
 | **题目覆盖** | 无题库限制 | 仅题库收录 | 中等 |
 | **个性化辅导** | ✅ 多轮对话 | ❌ 无 | ✅ 对话 |
+| **学习画像** | ✅ 6维能力评估 | ❌ 无 | ❌ 无 |
+| **考试系统** | ✅ 组卷/答题/AI评分 | ❌ 无 | ❌ 无 |
+| **资源库** | ✅ Awesome Math 5000+ | ❌ 无 | ❌ 无 |
 | **专业工具** | ✅ GeoGebra 6件套 | ❌ 无 | ❌ 无 |
 | **数学严谨性** | ★★★★★ 92分 | ★★☆☆☆ 48分 | ★★★☆☆ 72分 |
 
@@ -240,7 +258,7 @@ lib/
 
 ## 🔮 开发路线
 
-### ✅ 已完成 (v2.3.2)
+### ✅ 已完成 (v2.4.1)
 
 - [x] 核心流水线（OCR → 解题 → 可视化）
 - [x] AI 对话助手（流式响应）
@@ -250,19 +268,26 @@ lib/
 - [x] B 站视频推荐系统
 - [x] Web 平台支持
 - [x] 数据库迁移（Isar → Hive）
+- [x] Awesome Math 资源库（5000+ 数学资源）
+- [x] 学习画像体系（6 维能力雷达图）
+- [x] 智能考试系统（组卷/答题/AI 评分）
+- [x] LaTeX 公式渲染全链路（练习/题库/答题页）
+- [x] 登录注册体系（Node.js 后端 + JWT 认证）
+- [x] 火山 Ark 多模型接入
+- [x] Material 3 底部导航升级
 
 ### 🚧 进行中
 
 - [ ] 个人知识图谱构建
 - [ ] 智能错题本
-- [ ] LaTeX 公式编辑器组件
+- [ ] 学习路径智能推荐
 
 ### 📋 计划中
 
 - [ ] 本地化 AI（flutter_onnxruntime）
 - [ ] 3D 几何可视化增强
 - [ ] Wolfram Alpha / Symbolab 集成
-- [ ] 学习路径智能推荐
+- [ ] 资料上传与自动分类（PPT/PDF/图片/录音）
 
 ---
 
