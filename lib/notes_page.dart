@@ -96,6 +96,14 @@ class _NotesPageState extends State<NotesPage> {
     }
   }
 
+  String _displayTitle(Note note) {
+    final t = note.title.trim();
+    if (t.isEmpty || t.startsWith('{') || t.startsWith('[')) {
+      return '笔记 ${note.createTime.toString().substring(0, 16)}';
+    }
+    return t;
+  }
+
   Future<void> _importPdf() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -478,7 +486,7 @@ class _NotesPageState extends State<NotesPage> {
                   title: Row(
                     children: [
                       Expanded(
-                        child: Text(note.title.isEmpty ? "无标题" : note.title),
+                        child: Text(_displayTitle(note)),
                       ),
                       if (isHandwriting)
                         Container(

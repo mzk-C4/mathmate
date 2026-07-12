@@ -117,12 +117,16 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   }
 
   void _saveAndExit() {
-    final title = _titleController.text.trim();
+    String title = _titleController.text.trim();
     final plainText = _quillController.document.toPlainText().trim();
 
     if (title.isEmpty && plainText.isEmpty && _imagePaths.isEmpty) {
       Navigator.pop(context, null);
       return;
+    }
+
+    if (title.isEmpty) {
+      title = '笔记 ${DateTime.now().toString().substring(0, 16)}';
     }
 
     final contentJson = jsonEncode(
