@@ -6,6 +6,8 @@ import 'package:mathmate/data/hive_conversation_models.dart';
 import 'package:mathmate/data/conversation_repository.dart';
 import 'package:mathmate/responsive/breakpoints.dart';
 import 'package:mathmate/services/model_service.dart';
+import 'package:mathmate/services/ability_score_service.dart';
+import 'package:mathmate/theme/grade_ui_profile.dart';
 
 class ChatHomePage extends StatefulWidget {
   final String? initialQuery;
@@ -29,12 +31,12 @@ class _ChatHomePageState extends State<ChatHomePage> {
     _conversationSub = ConversationRepository.instance
         .watchConversations()
         .listen((List<Conversation> list) {
-      if (mounted) {
-        setState(() {
-          _conversations = list;
+          if (mounted) {
+            setState(() {
+              _conversations = list;
+            });
+          }
         });
-      }
-    });
     _initModel();
   }
 
@@ -96,6 +98,18 @@ class _ChatHomePageState extends State<ChatHomePage> {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool isDesktop = context.isDesktop;
+    final GradeUiProfile gradeUi = GradeUiProfile.forGrade(
+      AbilityScoreService().currentGrade,
+    );
+    final Widget chatContent = isDesktop
+        ? Row(
+            children: <Widget>[
+              SizedBox(width: 320, child: _buildConversationPanel()),
+              const VerticalDivider(width: 1),
+              Expanded(child: _buildChatArea()),
+            ],
+          )
+        : _buildChatArea();
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: cs.surface,
@@ -115,7 +129,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
-        backgroundColor: cs.surface,
+        backgroundColor: cs.surface.withValues(alpha: 0.94),
         elevation: 0,
         foregroundColor: cs.onSurface,
         surfaceTintColor: Colors.transparent,
@@ -137,7 +151,8 @@ class _ChatHomePageState extends State<ChatHomePage> {
                   child: Row(
                     children: <Widget>[
                       Expanded(child: Text(m['name']!)),
-                      if (selected) Icon(Icons.check, size: 16, color: cs.primary),
+                      if (selected)
+                        Icon(Icons.check, size: 16, color: cs.primary),
                     ],
                   ),
                 );
@@ -152,15 +167,18 @@ class _ChatHomePageState extends State<ChatHomePage> {
       ),
       // 窄屏：对话列表放 Drawer；桌面：左侧常驻面板 + 右侧聊天区。
       drawer: isDesktop ? null : _buildDrawer(),
-      body: isDesktop
-          ? Row(
-              children: <Widget>[
-                SizedBox(width: 320, child: _buildConversationPanel()),
-                const VerticalDivider(width: 1),
-                Expanded(child: _buildChatArea()),
-              ],
-            )
-          : _buildChatArea(),
+      body: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: GradeBackdrop(
+              profile: gradeUi,
+              imageAsset: 'assets/images/background-chat-home.png',
+              veilStrength: 0.78,
+            ),
+          ),
+          Positioned.fill(child: chatContent),
+        ],
+      ),
     );
   }
 
@@ -208,11 +226,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
               color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              Icons.auto_awesome,
-              size: 24,
-              color: cs.primary,
-            ),
+            child: Icon(Icons.auto_awesome, size: 24, color: cs.primary),
           ),
           const SizedBox(height: 12),
           Text(
@@ -263,7 +277,6 @@ class _ChatHomePageState extends State<ChatHomePage> {
   }
 
   Widget _buildSearchBox() {
-    final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: TextField(
@@ -287,8 +300,9 @@ class _ChatHomePageState extends State<ChatHomePage> {
 
   /// 长按会话 → 重命名对话框（NextChat 风格会话重命名）
   Future<void> _showRenameDialog(Conversation conversation) async {
-    final TextEditingController controller =
-        TextEditingController(text: conversation.title);
+    final TextEditingController controller = TextEditingController(
+      text: conversation.title,
+    );
     final String? result = await showDialog<String>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
@@ -300,7 +314,9 @@ class _ChatHomePageState extends State<ChatHomePage> {
         ),
         actions: <Widget>[
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: const Text('保存'),
@@ -309,8 +325,10 @@ class _ChatHomePageState extends State<ChatHomePage> {
       ),
     );
     if (result != null && result.isNotEmpty && result != conversation.title) {
-      await ConversationRepository.instance
-          .updateTitle(conversation.id, result);
+      await ConversationRepository.instance.updateTitle(
+        conversation.id,
+        result,
+      );
     }
   }
 

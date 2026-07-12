@@ -6,6 +6,7 @@ import 'package:mathmate/main.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
 import 'package:mathmate/services/ability_score_service.dart';
 import 'package:mathmate/tutorial_page.dart';
+import 'package:mathmate/theme/grade_ui_profile.dart';
 
 class GradeSelectionPage extends StatefulWidget {
   final bool isFromSettings;
@@ -96,13 +97,15 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final GradeUiProfile gradeUi = GradeUiProfile.forGrade(_selectedGrade);
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFF),
+      backgroundColor: gradeUi.surfaceTint,
       appBar: AppBar(
         title: const Text('选择年级'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: const Color(0xFF3F51B5),
+        foregroundColor: gradeUi.primary,
         actions: <Widget>[
           TextButton(
             onPressed: () async {
@@ -115,121 +118,136 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
                 );
               }
             },
-            child: const Text(
+            child: Text(
               '跳过',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF3F51B5),
+                color: gradeUi.primary,
               ),
             ),
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x12000000),
-                    blurRadius: 12,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const Text(
-                    '请选择您的年级',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '我们将为您推荐适合的学习内容',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.blueGrey.shade600,
-                    ),
-                  ),
-                  if (_selectedGrade != null) ...<Widget>[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+      body: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: GradeBackdrop(
+              profile: gradeUi,
+              imageAsset: 'assets/images/background-profile.png',
+              veilStrength: 0.68,
+            ),
+          ),
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cs.surface.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const <BoxShadow>[
+                      BoxShadow(
+                        color: Color(0x12000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 2),
                       ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8EEFF),
-                        borderRadius: BorderRadius.circular(20),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text(
+                        '请选择您的年级',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '我们将为您推荐适合的学习内容',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blueGrey.shade600,
+                        ),
+                      ),
+                      if (_selectedGrade != null) ...<Widget>[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: gradeUi.primary.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '当前选择：${_getGradeDisplayText()}',
+                            style: TextStyle(
+                              color: gradeUi.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ..._buildGradeCategories(),
+                const SizedBox(height: 30),
+                if (_selectedGrade != null)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final NavigatorState navigator = Navigator.of(context);
+                        await _saveGrade(_selectedGrade!);
+                        if (!widget.isFromSettings) {
+                          await HistoryRepository.instance
+                              .setFirstLaunchComplete();
+                        }
+                        if (mounted) {
+                          if (widget.isFromSettings) {
+                            navigator.pop(_selectedGrade);
+                          } else {
+                            // 年级选择后 → 能力自评 → 新手引导
+                            navigator.pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => AbilityAssessmentPage(
+                                  nextPage: const TutorialPage(),
+                                ),
+                              ),
+                              (Route<dynamic> route) => false,
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: gradeUi.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
                       ),
                       child: Text(
-                        '当前选择：${_getGradeDisplayText()}',
+                        widget.isFromSettings ? '保存' : '开始使用',
                         style: const TextStyle(
-                          color: Color(0xFF3F51B5),
-                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                  ],
-                ],
-              ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 20),
-            ..._buildGradeCategories(),
-            const SizedBox(height: 30),
-            if (_selectedGrade != null)
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final NavigatorState navigator = Navigator.of(context);
-                    await _saveGrade(_selectedGrade!);
-                    if (!widget.isFromSettings) {
-                      await HistoryRepository.instance.setFirstLaunchComplete();
-                    }
-                    if (mounted) {
-                      if (widget.isFromSettings) {
-                        navigator.pop(_selectedGrade);
-                      } else {
-                        // 年级选择后 → 能力自评 → 新手引导
-                        navigator.pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => AbilityAssessmentPage(
-                              nextPage: const TutorialPage(),
-                            ),
-                          ),
-                          (Route<dynamic> route) => false,
-                        );
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3F51B5),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    widget.isFromSettings ? '保存' : '开始使用',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -252,6 +270,7 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
   }
 
   Widget _buildCategoryHeader(String title) {
+    final GradeUiProfile gradeUi = GradeUiProfile.forGrade(_selectedGrade);
     IconData icon;
     switch (title) {
       case '小学':
@@ -276,10 +295,10 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFFE8EEFF),
+            color: gradeUi.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: const Color(0xFF3F51B5), size: 20),
+          child: Icon(icon, color: gradeUi.primary, size: 20),
         ),
         const SizedBox(width: 10),
         Text(
@@ -291,6 +310,8 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
   }
 
   Widget _buildGradeGrid(List<Map<String, dynamic>> grades) {
+    final GradeUiProfile gradeUi = GradeUiProfile.forGrade(_selectedGrade);
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -306,18 +327,20 @@ class _GradeSelectionPageState extends State<GradeSelectionPage> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF3F51B5) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: isSelected
+                  ? gradeUi.primary
+                  : cs.surface.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(
+                gradeUi.cardRadius.clamp(10.0, 14.0).toDouble(),
+              ),
               border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF3F51B5)
-                    : const Color(0xFFE0E0E0),
+                color: isSelected ? gradeUi.primary : const Color(0xFFE0E0E0),
                 width: 1.5,
               ),
               boxShadow: isSelected
                   ? <BoxShadow>[
                       BoxShadow(
-                        color: const Color(0xFF3F51B5).withValues(alpha: 0.3),
+                        color: gradeUi.primary.withValues(alpha: 0.24),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),

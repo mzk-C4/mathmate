@@ -10,6 +10,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mathmate/data/hive_models.dart';
+import 'package:mathmate/services/api_config_service.dart';
 
 const String _kIsFirstLaunch = 'is_first_launch';
 const String _kGradeLevel = 'grade_level';
@@ -113,14 +114,20 @@ class HistoryRepository {
 
     try {
       await dotenv.load(fileName: '.env');
-      final String apiKey = (dotenv.env[apiKeyEnv] ?? '').trim();
+      final ResolvedApiConfig config = await ApiConfigService.instance.resolve(
+        provider: ApiProvider.volc,
+        fallbackApiKey: dotenv.env[apiKeyEnv] ?? '',
+        fallbackModelId: dotenv.env[modelEnv] ?? defaultModel,
+        fallbackBaseUrl: dotenv.env[baseUrlEnv] ?? defaultBaseUrl,
+      );
+      final String apiKey = config.apiKey;
       if (apiKey.isEmpty) return '数学问题';
 
-      final String modelId = (dotenv.env[modelEnv] ?? defaultModel).trim();
-      final String baseUrl =
-          (dotenv.env[baseUrlEnv] ?? defaultBaseUrl).trim();
+      final String modelId = config.modelId;
+      final String baseUrl = config.baseUrl;
 
-      const String prompt = '请根据以下数学题目内容，总结一个简洁的标题（不超过20个字），概括这道题目的知识点或题型。\n\n题目内容：\n';
+      const String prompt =
+          '请根据以下数学题目内容，总结一个简洁的标题（不超过20个字），概括这道题目的知识点或题型。\n\n题目内容：\n';
 
       final String fullPrompt = '$prompt$ocrContent\n\n标题：';
 
@@ -138,15 +145,14 @@ class HistoryRepository {
         'max_tokens': 50,
       };
 
-      final http.Response response = await http.post(
-        Uri.parse(baseUrl),
-        headers: headers,
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 15));
+      final http.Response response = await http
+          .post(Uri.parse(baseUrl), headers: headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        final String content = data['choices']?[0]?['message']?['content'] ?? '';
+        final String content =
+            data['choices']?[0]?['message']?['content'] ?? '';
         if (content.trim().isNotEmpty) {
           String title = content.trim();
           if (title.startsWith('"') && title.endsWith('"')) {

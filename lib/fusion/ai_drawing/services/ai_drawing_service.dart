@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:mathmate/fusion/ai_drawing/prompts/math_prompts.dart';
 import 'package:mathmate/fusion/models/ai_models.dart';
 import 'package:mathmate/services/app_logger.dart';
+import 'package:mathmate/services/api_config_service.dart';
 
 /// AI 绘图服务
 ///
@@ -141,10 +142,7 @@ class AIDrawingService {
     try {
       final userPrompt = MathDrawingPrompts.formatTemplate(
         MathDrawingPrompts.repairTemplate,
-        <String, String>{
-          'current_code': currentCode,
-          'error_text': errorText,
-        },
+        <String, String>{'current_code': currentCode, 'error_text': errorText},
       );
 
       final rawContent = await _callAI(
@@ -185,10 +183,15 @@ class AIDrawingService {
   }) async {
     await _ensureEnvLoaded();
 
-    final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-    final String modelId = (dotenv.env[_modelIdEnv] ?? _defaultModel).trim();
-    final String baseUrl =
-        (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+    final ResolvedApiConfig config = await ApiConfigService.instance.resolve(
+      provider: ApiProvider.deepseek,
+      fallbackApiKey: dotenv.env[_apiKeyEnv] ?? '',
+      fallbackModelId: dotenv.env[_modelIdEnv] ?? _defaultModel,
+      fallbackBaseUrl: dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl,
+    );
+    final String apiKey = config.apiKey;
+    final String modelId = config.modelId;
+    final String baseUrl = config.baseUrl;
 
     AppLogger.instance.info('[AIDrawing] 请求模型: $modelId');
     AppLogger.instance.info('[AIDrawing] 请求端点: $baseUrl');
@@ -210,22 +213,26 @@ class AIDrawingService {
     final Stopwatch sw = Stopwatch()..start();
     final http.Response response = await http
         .post(
-      Uri.parse(baseUrl),
-      headers: headers,
-      body: jsonEncode(<String, dynamic>{
-        'model': modelId,
-        'messages': messages,
-        'temperature': 0.3,
-        'max_tokens': 2000,
-      }),
-    )
-        .timeout(_timeout, onTimeout: () {
-      throw Exception('AI 请求超时（${_timeout.inSeconds}秒）');
-    });
+          Uri.parse(baseUrl),
+          headers: headers,
+          body: jsonEncode(<String, dynamic>{
+            'model': modelId,
+            'messages': messages,
+            'temperature': 0.3,
+            'max_tokens': 2000,
+          }),
+        )
+        .timeout(
+          _timeout,
+          onTimeout: () {
+            throw Exception('AI 请求超时（${_timeout.inSeconds}秒）');
+          },
+        );
     sw.stop();
 
     AppLogger.instance.info(
-        '[AIDrawing] 响应状态: ${response.statusCode}，耗时 ${sw.elapsedMilliseconds}ms');
+      '[AIDrawing] 响应状态: ${response.statusCode}，耗时 ${sw.elapsedMilliseconds}ms',
+    );
 
     if (response.statusCode != 200) {
       final String detail = utf8.decode(response.bodyBytes);
@@ -257,8 +264,10 @@ class AIDrawingService {
   /// 支持 markdown 代码块 (```python ... ```) 或纯代码
   String _extractCodeBlock(String content) {
     // 尝试匹配 ```python ... ``` 或 ``` ... ```
-    final RegExp codeBlockRegex =
-        RegExp(r'```(?:python|py)?\s*\n([\s\S]*?)```', caseSensitive: false);
+    final RegExp codeBlockRegex = RegExp(
+      r'```(?:python|py)?\s*\n([\s\S]*?)```',
+      caseSensitive: false,
+    );
     final RegExpMatch? match = codeBlockRegex.firstMatch(content);
 
     if (match != null && match.groupCount >= 1) {
@@ -290,9 +299,7 @@ class AIDrawingService {
   /// 测试连接
   Future<bool> testConnection() async {
     try {
-      final result = await generateVisualization(
-        description: '画一条简单的直线',
-      );
+      final result = await generateVisualization(description: '画一条简单的直线');
       return result.isSuccess;
     } catch (e) {
       debugPrint('[AIDrawing] 连接测试失败: $e');

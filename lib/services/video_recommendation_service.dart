@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:mathmate/data/hive_models.dart';
 import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/data/video_resources.dart';
+import 'package:mathmate/services/api_config_service.dart';
 
 class VideoRecommendationService {
   static const String _apiKeyEnv = 'VOLC_API_KEY';
@@ -29,15 +30,15 @@ class VideoRecommendationService {
     try {
       await _ensureEnvLoaded();
 
-      final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
+      final ResolvedApiConfig config = await _resolveConfig();
+      final String apiKey = config.apiKey;
       if (apiKey.isEmpty) {
         debugPrint('VideoRecommendationService: missing $_apiKeyEnv.');
         return <VideoResource>[];
       }
 
-      final String modelId = (dotenv.env[_modelEnv] ?? _defaultModel).trim();
-      final String baseUrl =
-          (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+      final String modelId = config.modelId;
+      final String baseUrl = config.baseUrl;
 
       // 获取年级信息
       final int? grade = await HistoryRepository.instance.getGradeLevel();
@@ -47,7 +48,10 @@ class VideoRecommendationService {
       final List<String> historyContents = await _getRecentHistoryContents();
 
       // 构建prompt
-      final String prompt = _buildRecommendationPrompt(gradeText, historyContents);
+      final String prompt = _buildRecommendationPrompt(
+        gradeText,
+        historyContents,
+      );
 
       // 调用千问API
       final Map<String, String> headers = <String, String>{
@@ -64,18 +68,19 @@ class VideoRecommendationService {
         'max_tokens': 1500,
       };
 
-      final http.Response response = await http.post(
-        Uri.parse(baseUrl),
-        headers: headers,
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 30));
+      final http.Response response = await http
+          .post(Uri.parse(baseUrl), headers: headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        final String content = data['choices']?[0]?['message']?['content'] ?? '';
+        final String content =
+            data['choices']?[0]?['message']?['content'] ?? '';
         return _parseRecommendedVideos(content);
       } else {
-        debugPrint('VideoRecommendationService API error: ${response.statusCode}');
+        debugPrint(
+          'VideoRecommendationService API error: ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('VideoRecommendationService error: $e');
@@ -110,7 +115,10 @@ class VideoRecommendationService {
   }
 
   /// 构建推荐prompt
-  String _buildRecommendationPrompt(String gradeText, List<String> historyContents) {
+  String _buildRecommendationPrompt(
+    String gradeText,
+    List<String> historyContents,
+  ) {
     final String historyText = historyContents.isEmpty
         ? '暂无历史记录'
         : historyContents.join('\n');
@@ -127,7 +135,9 @@ class VideoRecommendationService {
         videoDb.writeln('  $module:');
         final List<VideoResource> videos = getVideoResourcesByModule(module);
         for (final VideoResource video in videos) {
-          final String bvStr = video.bvId.isEmpty ? '(暂无BV号)' : '(${video.bvId})';
+          final String bvStr = video.bvId.isEmpty
+              ? '(暂无BV号)'
+              : '(${video.bvId})';
           videoDb.writeln('    - ${video.title} ${bvStr} - ${video.uploader}');
         }
       }
@@ -237,17 +247,18 @@ $videoDb
   Future<List<String>> extractKeywords(String text) async {
     try {
       await _ensureEnvLoaded();
-      final String apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
+      final ResolvedApiConfig config = await _resolveConfig();
+      final String apiKey = config.apiKey;
       if (apiKey.isEmpty) {
         debugPrint('VideoRecommendationService: missing $_apiKeyEnv.');
         return <String>[];
       }
 
-      final String modelId = (dotenv.env[_modelEnv] ?? _defaultModel).trim();
-      final String baseUrl =
-          (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+      final String modelId = config.modelId;
+      final String baseUrl = config.baseUrl;
 
-      final String prompt = '''
+      final String prompt =
+          '''
 请从以下数学题目中提取关键词（数学概念、题型类别等），只返回关键词，用逗号分隔，最多返回5个关键词。
 
 题目内容：
@@ -269,15 +280,14 @@ $text
         'max_tokens': 100,
       };
 
-      final http.Response response = await http.post(
-        Uri.parse(baseUrl),
-        headers: headers,
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 30));
+      final http.Response response = await http
+          .post(Uri.parse(baseUrl), headers: headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        final String content = data['choices']?[0]?['message']?['content'] ?? '';
+        final String content =
+            data['choices']?[0]?['message']?['content'] ?? '';
         return content
             .split(RegExp(r'[,，、\n]'))
             .map((String s) => s.trim())
@@ -289,5 +299,14 @@ $text
       debugPrint('extractKeywords error: $e');
     }
     return <String>[];
+  }
+
+  Future<ResolvedApiConfig> _resolveConfig() {
+    return ApiConfigService.instance.resolve(
+      provider: ApiProvider.volc,
+      fallbackApiKey: dotenv.env[_apiKeyEnv] ?? '',
+      fallbackModelId: dotenv.env[_modelEnv] ?? _defaultModel,
+      fallbackBaseUrl: dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl,
+    );
   }
 }

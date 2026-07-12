@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:flutter_floating/flutter_floating.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/learner/models/learner_profile.dart';
@@ -35,6 +36,7 @@ import 'package:mathmate/services/theme_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mathmate/services/video_recommendation_service.dart';
 import 'package:mathmate/theme/app_theme.dart';
+import 'package:mathmate/theme/grade_ui_profile.dart';
 import 'package:mathmate/responsive/responsive_shell.dart';
 import 'package:mathmate/tutorial_page.dart';
 import 'package:mathmate/services/update_service.dart';
@@ -46,13 +48,12 @@ import 'package:mathmate/exam/pages/question_bank_page.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
 import 'package:mathmate/pages/practice_page.dart';
 import 'package:mathmate/services/ability_score_service.dart';
+import 'package:mathmate/widgets/grade_mascot_orb.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb) {
-    await dotenv.load(fileName: ".env");
-  }
+  await dotenv.load(fileName: '.env');
 
   // 初始化设备ID
   final prefs = await SharedPreferences.getInstance();
@@ -101,16 +102,20 @@ Future<void> main() async {
     isFirst = await HistoryRepository.instance.isFirstLaunch();
   }
   // Web 端跳过教程
-  final bool tutorialCompleted = kIsWeb ? true : await HistoryRepository.instance.isTutorialCompleted();
+  final bool tutorialCompleted = kIsWeb
+      ? true
+      : await HistoryRepository.instance.isTutorialCompleted();
   // 已有年级但未完成能力自评的用户，引导至自评页
   final bool needsAssessment = !isFirst && !AbilityScoreService().hasAssessment;
-  
-  runApp(MathMateApp(
-    checkFirstLaunch: isFirst,
-    showTutorial: !tutorialCompleted && !isFirst && !needsAssessment,
-    showAssessment: needsAssessment,
-    isLoggedIn: isLoggedIn, // 传入登录状态
-  ));
+
+  runApp(
+    MathMateApp(
+      checkFirstLaunch: isFirst,
+      showTutorial: !tutorialCompleted && !isFirst && !needsAssessment,
+      showAssessment: needsAssessment,
+      isLoggedIn: isLoggedIn, // 传入登录状态
+    ),
+  );
 }
 
 class MathMateApp extends StatefulWidget {
@@ -152,13 +157,18 @@ class _MathMateAppState extends State<MathMateApp> {
         title: const Text('发现新版本'),
         content: Text('最新版本: ${update.version}\n\n${update.releaseNotes}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('稍后')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('稍后'),
+          ),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
               final msg = await UpdateService.downloadAndInstall(update);
               if (msg != null && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(msg)));
               }
             },
             child: const Text('立即更新'),
@@ -199,10 +209,7 @@ class _MathMateAppState extends State<MathMateApp> {
         GlobalCupertinoLocalizations.delegate,
         quill.FlutterQuillLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('zh', 'CN'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
@@ -221,7 +228,7 @@ class _MathMateAppState extends State<MathMateApp> {
       return AbilityAssessmentPage(nextPage: const MainScreen());
     }
     if (widget.showTutorial) return const TutorialPage();
-    
+
     // 3. 最终进入主屏幕
     return const MainScreen();
   }
@@ -236,9 +243,11 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+
   /// 用于通知 ProfilePage 的雷达图触发计数器（每次点击"我的"Tab 递增）
   final ValueNotifier<int> _radarTrigger = ValueNotifier<int>(0);
   late final List<Widget> _pages;
+  late final FloatingOverlay _mascotFloating;
 
   @override
   void initState() {
@@ -249,10 +258,35 @@ class _MainScreenState extends State<MainScreen> {
       const PracticePage(),
       ProfilePage(radarTrigger: _radarTrigger),
     ];
+    _mascotFloating = FloatingOverlay(
+      GradeMascotOrb(onTap: _openMascotChat),
+      slideType: FloatingEdgeType.onRightAndBottom,
+      right: 12,
+      bottom: 96,
+      logKey: 'mathmate_mascot',
+      params: const FloatingParams(
+        enablePositionCache: true,
+        isSnapToEdge: true,
+        isDragEnable: true,
+        dragOpacity: 0.82,
+        marginTop: 16,
+        marginBottom: 88,
+        snapToEdgeSpace: 12,
+        snapToEdgeSpeed: 220,
+        notifyThrottleMs: 16,
+      ),
+    );
+  }
+
+  void _openMascotChat() {
+    Navigator.of(
+      context,
+    ).push(_ChatTransitionRoute(targetPage: const ChatHomePage()));
   }
 
   @override
   void dispose() {
+    _mascotFloating.dispose();
     _radarTrigger.dispose();
     super.dispose();
   }
@@ -260,37 +294,43 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     // 桌面端导航壳：宽屏使用 NavigationRail，窄屏使用 Material 3 NavigationBar。
-    return ResponsiveShell(
-      currentIndex: _currentIndex,
-      onTap: (int index) {
-        setState(() => _currentIndex = index);
-        // 每次点击"我的"Tab 都触发雷达图动画（包括重复点击）
-        if (index == 3) {
-          _radarTrigger.value++;
-        }
-      },
-      pages: _pages,
-      tabs: const <NavTab>[
-        NavTab(
-          icon: Icons.grid_view_outlined,
-          selectedIcon: Icons.grid_view_rounded,
-          label: '题目',
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        ResponsiveShell(
+          currentIndex: _currentIndex,
+          onTap: (int index) {
+            setState(() => _currentIndex = index);
+            // 每次点击"我的"Tab 都触发雷达图动画（包括重复点击）
+            if (index == 3) {
+              _radarTrigger.value++;
+            }
+          },
+          pages: _pages,
+          tabs: const <NavTab>[
+            NavTab(
+              icon: Icons.grid_view_outlined,
+              selectedIcon: Icons.grid_view_rounded,
+              label: '题目',
+            ),
+            NavTab(
+              icon: Icons.bookmark_border_rounded,
+              selectedIcon: Icons.bookmark_rounded,
+              label: '笔记',
+            ),
+            NavTab(
+              icon: Icons.fitness_center_outlined,
+              selectedIcon: Icons.fitness_center_rounded,
+              label: '练习',
+            ),
+            NavTab(
+              icon: Icons.account_circle_outlined,
+              selectedIcon: Icons.account_circle_rounded,
+              label: '我的',
+            ),
+          ],
         ),
-        NavTab(
-          icon: Icons.bookmark_border_rounded,
-          selectedIcon: Icons.bookmark_rounded,
-          label: '笔记',
-        ),
-        NavTab(
-          icon: Icons.fitness_center_outlined,
-          selectedIcon: Icons.fitness_center_rounded,
-          label: '练习',
-        ),
-        NavTab(
-          icon: Icons.account_circle_outlined,
-          selectedIcon: Icons.account_circle_rounded,
-          label: '我的',
-        ),
+        _mascotFloating.getFloating(),
       ],
     );
   }
@@ -307,13 +347,26 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
   ColorScheme get cs => Theme.of(context).colorScheme;
 
   final ScannerService _scannerService = ScannerService();
-  final VideoRecommendationService _recommendationService = VideoRecommendationService();
+  final VideoRecommendationService _recommendationService =
+      VideoRecommendationService();
   final TextEditingController _searchController = TextEditingController();
 
   bool _isScanning = false;
   bool _isRefreshing = false;
   List<VideoResource> _recommendedVideos = <VideoResource>[];
   String _currentGrade = '高中';
+  int? _currentGradeValue;
+
+  GradeUiProfile get gradeUi => GradeUiProfile.forGrade(_currentGradeValue);
+
+  Color get gradePanelColor {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color base = Color.alphaBlend(
+      gradeUi.primary.withValues(alpha: isDark ? 0.06 : 0.025),
+      cs.surface,
+    );
+    return base.withValues(alpha: isDark ? 0.94 : 0.90);
+  }
 
   @override
   void initState() {
@@ -329,17 +382,26 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
 
   void _openSearchChat() {
     final String query = _searchController.text.trim();
-    Navigator.of(context).push(_ChatTransitionRoute(
-      targetPage: ChatHomePage(initialQuery: query.isNotEmpty ? query : null),
-    ));
+    Navigator.of(context).push(
+      _ChatTransitionRoute(
+        targetPage: ChatHomePage(initialQuery: query.isNotEmpty ? query : null),
+      ),
+    );
   }
 
   Future<void> _loadGradeLevelAndVideos() async {
     final int? grade = await HistoryRepository.instance.getGradeLevel();
     // 同步年级到能力评分服务（K-12 / 大学维度切换）
     AbilityScoreService().setGrade(grade);
+    _currentGradeValue = grade;
     _currentGrade = grade != null
-        ? (grade >= 1 && grade <= 6 ? '小学' : grade >= 7 && grade <= 9 ? '初中' : grade >= 10 && grade <= 12 ? '高中' : '大学')
+        ? (grade >= 1 && grade <= 6
+              ? '小学'
+              : grade >= 7 && grade <= 9
+              ? '初中'
+              : grade >= 10 && grade <= 12
+              ? '高中'
+              : '大学')
         : '高中';
 
     // 优先使用AI推荐
@@ -373,10 +435,25 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
   }
 
   List<VideoResource> _boostByHistory(
-      List<VideoResource> videos, List<MathHistory> histories) {
+    List<VideoResource> videos,
+    List<MathHistory> histories,
+  ) {
     const List<String> keywords = <String>[
-      '函数', '几何', '向量', '数列', '导数', '三角', '概率', '集合',
-      '不等式', '解析几何', '立体几何', '方程', '统计', '排列', '组合',
+      '函数',
+      '几何',
+      '向量',
+      '数列',
+      '导数',
+      '三角',
+      '概率',
+      '集合',
+      '不等式',
+      '解析几何',
+      '立体几何',
+      '方程',
+      '统计',
+      '排列',
+      '组合',
     ];
 
     final Set<String> matchedModules = <String>{};
@@ -420,9 +497,7 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
 
       // 2. 进入裁剪页面，返回裁剪后的 XFile
       final XFile? croppedFile = await Navigator.of(context).push<XFile>(
-        MaterialPageRoute(
-          builder: (_) => EnhancedCropPage(imageFile: scanned),
-        ),
+        MaterialPageRoute(builder: (_) => EnhancedCropPage(imageFile: scanned)),
       );
 
       if (!mounted) return;
@@ -437,9 +512,9 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
     } catch (e) {
       debugPrint('扫描流程异常: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('拍照/选图失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('拍照/选图失败: $e')));
       }
     } finally {
       if (mounted) {
@@ -458,66 +533,110 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
       backgroundColor: cs.surface,
       body: Stack(
         children: <Widget>[
-          Positioned.fill(
-            child: Image.asset('assets/images/background.png', fit: BoxFit.cover),
-          ),
-          Positioned.fill(
-            child: ColoredBox(color: cs.surface.withValues(alpha: 0.55)),
-          ),
+          Positioned.fill(child: GradeBackdrop(profile: gradeUi)),
           SafeArea(
             child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isWide ? 1100 : double.infinity),
-            child: RefreshIndicator(
-              onRefresh: _onRefresh,
-              color: cs.primary,
-              backgroundColor: cs.surface,
-              displacement: 40.0,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(isWide ? 24 : 16, 12, isWide ? 24 : 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _buildSearchBar(),
-                    const SizedBox(height: 12),
-                    _buildQuestionBankEntry(),
-                    const SizedBox(height: 18),
-                    _buildCameraHero(),
-                    const SizedBox(height: 16),
-                    _buildGeoChatCard(),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 1100 : double.infinity,
+                ),
+                child: RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  color: cs.primary,
+                  backgroundColor: cs.surface,
+                  displacement: 40.0,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      isWide ? 24 : 16,
+                      12,
+                      isWide ? 24 : 16,
+                      24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        const Text(
-                          '数学视频推荐',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        _buildGradeIdentity(),
+                        const SizedBox(height: 12),
+                        _buildSearchBar(),
+                        const SizedBox(height: 12),
+                        _buildQuestionBankEntry(),
+                        const SizedBox(height: 18),
+                        _buildCameraHero(),
+                        const SizedBox(height: 16),
+                        _buildGeoChatCard(),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            const Text(
+                              '数学视频推荐',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (_isRefreshing)
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                          ],
                         ),
-                        if (_isRefreshing)
-                          const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
+                        const SizedBox(height: 10),
+                        _buildVideoList(),
+                        const SizedBox(height: 16),
+                        _buildToolboxCard(),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    _buildVideoList(),
-                    const SizedBox(height: 16),
-                    _buildToolboxCard(),
-                  ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      ),
-      ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGradeIdentity() {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: gradeUi.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(
+              gradeUi.cardRadius.clamp(10.0, 12.0).toDouble(),
+            ),
+          ),
+          child: Icon(gradeUi.icon, color: gradeUi.primary, size: 22),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                gradeUi.gradeLabel,
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                '${gradeUi.modeLabel} · 今天继续解决一个问题',
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -525,19 +644,15 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
   Widget _buildQuestionBankEntry() {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const QuestionBankPage()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const QuestionBankPage()));
       },
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 18, 16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF5B6CFF), Color(0xFF4C6FFF)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
+          gradient: gradeUi.actionGradient,
+          borderRadius: BorderRadius.circular(gradeUi.cardRadius),
         ),
         child: Row(
           children: <Widget>[
@@ -548,27 +663,38 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                 color: Colors.white.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.menu_book_rounded,
-                  color: Colors.white, size: 26),
+              child: const Icon(
+                Icons.menu_book_rounded,
+                color: Colors.white,
+                size: 26,
+              ),
             ),
             const SizedBox(width: 14),
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('数学题库',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white)),
+                  Text(
+                    '数学题库',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                   SizedBox(height: 4),
-                  Text('按板块/难度筛选 · 真题+解析 · 云端共享',
-                      style: TextStyle(fontSize: 12, color: Colors.white70)),
+                  Text(
+                    '按板块/难度筛选 · 真题+解析 · 云端共享',
+                    style: TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: Colors.white, size: 18),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -578,16 +704,19 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
   Widget _buildSearchBar() {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(_ChatTransitionRoute(
-          targetPage: const ChatHomePage(),
-        ));
+        Navigator.of(
+          context,
+        ).push(_ChatTransitionRoute(targetPage: const ChatHomePage()));
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: cs.surface,
+          color: gradePanelColor,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: cs.primary.withValues(alpha: 0.25), width: 1.5),
+          border: Border.all(
+            color: cs.primary.withValues(alpha: 0.25),
+            width: 1.5,
+          ),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: cs.primary.withValues(alpha: 0.12),
@@ -598,7 +727,7 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
         ),
         child: Row(
           children: <Widget>[
-            Icon(Icons.auto_awesome, color: cs.primary, size: 22),
+            Icon(Icons.auto_awesome, color: gradeUi.primary, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -609,7 +738,7 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: cs.primary,
+                color: gradeUi.primary,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
@@ -634,8 +763,8 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: gradePanelColor,
+        borderRadius: BorderRadius.circular(gradeUi.cardRadius),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: cs.shadow.withValues(alpha: 0.07),
@@ -646,42 +775,36 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
       ),
       child: Column(
         children: <Widget>[
-          const Text(
+          Text(
             '拍一下，难题秒解决',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF3F51B5),
+              color: gradeUi.primary,
             ),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 180,
+            height: gradeUi.cameraHeight,
             child: Stack(
               alignment: Alignment.center,
               children: <Widget>[
                 CustomPaint(
-                  size: const Size(double.infinity, 180),
+                  size: Size(double.infinity, gradeUi.cameraHeight),
                   painter: _FunctionWavePainter(),
                 ),
                 GestureDetector(
                   onTap: _scanAndOpenResult,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 240),
-                    width: 150,
-                    height: 150,
+                    width: gradeUi.cameraDiameter,
+                    height: gradeUi.cameraDiameter,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: <Color>[Color(0xFF4C6FFF), Color(0xFF3557E5)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+                      gradient: gradeUi.actionGradient,
                       boxShadow: <BoxShadow>[
                         BoxShadow(
-                          color: const Color(
-                            0xFF4C6FFF,
-                          ).withValues(alpha: 0.35),
+                          color: gradeUi.primary.withValues(alpha: 0.30),
                           blurRadius: 26,
                           offset: const Offset(0, 8),
                         ),
@@ -712,9 +835,12 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.3), width: 1.5),
+        color: gradePanelColor,
+        borderRadius: BorderRadius.circular(gradeUi.cardRadius),
+        border: Border.all(
+          color: cs.primary.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: cs.shadow.withValues(alpha: 0.07),
@@ -732,12 +858,20 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
               color: cs.primaryContainer,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.cloud_upload_rounded, size: 32, color: cs.primary),
+            child: Icon(
+              Icons.cloud_upload_rounded,
+              size: 32,
+              color: cs.primary,
+            ),
           ),
           const SizedBox(height: 14),
           Text(
             '上传题目图片',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -753,7 +887,9 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
               label: const Text('选择图片'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -766,25 +902,23 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
   Widget _buildGeoChatCard() {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const GeogebraChatPage(),
-          ),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const GeogebraChatPage()));
       },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 16, 18, 16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF6A5BFF), Color(0xFF4C6FFF)],
+          gradient: LinearGradient(
+            colors: <Color>[gradeUi.secondary, gradeUi.primary],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(gradeUi.cardRadius),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: const Color(0xFF4C6FFF).withValues(alpha: 0.30),
+              color: gradeUi.primary.withValues(alpha: 0.24),
               blurRadius: 18,
               offset: const Offset(0, 6),
             ),
@@ -842,8 +976,8 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: gradePanelColor,
+        borderRadius: BorderRadius.circular(gradeUi.cardRadius),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: cs.shadow.withValues(alpha: 0.07),
@@ -884,7 +1018,8 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                   'onTap': () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const GeogebraPage(appName: 'scientific'),
+                        builder: (_) =>
+                            const GeogebraPage(appName: 'scientific'),
                       ),
                     );
                   },
@@ -906,9 +1041,7 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                   'onTap': () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const GeogebraPage(
-                          appName: 'graphing',
-                        ),
+                        builder: (_) => const GeogebraPage(appName: 'graphing'),
                       ),
                     );
                   },
@@ -941,7 +1074,8 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                   'onTap': () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const GeogebraPage(appName: 'probability'),
+                        builder: (_) =>
+                            const GeogebraPage(appName: 'probability'),
                       ),
                     );
                   },
@@ -969,11 +1103,18 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
-                              Icon(tool['icon'] as IconData, color: cs.primary, size: 20),
+                              Icon(
+                                tool['icon'] as IconData,
+                                color: cs.primary,
+                                size: 20,
+                              ),
                               const SizedBox(height: 4),
                               Text(
                                 tool['name'] as String,
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
@@ -1003,6 +1144,7 @@ class _QuestionHomePageState extends State<QuestionHomePage> {
       ),
     );
   }
+
   Widget _buildVideoList() {
     final List<VideoResource> videos = _recommendedVideos;
 
@@ -1101,15 +1243,21 @@ class _VideoCardState extends State<_VideoCard> {
       final String apiUrl = kIsWeb
           ? '/api/bilibili/x/web-interface/view?bvid=${widget.video.bvId}'
           : 'https://api.bilibili.com/x/web-interface/view?bvid=${widget.video.bvId}';
-      final http.Response response = await http.get(
-        Uri.parse(apiUrl),
-        headers: kIsWeb ? <String, String>{} : <String, String>{
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-          'Referer': 'https://www.bilibili.com/',
-        },
-      ).timeout(const Duration(seconds: 5));
+      final http.Response response = await http
+          .get(
+            Uri.parse(apiUrl),
+            headers: kIsWeb
+                ? <String, String>{}
+                : <String, String>{
+                    'User-Agent':
+                        'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                    'Referer': 'https://www.bilibili.com/',
+                  },
+          )
+          .timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> data =
+            jsonDecode(response.body) as Map<String, dynamic>;
         final String? pic = data['data']?['pic'] as String?;
         if (pic != null && mounted) {
           setState(() {
@@ -1127,18 +1275,14 @@ class _VideoCardState extends State<_VideoCard> {
     final String bvId = widget.video.bvId;
     if (bvId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('暂无对应视频'),
-          duration: Duration(seconds: 1),
-        ),
+        const SnackBar(content: Text('暂无对应视频'), duration: Duration(seconds: 1)),
       );
       return;
     }
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            VideoPlayerPage(title: widget.video.title, bvId: bvId),
+        builder: (_) => VideoPlayerPage(title: widget.video.title, bvId: bvId),
       ),
     );
   }
@@ -1241,11 +1385,7 @@ class _VideoCardState extends State<_VideoCard> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Icon(
-            Icons.video_library,
-            color: cs.primary,
-            size: 40,
-          ),
+          Icon(Icons.video_library, color: cs.primary, size: 40),
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1266,31 +1406,35 @@ class _VideoCardState extends State<_VideoCard> {
     );
   }
 }
+
 class _ChatTransitionRoute extends PageRouteBuilder<void> {
   final Widget targetPage;
 
   _ChatTransitionRoute({required this.targetPage})
-      : super(
-          pageBuilder: (context, animation, secondaryAnimation) => targetPage,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.15),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
-              child: FadeTransition(
-                opacity: CurvedAnimation(
-                  parent: animation,
-                  curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+    : super(
+        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0, 0.15),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
                 ),
-                child: child,
+            child: FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
               ),
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 400),
-          reverseTransitionDuration: const Duration(milliseconds: 300),
-        );
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+      );
 }

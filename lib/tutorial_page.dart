@@ -19,43 +19,43 @@ class _TutorialPageState extends State<TutorialPage> {
       'icon': 'camera_alt',
       'title': '拍照搜题',
       'subtitle': '一拍即解',
-      'content': '点击中央拍照按钮\n拍摄题目后自动识别\n秒出答案和解题步骤',
-      'action': '点击拍照按钮',
-    },
-    {
-      'icon': 'functions',
-      'title': '几何可视化',
-      'subtitle': '动态几何',
-      'content': '点击「数学工具箱」\n选择「几何画板」\n动态演示点线圆三角形',
-      'action': '点击「数学工具箱」 → 选择「几何画板」',
-    },
-    {
-      'icon': 'calculate',
-      'title': 'AI计算器',
-      'subtitle': '函数绘图',
-      'content': '点击「数学工具箱」\n选择「科学计算器」\n输入公式自动计算',
-      'action': '点击「数学工具箱」 → 选择「科学计算器」或「函数绘图」',
-    },
-    {
-      'icon': 'edit_note',
-      'title': '智能笔记',
-      'subtitle': '手写识别',
-      'content': '点击底部「笔记」Tab\n点击右下角「+」新建笔记\n支持打字、手写、PDF导入',
-      'action': '点击底部「笔记」Tab → 点击右下角「+」新建笔记',
-    },
-    {
-      'icon': 'play_circle',
-      'title': '视频推荐',
-      'subtitle': '个性化学习',
-      'content': '向下滑动查看推荐视频\n点击视频卡片播放\n根据年级智能匹配',
-      'action': '向下滑动查看推荐视频 → 点击视频卡片',
+      'content': '点击中央拍照按钮\n拍摄题目自动识别\n秒出答案和解题步骤',
+      'action': '点击中央拍照按钮',
     },
     {
       'icon': 'smart_toy',
       'title': 'MathMate 助手',
-      'subtitle': 'AI答疑',
-      'content': '点击搜索框旁的MathMate 图标\n输入或语音提问\n获取AI步骤讲解',
-      'action': '点击搜索框旁的MathMate 图标 → 开始对话',
+      'subtitle': 'AI 答疑 · 图片解题',
+      'content': '点击搜索框进入对话\n11 个 AI 模型可选（DeepSeek/Doubao/Qwen）\n支持上传图片自动识别解题',
+      'action': '点击搜索框 → 进入 MathMate 助手',
+    },
+    {
+      'icon': 'folder_special',
+      'title': '学习资料库',
+      'subtitle': 'AI 自动整理',
+      'content': '点击底部「资料库」Tab\n上传课件 / 真题 / 板书\nAI 自动分类整理归档',
+      'action': '点击底部「资料库」Tab',
+    },
+    {
+      'icon': 'fitness_center',
+      'title': '题库练习',
+      'subtitle': '个性化推荐',
+      'content': '点击底部「练习」Tab\n按能力推荐题目\n做题提升能力雷达图',
+      'action': '点击底部「练习」Tab',
+    },
+    {
+      'icon': 'edit_note',
+      'title': '智能笔记',
+      'subtitle': '手写 + PDF',
+      'content': '点击底部「笔记」Tab\n支持打字、手写、PDF 导入\n随时随地记录',
+      'action': '点击底部「笔记」Tab → 点击右下角「+」新建笔记',
+    },
+    {
+      'icon': 'radar',
+      'title': '能力雷达图',
+      'subtitle': '六维评估',
+      'content': '点击底部「我的」Tab\n完成能力自评\n练习后雷达图实时更新',
+      'action': '点击底部「我的」Tab → 查看能力雷达图',
     },
   ];
 
@@ -91,16 +91,16 @@ class _TutorialPageState extends State<TutorialPage> {
     switch (name) {
       case 'camera_alt':
         return Icons.camera_alt_rounded;
-      case 'functions':
-        return Icons.functions;
-      case 'calculate':
-        return Icons.calculate_rounded;
-      case 'edit_note':
-        return Icons.edit_note_rounded;
-      case 'play_circle':
-        return Icons.play_circle_rounded;
       case 'smart_toy':
         return Icons.smart_toy_rounded;
+      case 'folder_special':
+        return Icons.folder_special_rounded;
+      case 'fitness_center':
+        return Icons.fitness_center_rounded;
+      case 'edit_note':
+        return Icons.edit_note_rounded;
+      case 'radar':
+        return Icons.radar_rounded;
       default:
         return Icons.star_rounded;
     }

@@ -1,38 +1,40 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/api_config_service.dart';
 
 class FormulaAnalysisResult {
   final String explanation;
   final String visualization;
 
-  FormulaAnalysisResult({required this.explanation, required this.visualization});
+  FormulaAnalysisResult({
+    required this.explanation,
+    required this.visualization,
+  });
 }
 
 class FormulaAnalysisService {
-  String? _apiKey;
-  String? _modelId;
-  String? _baseUrl;
   bool _initialized = false;
 
   Future<void> ensureInitialized() async {
     if (_initialized) return;
     await dotenv.load(fileName: '.env');
-    _apiKey = (dotenv.env['VOLC_API_KEY'] ?? '').trim();
-    _modelId = (dotenv.env['VOLC_MODEL_ID'] ?? '').trim();
-    _baseUrl = (dotenv.env['VOLC_BASE_URL'] ??
-            'https://ark.cn-beijing.volces.com/api/v3/chat/completions')
-        .trim();
     _initialized = true;
   }
-
-  bool get isConfigured =>
-      _initialized && (_apiKey?.isNotEmpty == true) && (_modelId?.isNotEmpty == true);
 
   Future<FormulaAnalysisResult> analyze(String formula) async {
     await ensureInitialized();
 
-    if (!isConfigured) {
+    final ResolvedApiConfig config = await ApiConfigService.instance.resolve(
+      provider: ApiProvider.volc,
+      fallbackApiKey: dotenv.env['VOLC_API_KEY'] ?? '',
+      fallbackModelId: dotenv.env['VOLC_MODEL_ID'] ?? '',
+      fallbackBaseUrl:
+          dotenv.env['VOLC_BASE_URL'] ??
+          'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+    );
+
+    if (config.apiKey.isEmpty || config.modelId.isEmpty) {
       return FormulaAnalysisResult(
         explanation: '请配置 VOLC_API_KEY 和 VOLC_MODEL_ID',
         visualization: '',
@@ -51,13 +53,13 @@ class FormulaAnalysisService {
 只返回 JSON，不要其他文字。visualization 字段中必须是完整可独立运行的 HTML。''';
 
     final response = await http.post(
-      Uri.parse(_baseUrl!),
+      Uri.parse(config.baseUrl),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_apiKey',
+        'Authorization': 'Bearer ${config.apiKey}',
       },
       body: jsonEncode({
-        'model': _modelId,
+        'model': config.modelId,
         'messages': [
           {'role': 'user', 'content': prompt},
         ],
@@ -83,10 +85,7 @@ class FormulaAnalysisService {
         visualization: analysis['visualization'] as String? ?? '',
       );
     } catch (e) {
-      return FormulaAnalysisResult(
-        explanation: content,
-        visualization: '',
-      );
+      return FormulaAnalysisResult(explanation: content, visualization: '');
     }
   }
 

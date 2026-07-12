@@ -49,3 +49,7 @@ app.*.map.json
 .env
 .env.*
 !.env.example
+
+# 本地后端数据（登录用户/JWT secret，含敏感信息）
+/deploy/data/
+/deploy/node_modules/

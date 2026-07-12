@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/api_config_service.dart';
 
 /// API 消息（发给 LLM 的消息，去 vivo 品牌，替代 VivoChatMessage）
 ///
@@ -13,7 +14,10 @@ class LlmMessage {
   final String role;
   final String content;
   const LlmMessage({required this.role, required this.content});
-  Map<String, String> toMap() => <String, String>{'role': role, 'content': content};
+  Map<String, String> toMap() => <String, String>{
+    'role': role,
+    'content': content,
+  };
 }
 
 class StreamChunk {
@@ -22,7 +26,12 @@ class StreamChunk {
   final bool isDone;
   final String? error;
 
-  const StreamChunk({this.content, this.reasoning, this.isDone = false, this.error});
+  const StreamChunk({
+    this.content,
+    this.reasoning,
+    this.isDone = false,
+    this.error,
+  });
 }
 
 /// 聊天流式服务（DeepSeek，SSE 流式打字机效果）
@@ -65,28 +74,43 @@ class ChatStreamService {
     _cancelled = false;
 
     // 按 modelId 选端点：qwen-* → QWEN_*，doubao-*/deepseek-v4-* → VOLC_*(Ark)，其余 → DEEPSEEK_*
-    final String model = (modelId ?? 'deepseek-v4-flash').trim();
-    final String m = model.toLowerCase();
+    final String requestedModel = (modelId ?? 'deepseek-v4-flash').trim();
+    final String m = requestedModel.toLowerCase();
     final bool isQwen = m.startsWith('qwen');
-    final bool isArk = m.startsWith('doubao') || m.startsWith('deepseek-v4') || m.startsWith('glm-');
-    final String apiKeyEnv =
-        isQwen ? _qwenApiKeyEnv : (isArk ? _volcApiKeyEnv : _deepseekApiKeyEnv);
+    final bool isArk =
+        m.startsWith('doubao') ||
+        m.startsWith('deepseek-v4') ||
+        m.startsWith('glm-');
+    final String apiKeyEnv = isQwen
+        ? _qwenApiKeyEnv
+        : (isArk ? _volcApiKeyEnv : _deepseekApiKeyEnv);
     final String baseUrlEnv = isQwen
         ? _qwenBaseUrlEnv
         : (isArk ? _volcBaseUrlEnv : _deepseekBaseUrlEnv);
     final String defaultBaseUrl = isQwen
         ? _defaultQwenBaseUrl
         : (isArk ? _defaultVolcBaseUrl : _defaultDeepseekBaseUrl);
-    final String apiKey = (dotenv.env[apiKeyEnv] ?? '').trim();
-    final String baseUrl = (dotenv.env[baseUrlEnv] ?? defaultBaseUrl).trim();
+    final ApiProvider provider = isQwen
+        ? ApiProvider.qwen
+        : (isArk ? ApiProvider.volc : ApiProvider.deepseek);
+    final ResolvedApiConfig config = await ApiConfigService.instance.resolve(
+      provider: provider,
+      fallbackApiKey: dotenv.env[apiKeyEnv] ?? '',
+      fallbackBaseUrl: dotenv.env[baseUrlEnv] ?? defaultBaseUrl,
+      fallbackModelId: requestedModel,
+    );
+    final String apiKey = config.apiKey;
+    final String baseUrl = config.baseUrl;
+    final String model = config.modelId;
 
     if (apiKey.isEmpty) {
       yield StreamChunk(error: 'Missing env config: $apiKeyEnv');
       return;
     }
 
-    final List<Map<String, String>> formattedMessages =
-        messages.map((LlmMessage m) => m.toMap()).toList();
+    final List<Map<String, String>> formattedMessages = messages
+        .map((LlmMessage m) => m.toMap())
+        .toList();
 
     final http.Request request = http.Request('POST', Uri.parse(baseUrl))
       ..headers.addAll(<String, String>{

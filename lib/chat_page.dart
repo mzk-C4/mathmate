@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:mathmate/services/ability_score_service.dart';
+import 'package:mathmate/theme/grade_ui_profile.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:mathmate/data/hive_conversation_models.dart';
 import 'package:mathmate/data/conversation_repository.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/services/katex_pdf_service.dart';
+import 'package:mathmate/services/ocr_service.dart';
 import 'package:mathmate/services/model_service.dart';
 import 'package:mathmate/services/chat_stream_service.dart';
 
@@ -13,7 +17,12 @@ class ChatPage extends StatefulWidget {
   final String? initialQuery;
   final void Function(int)? onConversationCreated;
 
-  const ChatPage({super.key, this.conversationId, this.initialQuery, this.onConversationCreated});
+  const ChatPage({
+    super.key,
+    this.conversationId,
+    this.initialQuery,
+    this.onConversationCreated,
+  });
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -59,9 +68,7 @@ class _ChatPageState extends State<ChatPage> {
     if (_conversationId != null) {
       _loadConversation(_conversationId!);
     }
-    _historyMessages.add(
-      LlmMessage(role: 'system', content: _systemPrompt),
-    );
+    _historyMessages.add(LlmMessage(role: 'system', content: _systemPrompt));
     _inputController.addListener(_onInputChanged);
     if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,18 +82,20 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadConversation(int id) async {
-    final Conversation? conversation =
-        await ConversationRepository.instance.getConversation(id);
+    final Conversation? conversation = await ConversationRepository.instance
+        .getConversation(id);
     if (conversation == null || !mounted) return;
 
     final List<ChatMessage> loaded = <ChatMessage>[];
     for (final ChatMessageEmbedded msg in conversation.messages) {
-      loaded.add(ChatMessage(
-        role: msg.role,
-        content: msg.content,
-        reasoning: msg.reasoning,
-        timestamp: msg.timestamp,
-      ));
+      loaded.add(
+        ChatMessage(
+          role: msg.role,
+          content: msg.content,
+          reasoning: msg.reasoning,
+          timestamp: msg.timestamp,
+        ),
+      );
       _historyMessages.add(LlmMessage(role: msg.role, content: msg.content));
     }
     _titleSet = loaded.isNotEmpty;
@@ -109,9 +118,7 @@ class _ChatPageState extends State<ChatPage> {
     _historyMessages.clear();
     _conversationId = id;
     _titleSet = false;
-    _historyMessages.add(
-      LlmMessage(role: 'system', content: _systemPrompt),
-    );
+    _historyMessages.add(LlmMessage(role: 'system', content: _systemPrompt));
     if (id != null) {
       await _loadConversation(id);
     }
@@ -145,11 +152,9 @@ class _ChatPageState extends State<ChatPage> {
     _inputController.clear();
     final DateTime now = DateTime.now();
     setState(() {
-      _messages.add(ChatMessage(
-        role: 'user',
-        content: content,
-        timestamp: now,
-      ));
+      _messages.add(
+        ChatMessage(role: 'user', content: content, timestamp: now),
+      );
       _isLoading = true;
     });
     _scrollToBottom();
@@ -163,13 +168,16 @@ class _ChatPageState extends State<ChatPage> {
     // bug 6: 会话创建/标题/用户消息持久化移入 try（Hive 故障时重置 _isLoading）
     try {
       if (_conversationId == null) {
-        final Conversation conversation =
-            await ConversationRepository.instance.createConversation(title);
+        final Conversation conversation = await ConversationRepository.instance
+            .createConversation(title);
         _conversationId = conversation.id;
         widget.onConversationCreated?.call(conversation.id);
       } else if (!_titleSet) {
         _titleSet = true;
-        await ConversationRepository.instance.updateTitle(_conversationId!, title);
+        await ConversationRepository.instance.updateTitle(
+          _conversationId!,
+          title,
+        );
       } else {
         _titleSet = true;
       }
@@ -183,10 +191,12 @@ class _ChatPageState extends State<ChatPage> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() { _isLoading = false; });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存失败: $e')),
-        );
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('保存失败: $e')));
       }
       return;
     }
@@ -202,11 +212,13 @@ class _ChatPageState extends State<ChatPage> {
       final StringBuffer reasoningBuf = StringBuffer();
       if (mounted) {
         setState(() {
-          _messages.add(ChatMessage(
-            role: 'assistant',
-            content: '',
-            timestamp: assistantNow,
-          ));
+          _messages.add(
+            ChatMessage(
+              role: 'assistant',
+              content: '',
+              timestamp: assistantNow,
+            ),
+          );
         });
         _scrollToBottom();
       }
@@ -226,7 +238,9 @@ class _ChatPageState extends State<ChatPage> {
           reasoningBuf.write(chunk.reasoning);
         }
         // bug 1: 检查 _messages 非空 + 最后是 assistant（防切换清空后越界）
-        if (mounted && _messages.isNotEmpty && _messages.last.role == 'assistant') {
+        if (mounted &&
+            _messages.isNotEmpty &&
+            _messages.last.role == 'assistant') {
           setState(() {
             _messages[_messages.length - 1] = ChatMessage(
               role: 'assistant',
@@ -242,8 +256,9 @@ class _ChatPageState extends State<ChatPage> {
       }
 
       final String assistantContent = buf.toString();
-      final String? reasoning =
-          reasoningBuf.toString().isEmpty ? null : reasoningBuf.toString();
+      final String? reasoning = reasoningBuf.toString().isEmpty
+          ? null
+          : reasoningBuf.toString();
 
       // bug 1: 仅当会话未切换时持久化（防写到错误的会话）
       if (_conversationId == convId) {
@@ -261,33 +276,82 @@ class _ChatPageState extends State<ChatPage> {
       }
 
       if (mounted && _conversationId == convId) {
-        setState(() { _isLoading = false; });
+        setState(() {
+          _isLoading = false;
+        });
         _scrollToBottom();
       }
     } catch (e) {
       // bug 7: 移除流式错误时的空 assistant 占位符
-      if (mounted && _messages.isNotEmpty &&
-          _messages.last.role == 'assistant' && _messages.last.content.isEmpty) {
-        setState(() { _messages.removeLast(); });
+      if (mounted &&
+          _messages.isNotEmpty &&
+          _messages.last.role == 'assistant' &&
+          _messages.last.content.isEmpty) {
+        setState(() {
+          _messages.removeLast();
+        });
       }
       if (mounted) {
-        setState(() { _isLoading = false; });
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('发送失败: $e'),
             // bug 5: 重试传 content（input 已清空，无 text 会静默失败）
-            action: SnackBarAction(label: '重试', onPressed: () => _sendMessage(text: content)),
+            action: SnackBarAction(
+              label: '重试',
+              onPressed: () => _sendMessage(text: content),
+            ),
           ),
         );
       }
     }
   }
 
+  /// 上传图片 → OCR 识别题目 → 流式解题（只解题，不可视化）
+  Future<void> _pickImageAndSolve() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+    if (image == null || !mounted) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final OcrService ocrService = OcrService();
+      final result = await ocrService.recognizeQuestionFromImage(image);
+      final String question = result.questionMarkdown.trim();
+      setState(() {
+        _isLoading = false;
+      });
+      if (question.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('未能识别题目，请重试')));
+        }
+        return;
+      }
+      _sendMessage(text: question); // 走聊天流式解题
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('识别失败: $e')));
+      }
+    }
+  }
+
   void _rebuildHistory() {
     _historyMessages.clear();
-    _historyMessages.add(
-      LlmMessage(role: 'system', content: _systemPrompt),
-    );
+    _historyMessages.add(LlmMessage(role: 'system', content: _systemPrompt));
     for (final ChatMessage msg in _messages) {
       _historyMessages.add(LlmMessage(role: msg.role, content: msg.content));
     }
@@ -295,11 +359,13 @@ class _ChatPageState extends State<ChatPage> {
 
   List<ChatMessageEmbedded> _toEmbeddedList() {
     return _messages
-        .map((ChatMessage m) => ChatMessageEmbedded()
-          ..role = m.role
-          ..content = m.content
-          ..reasoning = m.reasoning
-          ..timestamp = m.timestamp)
+        .map(
+          (ChatMessage m) => ChatMessageEmbedded()
+            ..role = m.role
+            ..content = m.content
+            ..reasoning = m.reasoning
+            ..timestamp = m.timestamp,
+        )
         .toList();
   }
 
@@ -326,8 +392,10 @@ class _ChatPageState extends State<ChatPage> {
     }
     _rebuildHistory();
     if (_conversationId != null) {
-      await ConversationRepository.instance
-          .replaceMessages(_conversationId!, _toEmbeddedList());
+      await ConversationRepository.instance.replaceMessages(
+        _conversationId!,
+        _toEmbeddedList(),
+      );
     }
     if (mounted) setState(() {});
   }
@@ -345,8 +413,10 @@ class _ChatPageState extends State<ChatPage> {
     }
     _rebuildHistory();
     if (_conversationId != null) {
-      ConversationRepository.instance
-          .replaceMessages(_conversationId!, _toEmbeddedList());
+      ConversationRepository.instance.replaceMessages(
+        _conversationId!,
+        _toEmbeddedList(),
+      );
     }
     setState(() {});
   }
@@ -369,8 +439,10 @@ class _ChatPageState extends State<ChatPage> {
     }
     _rebuildHistory();
     if (_conversationId != null && _messages.isNotEmpty) {
-      await ConversationRepository.instance
-          .replaceMessages(_conversationId!, _toEmbeddedList());
+      await ConversationRepository.instance.replaceMessages(
+        _conversationId!,
+        _toEmbeddedList(),
+      );
     }
     if (mounted) setState(() {});
     _sendMessage(text: userContent);
@@ -387,10 +459,7 @@ class _ChatPageState extends State<ChatPage> {
   void _copyMessage(String text) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已复制到剪贴板'),
-        duration: Duration(seconds: 1),
-      ),
+      const SnackBar(content: Text('已复制到剪贴板'), duration: Duration(seconds: 1)),
     );
   }
 
@@ -431,14 +500,28 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final GradeUiProfile gradeUi = GradeUiProfile.forGrade(
+      AbilityScoreService().currentGrade,
+    );
+    return Stack(
       children: <Widget>[
-        Expanded(
-          child: _messages.isEmpty && !_isLoading
-              ? _buildWelcomeScreen()
-              : _buildMessageList(),
+        Positioned.fill(
+          child: GradeBackdrop(
+            profile: gradeUi,
+            imageAsset: 'assets/images/background-chat-conversation.png',
+            veilStrength: 0.82,
+          ),
         ),
-        _buildInputBar(),
+        Column(
+          children: <Widget>[
+            Expanded(
+              child: _messages.isEmpty && !_isLoading
+                  ? _buildWelcomeScreen()
+                  : _buildMessageList(),
+            ),
+            _buildInputBar(),
+          ],
+        ),
       ],
     );
   }
@@ -457,11 +540,7 @@ class _ChatPageState extends State<ChatPage> {
               color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(
-              Icons.auto_awesome,
-              size: 36,
-              color: cs.primary,
-            ),
+            child: Icon(Icons.auto_awesome, size: 36, color: cs.primary),
           ),
           const SizedBox(height: 20),
           Text(
@@ -475,7 +554,10 @@ class _ChatPageState extends State<ChatPage> {
           const SizedBox(height: 8),
           Text(
             '可以问我任何数学问题，我会一步步帮你解答',
-            style: TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.5)),
+            style: TextStyle(
+              fontSize: 14,
+              color: cs.onSurface.withValues(alpha: 0.5),
+            ),
           ),
           const SizedBox(height: 32),
           ..._suggestions.map(_buildSuggestionCard),
@@ -507,8 +589,11 @@ class _ChatPageState extends State<ChatPage> {
                 style: TextStyle(fontSize: 14, color: cs.onSurface),
               ),
             ),
-            Icon(Icons.chevron_right, size: 18,
-                color: cs.onSurface.withValues(alpha: 0.3)),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: cs.onSurface.withValues(alpha: 0.3),
+            ),
           ],
         ),
       ),
@@ -565,21 +650,27 @@ class _ChatPageState extends State<ChatPage> {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool isUser = message.role == 'user';
     final int msgIndex = _messages.indexOf(message);
-    final bool isLastAi = !isUser && _messages.isNotEmpty && _messages.last == message &&
+    final bool isLastAi =
+        !isUser &&
+        _messages.isNotEmpty &&
+        _messages.last == message &&
         !_isLoading;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: <Widget>[
-          if (!isUser && message.reasoning != null &&
+          if (!isUser &&
+              message.reasoning != null &&
               message.reasoning!.isNotEmpty)
             _buildReasoningCard(message.reasoning!),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment:
-                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isUser
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             children: <Widget>[
               if (!isUser)
                 Padding(
@@ -587,15 +678,17 @@ class _ChatPageState extends State<ChatPage> {
                   child: CircleAvatar(
                     radius: 14,
                     backgroundColor: cs.primaryContainer,
-                    child: Icon(Icons.auto_awesome, size: 16, color: cs.primary),
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: cs.primary,
+                    ),
                   ),
                 ),
               if (!isUser) const SizedBox(width: 8),
               Flexible(
                 child: GestureDetector(
-                  onLongPress: isUser
-                      ? () => _editMessageAt(msgIndex)
-                      : null,
+                  onLongPress: isUser ? () => _editMessageAt(msgIndex) : null,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -642,7 +735,11 @@ class _ChatPageState extends State<ChatPage> {
                   child: CircleAvatar(
                     radius: 14,
                     backgroundColor: cs.primary,
-                    child: const Icon(Icons.person, size: 16, color: Colors.white),
+                    child: const Icon(
+                      Icons.person,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
             ],
@@ -666,29 +763,41 @@ class _ChatPageState extends State<ChatPage> {
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => _copyMessage(message.content),
-                  child: Icon(Icons.content_copy, size: 13,
-                      color: cs.onSurface.withValues(alpha: 0.3)),
+                  child: Icon(
+                    Icons.content_copy,
+                    size: 13,
+                    color: cs.onSurface.withValues(alpha: 0.3),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => _deleteMessageAt(msgIndex),
-                  child: Icon(Icons.delete_outline, size: 13,
-                      color: cs.onSurface.withValues(alpha: 0.3)),
+                  child: Icon(
+                    Icons.delete_outline,
+                    size: 13,
+                    color: cs.onSurface.withValues(alpha: 0.3),
+                  ),
                 ),
                 if (isLastAi) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: _regenerateLast,
-                    child: Icon(Icons.refresh, size: 13,
-                        color: cs.onSurface.withValues(alpha: 0.3)),
+                    child: Icon(
+                      Icons.refresh,
+                      size: 13,
+                      color: cs.onSurface.withValues(alpha: 0.3),
+                    ),
                   ),
                 ],
                 if (!isUser) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => _compileLatex(message.content),
-                    child: Icon(Icons.picture_as_pdf, size: 13,
-                        color: cs.onSurface.withValues(alpha: 0.3)),
+                    child: Icon(
+                      Icons.picture_as_pdf,
+                      size: 13,
+                      color: cs.onSurface.withValues(alpha: 0.3),
+                    ),
                   ),
                 ],
               ],
@@ -712,23 +821,19 @@ class _ChatPageState extends State<ChatPage> {
 
     // 保护代码块，避免 $ 被误识别为数学公式
     final List<String> codeBlocks = <String>[];
-    String processed = normalized.replaceAllMapped(
-      RegExp(r'```[\s\S]*?```'),
-      (Match m) {
-        codeBlocks.add(m.group(0)!);
-        return '\x00CODEBLOCK${codeBlocks.length - 1}\x00';
-      },
-    );
+    String processed = normalized.replaceAllMapped(RegExp(r'```[\s\S]*?```'), (
+      Match m,
+    ) {
+      codeBlocks.add(m.group(0)!);
+      return '\x00CODEBLOCK${codeBlocks.length - 1}\x00';
+    });
 
     // 保护行内代码
     final List<String> inlineCodes = <String>[];
-    processed = processed.replaceAllMapped(
-      RegExp(r'`[^`]+`'),
-      (Match m) {
-        inlineCodes.add(m.group(0)!);
-        return '\x00INLINECODE${inlineCodes.length - 1}\x00';
-      },
-    );
+    processed = processed.replaceAllMapped(RegExp(r'`[^`]+`'), (Match m) {
+      inlineCodes.add(m.group(0)!);
+      return '\x00INLINECODE${inlineCodes.length - 1}\x00';
+    });
 
     // 计算内容区可用宽度（气泡最大宽度 - 内边距）
     final double contentWidth = MediaQuery.of(context).size.width * 0.78 - 32;
@@ -740,9 +845,18 @@ class _ChatPageState extends State<ChatPage> {
     int lastEnd = 0;
     for (final RegExpMatch match in displayMathRegex.allMatches(processed)) {
       if (match.start > lastEnd) {
-        final String textBefore = processed.substring(lastEnd, match.start).trim();
+        final String textBefore = processed
+            .substring(lastEnd, match.start)
+            .trim();
         if (textBefore.isNotEmpty) {
-          blocks.addAll(_buildInlineContent(textBefore, codeBlocks, inlineCodes, contentWidth));
+          blocks.addAll(
+            _buildInlineContent(
+              textBefore,
+              codeBlocks,
+              inlineCodes,
+              contentWidth,
+            ),
+          );
         }
       }
 
@@ -771,7 +885,10 @@ class _ChatPageState extends State<ChatPage> {
           blocks.add(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(latex, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
+              child: Text(
+                latex,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+              ),
             ),
           );
         }
@@ -782,14 +899,20 @@ class _ChatPageState extends State<ChatPage> {
     if (lastEnd < processed.length) {
       final String remaining = processed.substring(lastEnd).trim();
       if (remaining.isNotEmpty) {
-        blocks.addAll(_buildInlineContent(remaining, codeBlocks, inlineCodes, contentWidth));
+        blocks.addAll(
+          _buildInlineContent(remaining, codeBlocks, inlineCodes, contentWidth),
+        );
       }
     }
 
     if (blocks.isEmpty) {
       return Text(
         text,
-        style: const TextStyle(fontSize: 15, height: 1.7, color: Color(0xFF333333)),
+        style: const TextStyle(
+          fontSize: 15,
+          height: 1.7,
+          color: Color(0xFF333333),
+        ),
       );
     }
 
@@ -804,7 +927,12 @@ class _ChatPageState extends State<ChatPage> {
   /// 核心策略：先按 \n\n 拆段落，然后每段整体渲染。段落内无 $...$ 公式的走
   /// [MarkdownBody]（保留完整 Markdown 格式）；段落内有 $...$ 公式的走
   /// [Text.rich] + [WidgetSpan]（保证公式与文字正确混排、不孤行、不破坏列表结构）。
-  List<Widget> _buildInlineContent(String text, List<String> codeBlocks, List<String> inlineCodes, double maxWidth) {
+  List<Widget> _buildInlineContent(
+    String text,
+    List<String> codeBlocks,
+    List<String> inlineCodes,
+    double maxWidth,
+  ) {
     final String restored = _restorePlaceholders(text, codeBlocks, inlineCodes);
     final RegExp inlineMathRegex = RegExp(r'\$([^\$\n]+)\$');
 
@@ -859,30 +987,37 @@ class _ChatPageState extends State<ChatPage> {
       final String latex = (match.group(1) ?? '').trim();
       if (latex.isNotEmpty) {
         try {
-          spans.add(WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Math.tex(
-              latex,
-              mathStyle: MathStyle.text,
-              textStyle: const TextStyle(fontSize: 15),
-              onErrorFallback: (_) {
-                debugPrint('[InlineMath] error: $latex');
-                return Text(
-                  latex,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-                );
-              },
+          spans.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Math.tex(
+                latex,
+                mathStyle: MathStyle.text,
+                textStyle: const TextStyle(fontSize: 15),
+                onErrorFallback: (_) {
+                  debugPrint('[InlineMath] error: $latex');
+                  return Text(
+                    latex,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 14,
+                    ),
+                  );
+                },
+              ),
             ),
-          ));
+          );
         } catch (e) {
           debugPrint('[InlineMath] exception: $e for: $latex');
-          spans.add(WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Text(
-              latex,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+          spans.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Text(
+                latex,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+              ),
             ),
-          ));
+          );
         }
       }
       lastEnd = match.end;
@@ -895,7 +1030,11 @@ class _ChatPageState extends State<ChatPage> {
     return SelectionArea(
       child: Text.rich(
         TextSpan(
-          style: const TextStyle(fontSize: 15, height: 1.7, color: Color(0xFF333333)),
+          style: const TextStyle(
+            fontSize: 15,
+            height: 1.7,
+            color: Color(0xFF333333),
+          ),
           children: spans,
         ),
       ),
@@ -904,9 +1043,9 @@ class _ChatPageState extends State<ChatPage> {
 
   /// 将纯文本片段解析为 [InlineSpan]，支持 **加粗**、*斜体*、`行内代码`、###/## 标题。
   static final RegExp _mdTokenRegex = RegExp(
-    r'(\*\*(.+?)\*\*)'       // **bold**
+    r'(\*\*(.+?)\*\*)' // **bold**
     r'|(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)' // *italic*
-    r'|(`[^`]+`)'            // `code`
+    r'|(`[^`]+`)', // `code`
   );
 
   static List<InlineSpan> _mdTextToSpans(String text) {
@@ -918,26 +1057,61 @@ class _ChatPageState extends State<ChatPage> {
     TextStyle? baseStyle;
     if (content.startsWith('### ')) {
       content = content.substring(4);
-      baseStyle = const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.5, color: c);
+      baseStyle = const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        height: 1.5,
+        color: c,
+      );
     } else if (content.startsWith('## ')) {
       content = content.substring(3);
-      baseStyle = const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, height: 1.5, color: c);
+      baseStyle = const TextStyle(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        height: 1.5,
+        color: c,
+      );
     }
 
     int lastEnd = 0;
     for (final Match match in _mdTokenRegex.allMatches(content)) {
       if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: content.substring(lastEnd, match.start),
-          style: baseStyle,
-        ));
+        spans.add(
+          TextSpan(
+            text: content.substring(lastEnd, match.start),
+            style: baseStyle,
+          ),
+        );
       }
       if (match.group(1) != null) {
-        spans.add(TextSpan(text: match.group(2), style: (baseStyle ?? const TextStyle()).copyWith(fontWeight: FontWeight.w700)));
+        spans.add(
+          TextSpan(
+            text: match.group(2),
+            style: (baseStyle ?? const TextStyle()).copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        );
       } else if (match.group(3) != null) {
-        spans.add(TextSpan(text: match.group(3), style: (baseStyle ?? const TextStyle()).copyWith(fontStyle: FontStyle.italic)));
+        spans.add(
+          TextSpan(
+            text: match.group(3),
+            style: (baseStyle ?? const TextStyle()).copyWith(
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        );
       } else if (match.group(4) != null) {
-        spans.add(TextSpan(text: match.group(4), style: const TextStyle(fontFamily: 'monospace', fontSize: 13.5, color: c)));
+        spans.add(
+          TextSpan(
+            text: match.group(4),
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13.5,
+              color: c,
+            ),
+          ),
+        );
       }
       lastEnd = match.end;
     }
@@ -952,7 +1126,11 @@ class _ChatPageState extends State<ChatPage> {
     return spans;
   }
 
-  String _restorePlaceholders(String text, List<String> codeBlocks, List<String> inlineCodes) {
+  String _restorePlaceholders(
+    String text,
+    List<String> codeBlocks,
+    List<String> inlineCodes,
+  ) {
     String result = text;
     for (int i = 0; i < codeBlocks.length; i++) {
       result = result.replaceAll('\x00CODEBLOCK$i\x00', codeBlocks[i]);
@@ -1022,7 +1200,13 @@ class _ChatPageState extends State<ChatPage> {
       child: SafeArea(
         child: Row(
           children: <Widget>[
-            Icon(Icons.search, color: cs.onSurfaceVariant),
+            GestureDetector(
+              onTap: _isLoading ? null : _pickImageAndSolve,
+              child: Icon(
+                Icons.add_photo_alternate_outlined,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -1036,7 +1220,8 @@ class _ChatPageState extends State<ChatPage> {
                 decoration: InputDecoration(
                   hintText: '输入数学问题...',
                   hintStyle: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.4)),
+                    color: cs.onSurface.withValues(alpha: 0.4),
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -1076,7 +1261,10 @@ class _ChatPageState extends State<ChatPage> {
 class _TypingDot extends StatefulWidget {
   final int delayMs;
   final Color color;
-  const _TypingDot({required this.delayMs, this.color = const Color(0xFF3F51B5)});
+  const _TypingDot({
+    required this.delayMs,
+    this.color = const Color(0xFF3F51B5),
+  });
 
   @override
   State<_TypingDot> createState() => _TypingDotState();
@@ -1094,9 +1282,10 @@ class _TypingDotState extends State<_TypingDot>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     Future<void>.delayed(Duration(milliseconds: widget.delayMs), () {
       if (mounted) _controller.repeat(reverse: true);
     });
@@ -1113,18 +1302,12 @@ class _TypingDotState extends State<_TypingDot>
     return AnimatedBuilder(
       animation: _animation,
       builder: (BuildContext context, Widget? child) {
-        return Opacity(
-          opacity: _animation.value,
-          child: child,
-        );
+        return Opacity(opacity: _animation.value, child: child);
       },
       child: Container(
         width: 8,
         height: 8,
-        decoration: BoxDecoration(
-          color: widget.color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
       ),
     );
   }
@@ -1153,7 +1336,10 @@ class _ReasoningCardState extends State<_ReasoningCard> {
           color: cs.primaryContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(10),
           border: Border(
-            left: BorderSide(color: cs.primary.withValues(alpha: 0.5), width: 3),
+            left: BorderSide(
+              color: cs.primary.withValues(alpha: 0.5),
+              width: 3,
+            ),
           ),
         ),
         child: Column(

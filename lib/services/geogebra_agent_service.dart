@@ -4,15 +4,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/api_config_service.dart';
 
 import 'prompts/geogebra_agent_prompt.dart';
 
 /// Agent 流式响应块
 class AgentStreamChunk {
-  final String? textDelta;       // 文本增量
-  final String? toolCallName;    // 工具调用名称（开始时）
-  final String? toolCallArgs;    // 工具调用参数（完整 JSON）
-  final String? toolResult;      // 工具执行结果描述
+  final String? textDelta; // 文本增量
+  final String? toolCallName; // 工具调用名称（开始时）
+  final String? toolCallArgs; // 工具调用参数（完整 JSON）
+  final String? toolResult; // 工具执行结果描述
   final bool isDone;
   final String? error;
 
@@ -32,7 +33,11 @@ class AgentTool {
   final String description;
   final Map<String, dynamic> parameters; // JSON Schema
 
-  const AgentTool({required this.name, required this.description, required this.parameters});
+  const AgentTool({
+    required this.name,
+    required this.description,
+    required this.parameters,
+  });
 
   Map<String, dynamic> toOpenAITool() => {
     'type': 'function',
@@ -49,10 +54,7 @@ const List<AgentTool> geogebraTools = [
   AgentTool(
     name: 'getCanvasContext',
     description: '获取当前 GeoGebra 画布的完整状态，包括所有对象和表达式',
-    parameters: {
-      'type': 'object',
-      'properties': {},
-    },
+    parameters: {'type': 'object', 'properties': {}},
   ),
   AgentTool(
     name: 'executeGeoGebraCommand',
@@ -79,18 +81,12 @@ const List<AgentTool> geogebraTools = [
   AgentTool(
     name: 'setUndoPoint',
     description: '在 GeoGebra 画布中设置一个撤销点',
-    parameters: {
-      'type': 'object',
-      'properties': {},
-    },
+    parameters: {'type': 'object', 'properties': {}},
   ),
   AgentTool(
     name: 'undo',
     description: '在 GeoGebra 画布中执行撤销操作',
-    parameters: {
-      'type': 'object',
-      'properties': {},
-    },
+    parameters: {'type': 'object', 'properties': {}},
   ),
   AgentTool(
     name: 'setPerspective',
@@ -106,10 +102,7 @@ const List<AgentTool> geogebraTools = [
   AgentTool(
     name: 'getSelectedObjects',
     description: '获取用户当前在 GeoGebra 画布中选中的对象标签列表',
-    parameters: {
-      'type': 'object',
-      'properties': {},
-    },
+    parameters: {'type': 'object', 'properties': {}},
   ),
 ];
 
@@ -125,19 +118,21 @@ class GeogebraAgentService {
   final String _defaultModel;
 
   /// 工具执行回调 —— 由外部注入，桥接 JS Bridge。
-  Future<String> Function(String toolName, Map<String, dynamic> args)? onToolCall;
+  Future<String> Function(String toolName, Map<String, dynamic> args)?
+  onToolCall;
 
   GeogebraAgentService({
     String apiKeyEnv = 'VOLC_API_KEY',
     String modelEnv = 'VOLC_MODEL_ID',
     String baseUrlEnv = 'VOLC_BASE_URL',
-    String defaultBaseUrl = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+    String defaultBaseUrl =
+        'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
     String defaultModel = 'deepseek-v4-flash',
-  })  : _apiKeyEnv = apiKeyEnv,
-        _modelEnv = modelEnv,
-        _baseUrlEnv = baseUrlEnv,
-        _defaultBaseUrl = defaultBaseUrl,
-        _defaultModel = defaultModel;
+  }) : _apiKeyEnv = apiKeyEnv,
+       _modelEnv = modelEnv,
+       _baseUrlEnv = baseUrlEnv,
+       _defaultBaseUrl = defaultBaseUrl,
+       _defaultModel = defaultModel;
 
   static bool _dotenvLoaded = false;
   http.Client? _client;
@@ -155,7 +150,9 @@ class GeogebraAgentService {
   }
 
   void _closeClient() {
-    try { _client?.close(); } catch (_) {}
+    try {
+      _client?.close();
+    } catch (_) {}
     _client = null;
   }
 
@@ -169,9 +166,15 @@ class GeogebraAgentService {
     await _ensureEnv();
     _cancelled = false;
 
-    final apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-    final model = (dotenv.env[_modelEnv] ?? _defaultModel).trim();
-    final baseUrl = (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+    final ResolvedApiConfig config = await ApiConfigService.instance.resolve(
+      provider: ApiProvider.deepseek,
+      fallbackApiKey: dotenv.env[_apiKeyEnv] ?? '',
+      fallbackModelId: dotenv.env[_modelEnv] ?? _defaultModel,
+      fallbackBaseUrl: dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl,
+    );
+    final String apiKey = config.apiKey;
+    final String model = config.modelId;
+    final String baseUrl = config.baseUrl;
 
     if (apiKey.isEmpty) {
       yield AgentStreamChunk(error: '缺少 API Key: $_apiKeyEnv');
@@ -239,7 +242,10 @@ class GeogebraAgentService {
         final toolName = (fn['name'] as String?) ?? '';
         final toolArgsStr = (fn['arguments'] as String?) ?? '{}';
 
-        yield AgentStreamChunk(toolCallName: toolName, toolCallArgs: toolArgsStr);
+        yield AgentStreamChunk(
+          toolCallName: toolName,
+          toolCallArgs: toolArgsStr,
+        );
 
         // 解析参数
         Map<String, dynamic> args;
@@ -302,10 +308,12 @@ class GeogebraAgentService {
         })
         ..body = body;
 
-      final streamedResponse = await _client!.send(request).timeout(
-        const Duration(seconds: 60),
-        onTimeout: () => throw Exception('请求超时'),
-      );
+      final streamedResponse = await _client!
+          .send(request)
+          .timeout(
+            const Duration(seconds: 60),
+            onTimeout: () => throw Exception('请求超时'),
+          );
 
       final responseBody = await streamedResponse.stream.bytesToString();
 

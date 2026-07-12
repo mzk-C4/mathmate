@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/api_config_service.dart';
 
 class HandwritingOcrService {
   static const String _ocrModelEnv = 'VOLC_OCR_MODEL_ID';
@@ -20,13 +21,19 @@ class HandwritingOcrService {
   Future<String> recognize(Uint8List imageBytes) async {
     await dotenv.load(fileName: '.env');
 
-    final String apiKey = (dotenv.env['VOLC_API_KEY'] ?? '').trim();
-    final String modelId = (dotenv.env[_ocrModelEnv] ??
-            dotenv.env[_defaultModelEnv] ?? '')
-        .trim();
-    final String baseUrl = (dotenv.env['VOLC_BASE_URL'] ??
-            'https://ark.cn-beijing.volces.com/api/v3/chat/completions')
-        .trim();
+    final ResolvedApiConfig config = await ApiConfigService.instance.resolve(
+      provider: ApiProvider.volc,
+      fallbackApiKey: dotenv.env['VOLC_API_KEY'] ?? '',
+      fallbackModelId:
+          dotenv.env[_ocrModelEnv] ?? dotenv.env[_defaultModelEnv] ?? '',
+      fallbackBaseUrl:
+          dotenv.env['VOLC_BASE_URL'] ??
+          'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+      useVisionModel: true,
+    );
+    final String apiKey = config.apiKey;
+    final String modelId = config.modelId;
+    final String baseUrl = config.baseUrl;
 
     if (apiKey.isEmpty || modelId.isEmpty) {
       return '请配置 VOLC_API_KEY 和 VOLC_MODEL_ID';
@@ -34,30 +41,35 @@ class HandwritingOcrService {
 
     final String base64Image = base64Encode(imageBytes);
 
-    final response = await http.post(
-      Uri.parse(baseUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      },
-      body: jsonEncode({
-        'model': modelId,
-        'messages': [
-          {
-            'role': 'user',
-            'content': [
-              {'type': 'text', 'text': _handwritingPrompt},
+    final response = await http
+        .post(
+          Uri.parse(baseUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $apiKey',
+          },
+          body: jsonEncode({
+            'model': modelId,
+            'messages': [
               {
-                'type': 'image_url',
-                'image_url': {'url': 'data:image/png;base64,$base64Image'},
+                'role': 'user',
+                'content': [
+                  {'type': 'text', 'text': _handwritingPrompt},
+                  {
+                    'type': 'image_url',
+                    'image_url': {'url': 'data:image/png;base64,$base64Image'},
+                  },
+                ],
               },
             ],
+          }),
+        )
+        .timeout(
+          const Duration(seconds: 60),
+          onTimeout: () {
+            throw Exception('手写识别请求超时（60秒）');
           },
-        ],
-      }),
-    ).timeout(const Duration(seconds: 60), onTimeout: () {
-      throw Exception('手写识别请求超时（60秒）');
-    });
+        );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(utf8.decode(response.bodyBytes));

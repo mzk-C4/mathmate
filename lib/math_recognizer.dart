@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:mathmate/services/api_config_service.dart';
 
 class MathRecognizer {
   static const _apiKeyEnv = 'VOLC_API_KEY';
@@ -23,9 +24,16 @@ class MathRecognizer {
     try {
       await _ensureEnvLoaded();
 
-      final apiKey = (dotenv.env[_apiKeyEnv] ?? '').trim();
-      final modelId = (dotenv.env[_modelIdEnv] ?? '').trim();
-      final baseUrl = (dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl).trim();
+      final ResolvedApiConfig config = await ApiConfigService.instance.resolve(
+        provider: ApiProvider.volc,
+        fallbackApiKey: dotenv.env[_apiKeyEnv] ?? '',
+        fallbackModelId: dotenv.env[_modelIdEnv] ?? '',
+        fallbackBaseUrl: dotenv.env[_baseUrlEnv] ?? _defaultBaseUrl,
+        useVisionModel: true,
+      );
+      final String apiKey = config.apiKey;
+      final String modelId = config.modelId;
+      final String baseUrl = config.baseUrl;
 
       if (apiKey.isEmpty || modelId.isEmpty) {
         return 'Missing env config: VOLC_API_KEY / VOLC_MODEL_ID';

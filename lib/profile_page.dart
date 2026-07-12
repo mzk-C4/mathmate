@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mathmate/about_mathmate_page.dart';
 import 'package:mathmate/account_settings_page.dart';
@@ -6,6 +7,7 @@ import 'package:mathmate/grade_selection_page.dart';
 import 'package:mathmate/help_support_page.dart';
 import 'package:mathmate/history_list_page.dart';
 import 'package:mathmate/pages/ability_assessment_page.dart';
+import 'package:mathmate/pages/api_settings_page.dart';
 import 'package:mathmate/profile_radar_chart.dart';
 import 'package:mathmate/responsive/breakpoints.dart';
 import 'package:mathmate/services/ability_score_service.dart';
@@ -15,6 +17,7 @@ import 'package:mathmate/services/theme_service.dart';
 import 'package:mathmate/services/update_service.dart';
 import 'package:mathmate/services/user_profile_service.dart';
 import 'package:mathmate/tutorial_page.dart';
+import 'package:mathmate/theme/grade_ui_profile.dart';
 
 class ProfilePage extends StatefulWidget {
   /// 雷达图动画触发器——每次递增时重建雷达图并重播中心展开动画。
@@ -29,6 +32,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final UserProfileService _profileService = UserProfileService();
   final AbilityScoreService _abilityService = AbilityScoreService();
+
   /// 动画触发计数器，每次递增时雷达图重建并重播动画
   int _animTrigger = 0;
 
@@ -66,10 +70,22 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final GradeUiProfile gradeUi = GradeUiProfile.forGrade(
+      _abilityService.currentGrade,
+    );
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: cs.surface,
       body: Stack(
         children: <Widget>[
+          Positioned.fill(
+            child: GradeBackdrop(
+              profile: gradeUi,
+              imageAsset: 'assets/images/background-profile.png',
+              veilStrength: isDark ? 0.98 : 0.78,
+              darkImageOpacity: 0.58,
+            ),
+          ),
           Positioned(
             top: -70,
             left: 0,
@@ -77,7 +93,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Container(
               height: 220,
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                color: gradeUi.primary.withValues(alpha: isDark ? 0.045 : 0.08),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.elliptical(320, 120),
                 ),
@@ -87,9 +103,13 @@ class _ProfilePageState extends State<ProfilePage> {
           SafeArea(
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
-                context.isDesktop ? (MediaQuery.sizeOf(context).width - 820) / 2 : 18,
+                context.isDesktop
+                    ? (MediaQuery.sizeOf(context).width - 820) / 2
+                    : 18,
                 12,
-                context.isDesktop ? (MediaQuery.sizeOf(context).width - 820) / 2 : 18,
+                context.isDesktop
+                    ? (MediaQuery.sizeOf(context).width - 820) / 2
+                    : 18,
                 24,
               ),
               child: Column(
@@ -120,6 +140,20 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
+                  if (kIsWeb || context.isDesktop) ...[
+                    const SizedBox(height: 10),
+                    _MenuCard(
+                      icon: Icons.key_rounded,
+                      title: 'AI API 配置',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ApiSettingsPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   _MenuCard(
                     icon: Icons.school_outlined,
@@ -143,7 +177,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     onTap: () async {
                       await Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const AbilityAssessmentPage(isFromSettings: true),
+                          builder: (_) =>
+                              const AbilityAssessmentPage(isFromSettings: true),
                         ),
                       );
                       if (mounted) setState(() {});
@@ -324,20 +359,41 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 14),
           if (auth.isLoggedIn && auth.user != null) ...[
-            Text(auth.user!.username,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.onSurface)),
+            Text(
+              auth.user!.username,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(auth.user!.role == 'admin' ? '管理员' : auth.user!.role == 'dev' ? '开发者' : '用户',
-              style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.5))),
+            Text(
+              auth.user!.role == 'admin'
+                  ? '管理员'
+                  : auth.user!.role == 'dev'
+                  ? '开发者'
+                  : '用户',
+              style: TextStyle(
+                fontSize: 13,
+                color: cs.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
           ] else ...[
-            Text('未登录',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.onSurface)),
+            Text(
+              '未登录',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+              ),
+            ),
             const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                );
+                await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
                 if (mounted) setState(() {});
               },
               icon: const Icon(Icons.login, size: 16),
@@ -351,16 +407,24 @@ class _ProfilePageState extends State<ProfilePage> {
 
   /// 六维能力雷达图卡片
   Widget _buildRadarSection(ColorScheme cs) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(8, 20, 8, 20),
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: isDark
+            ? cs.surfaceContainerLow
+            : cs.surface.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? cs.outlineVariant.withValues(alpha: 0.62)
+              : cs.outlineVariant.withValues(alpha: 0.35),
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.06),
-            blurRadius: 12,
+            color: cs.shadow.withValues(alpha: isDark ? 0.22 : 0.06),
+            blurRadius: isDark ? 8 : 12,
             offset: const Offset(0, 3),
           ),
         ],
@@ -420,7 +484,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _checkUpdate(BuildContext context) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('正在检查更新...'), duration: Duration(seconds: 1)),
+      const SnackBar(
+        content: Text('正在检查更新...'),
+        duration: Duration(seconds: 1),
+      ),
     );
     final update = await UpdateService.checkUpdate();
     if (!mounted) return;
@@ -435,8 +502,17 @@ class _ProfilePageState extends State<ProfilePage> {
           title: const Text('发现新版本'),
           content: Text('最新版本: ${update.version}\n\n${update.releaseNotes}'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('稍后')),
-            FilledButton(onPressed: () { Navigator.pop(ctx); UpdateService.downloadAndInstall(update); }, child: const Text('立即更新')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('稍后'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                UpdateService.downloadAndInstall(update);
+              },
+              child: const Text('立即更新'),
+            ),
           ],
         ),
       );
@@ -446,7 +522,9 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showLogoutDialog(BuildContext context) {
     final auth = AuthService();
     if (!auth.isLoggedIn) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginPage()));
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
       return;
     }
     showDialog(
@@ -488,8 +566,11 @@ class _MenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: cs.surface,
+      color: isDark
+          ? cs.surfaceContainerLow
+          : cs.surface.withValues(alpha: 0.94),
       borderRadius: BorderRadius.circular(12),
       shadowColor: cs.shadow,
       child: InkWell(
@@ -500,10 +581,15 @@ class _MenuCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark
+                  ? cs.outlineVariant.withValues(alpha: 0.58)
+                  : cs.outlineVariant.withValues(alpha: 0.28),
+            ),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: cs.shadow.withValues(alpha: 0.07),
-                blurRadius: 10,
+                color: cs.shadow.withValues(alpha: isDark ? 0.18 : 0.07),
+                blurRadius: isDark ? 6 : 10,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -522,7 +608,10 @@ class _MenuCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: cs.onSurface.withValues(alpha: 0.3)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: cs.onSurface.withValues(alpha: 0.3),
+              ),
             ],
           ),
         ),

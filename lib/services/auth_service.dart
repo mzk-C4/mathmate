@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,12 +32,12 @@ class AuthUser {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'username': username,
-        'email': email,
-        'role': role,
-        'createdAt': createdAt,
-      };
+    'id': id,
+    'username': username,
+    'email': email,
+    'role': role,
+    'createdAt': createdAt,
+  };
 }
 
 /// 登录/注册响应
@@ -53,10 +54,18 @@ class AuthResponse {
 ///
 /// 与服务端 auth_server.js 通信，Token 存储在 SharedPreferences。
 class AuthService {
-  // 本地开发：Web 用 localhost，Android 模拟器用 10.0.2.2（真机请改局域网 IP）
-  static final String _baseUrl = kIsWeb
-      ? 'http://localhost:3002/api/auth'
-      : 'http://10.0.2.2:3002/api/auth';
+  // 公开构建通过 AUTH_BASE_URL 指向生产服务；本地开发仍保留原调试地址。
+  static String get _baseUrl {
+    final configured = (dotenv.env['AUTH_BASE_URL'] ?? '').trim();
+    if (configured.isNotEmpty) {
+      return configured.replaceFirst(RegExp(r'/+$'), '');
+    }
+    if (kReleaseMode) return 'https://mathmate.top/api/auth';
+    return kIsWeb
+        ? 'http://localhost:3002/api/auth'
+        : 'http://10.136.66.36:3002/api/auth';
+  }
+
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
 
@@ -145,13 +154,15 @@ class AuthService {
 
   Future<AuthResponse> _get(String path) async {
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/$path'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_token ?? ''}',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/$path'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${_token ?? ''}',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (response.statusCode == 200) {
@@ -181,13 +192,18 @@ class AuthService {
   }
 
   /// 发送验证码到邮箱/手机
-  Future<Map<String, dynamic>> sendCode({String email = '', String phone = ''}) async {
+  Future<Map<String, dynamic>> sendCode({
+    String email = '',
+    String phone = '',
+  }) async {
     try {
-      final r = await http.post(
-        Uri.parse('$_baseUrl/send-code'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'phone': phone}),
-      ).timeout(const Duration(seconds: 10));
+      final r = await http
+          .post(
+            Uri.parse('$_baseUrl/send-code'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email, 'phone': phone}),
+          )
+          .timeout(const Duration(seconds: 10));
       return jsonDecode(r.body) as Map<String, dynamic>;
     } catch (e) {
       return {'error': '网络错误: $e'};
@@ -195,13 +211,19 @@ class AuthService {
   }
 
   /// 验证验证码
-  Future<Map<String, dynamic>> verifyCode({String email = '', String phone = '', required String code}) async {
+  Future<Map<String, dynamic>> verifyCode({
+    String email = '',
+    String phone = '',
+    required String code,
+  }) async {
     try {
-      final r = await http.post(
-        Uri.parse('$_baseUrl/verify-code'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'phone': phone, 'code': code}),
-      ).timeout(const Duration(seconds: 10));
+      final r = await http
+          .post(
+            Uri.parse('$_baseUrl/verify-code'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email, 'phone': phone, 'code': code}),
+          )
+          .timeout(const Duration(seconds: 10));
       return jsonDecode(r.body) as Map<String, dynamic>;
     } catch (e) {
       return {'error': '网络错误: $e'};
@@ -213,10 +235,7 @@ class AuthService {
     required String username,
     required String password,
   }) {
-    return _post('login', {
-      'username': username,
-      'password': password,
-    });
+    return _post('login', {'username': username, 'password': password});
   }
 
   /// 获取当前用户信息
