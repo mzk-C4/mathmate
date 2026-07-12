@@ -9,6 +9,7 @@ class ExamTakingPage extends StatefulWidget {
   final String title;
   final int totalCount;
   final String? board;
+  final List<String>? boards;
   final double? difficultyMin;
   final double? difficultyMax;
   final List<String>? questionTypes;
@@ -20,6 +21,7 @@ class ExamTakingPage extends StatefulWidget {
     required this.title,
     required this.totalCount,
     this.board,
+    this.boards,
     this.difficultyMin,
     this.difficultyMax,
     this.questionTypes,
@@ -64,17 +66,20 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
         title: widget.title,
         totalCount: widget.totalCount,
         board: widget.board,
+        boards: widget.boards,
         difficultyMin: widget.difficultyMin,
         difficultyMax: widget.difficultyMax,
         questionTypes: widget.questionTypes,
       );
       final List<dynamic> raw = result['questions'] as List<dynamic>;
+      if (!mounted) return;
       setState(() {
         _examId = result['exam_id'] as int;
         _questions = raw.cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -92,7 +97,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
         ? _choiceAnswers[questionId] ?? ''
         : _controllers[questionId]?.text ?? '';
 
-    if (answer.isEmpty) {
+    if (answer.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('请输入或选择答案')),
       );
@@ -107,10 +112,17 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
         questionId: questionId,
         studentAnswer: answer,
       );
+      if (!mounted) return;
       setState(() {
         _graded[questionId] = result;
         _answeredCount = _graded.length;
       });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('提交答案失败: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -132,7 +144,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
         ],
       ),
     );
-    if (confirm != true) return;
+    if (confirm != true || !mounted) return;
 
     try {
       final Map<String, dynamic> result = await widget.api.finishExam(

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:mathmate/services/auth_service.dart';
 
 /// 考试系统 API 客户端
 ///
@@ -10,11 +11,18 @@ import 'package:http/http.dart' as http;
 /// - 逐题提交答案
 /// - 完成考试获取成绩报告
 class ExamApi {
-  ExamApi({required this.baseUrl, http.Client? client})
-    : _client = client ?? http.Client();
+  ExamApi({
+    required this.baseUrl,
+    http.Client? client,
+    String? Function()? tokenProvider,
+  }) : _client = client ?? http.Client(),
+       _tokenProvider = tokenProvider ?? (() => AuthService().token);
 
   final String baseUrl;
   final http.Client _client;
+  final String? Function() _tokenProvider;
+
+  static const Duration _requestTimeout = Duration(seconds: 30);
 
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
@@ -24,6 +32,7 @@ class ExamApi {
     required String title,
     required int totalCount,
     String? board,
+    List<String>? boards,
     double? difficultyMin,
     double? difficultyMax,
     List<String>? questionTypes,
@@ -32,17 +41,38 @@ class ExamApi {
       'student_id': studentId,
       'title': title,
       'total_count': totalCount,
-      if (board != null) 'board': board,
-      if (difficultyMin != null) 'difficulty_min': difficultyMin,
-      if (difficultyMax != null) 'difficulty_max': difficultyMax,
-      if (questionTypes != null) 'question_types': questionTypes,
+      'board': ?board,
+      if (boards != null && boards.isNotEmpty) 'boards': boards,
+      'difficulty_min': ?difficultyMin,
+      'difficulty_max': ?difficultyMax,
+      'question_types': ?questionTypes,
     });
   }
 
   /// 获取考试详情
   Future<Map<String, dynamic>> getExam(int examId) async {
-    final response = await _client.get(_uri('/api/exams/$examId'));
+    final response = await _client
+        .get(_uri('/api/exams/$examId'), headers: _headers())
+        .timeout(_requestTimeout);
     return _decodeResponse(response);
+  }
+
+  /// 查询当前筛选条件下的可用题量
+  Future<int> availableQuestionCount({
+    String? board,
+    List<String>? boards,
+    double? difficultyMin,
+    double? difficultyMax,
+    List<String>? questionTypes,
+  }) async {
+    final result = await _postJson('/api/exams/available-count', {
+      'board': ?board,
+      if (boards != null && boards.isNotEmpty) 'boards': boards,
+      'difficulty_min': ?difficultyMin,
+      'difficulty_max': ?difficultyMax,
+      'question_types': ?questionTypes,
+    });
+    return (result['available_count'] as num?)?.toInt() ?? 0;
   }
 
   /// 提交单题答案
@@ -58,7 +88,7 @@ class ExamApi {
       'student_id': studentId,
       'question_id': questionId,
       'student_answer': studentAnswer,
-      if (imageUrl != null) 'image_url': imageUrl,
+      'image_url': ?imageUrl,
     });
   }
 
@@ -79,10 +109,11 @@ class ExamApi {
       'POST',
       _uri('/api/grading/upload-image'),
     );
+    request.headers.addAll(_headers());
     request.files.add(
       await http.MultipartFile.fromPath('file', imageFile.path),
     );
-    final streamed = await _client.send(request);
+    final streamed = await _client.send(request).timeout(_requestTimeout);
     final response = await http.Response.fromStream(streamed);
     return _decodeResponse(response);
   }
@@ -91,9 +122,11 @@ class ExamApi {
   Future<bool> healthCheck() async {
     try {
       final response = await _client
-          .get(_uri('/health'))
+          .get(_uri('/api/exams/health'), headers: _headers())
           .timeout(const Duration(seconds: 5));
-      return response.statusCode == 200;
+      if (response.statusCode != 200) return false;
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      return decoded is Map<String, dynamic> && decoded['status'] == 'ok';
     } catch (_) {
       return false;
     }
@@ -103,12 +136,25 @@ class ExamApi {
     String path,
     Map<String, dynamic> payload,
   ) async {
-    final response = await _client.post(
-      _uri(path),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    );
+    final response = await _client
+        .post(
+          _uri(path),
+          headers: _headers(json: true),
+          body: jsonEncode(payload),
+        )
+        .timeout(_requestTimeout);
     return _decodeResponse(response);
+  }
+
+  Map<String, String> _headers({bool json = false}) {
+    final headers = <String, String>{
+      if (json) 'Content-Type': 'application/json',
+    };
+    final token = _tokenProvider();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
   }
 
   Map<String, dynamic> _decodeResponse(http.Response response) {

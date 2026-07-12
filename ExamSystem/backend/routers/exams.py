@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from database import JsonStore, get_store
 from schemas import (
     BoardAnalysisItem,
+    ExamAvailabilityResponse,
     ExamCreateRequest,
     ExamCreateResponse,
     ExamDetailResponse,
+    ExamFilterRequest,
     ExamQuestionOut,
     FinishExamRequest,
     FinishExamResponse,
@@ -20,10 +22,31 @@ from schemas import (
 from services.blank_grader import grade_blank_by_rule
 from services.choice_grader import grade_choice
 from services.llm_grader import grade_with_llm
-from services.question_selector import select_questions
+from services.question_selector import filter_questions, select_questions
 from services.record_service import get_exam_question_score, save_answer_record
 
 router = APIRouter(prefix="/exams", tags=["exams"])
+
+
+@router.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@router.post("/available-count", response_model=ExamAvailabilityResponse)
+def available_count(
+    payload: ExamFilterRequest,
+    store: JsonStore = Depends(get_store),
+) -> ExamAvailabilityResponse:
+    questions = filter_questions(
+        store,
+        board=payload.board,
+        boards=payload.boards,
+        difficulty_min=payload.difficulty_min,
+        difficulty_max=payload.difficulty_max,
+        question_types=payload.question_types,
+    )
+    return ExamAvailabilityResponse(available_count=len(questions))
 
 
 @router.post("/create", response_model=ExamCreateResponse, status_code=201)
@@ -35,6 +58,7 @@ def create_exam(
         store,
         total_count=payload.total_count,
         board=payload.board,
+        boards=payload.boards,
         difficulty_min=payload.difficulty_min,
         difficulty_max=payload.difficulty_max,
         question_types=payload.question_types,
@@ -89,6 +113,8 @@ async def submit_answer(
     exam = store.get_exam(payload.exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="考试不存在")
+    if exam["student_id"] != payload.student_id:
+        raise HTTPException(status_code=403, detail="无权提交该考试答案")
 
     question = store.get_question(payload.question_id)
     if not question:
@@ -136,35 +162,48 @@ def finish_exam(
     exam = store.get_exam(payload.exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="考试不存在")
+    if exam["student_id"] != payload.student_id:
+        raise HTTPException(status_code=403, detail="无权完成该考试")
 
     records = store.list_answer_records(payload.exam_id, payload.student_id)
-    total_score = sum((Decimal(str(record.get("score") or "0")) for record in records), Decimal("0"))
-    max_score = sum((Decimal(str(record.get("max_score") or "0")) for record in records), Decimal("0"))
-    correct_count = sum(1 for record in records if record.get("is_correct"))
-    accuracy = correct_count / len(records) if records else 0
+    records_by_question = {record["question_id"]: record for record in records}
+    exam_questions = store.get_exam_questions(payload.exam_id)
+    total_score = Decimal("0")
+    max_score = Decimal("0")
+    correct_count = 0
 
     by_board: dict[str, dict[str, Decimal | int]] = defaultdict(
         lambda: {"total": 0, "correct": 0, "score": Decimal("0"), "max_score": Decimal("0")}
     )
     wrong_questions: list[WrongQuestionItem] = []
-    for record in records:
-        board = record.get("board_snapshot") or "未分类"
+    for exam_question, question in exam_questions:
+        record = records_by_question.get(question["id"])
+        question_max_score = Decimal(str(exam_question.get("score") or "0"))
+        question_score = Decimal(str(record.get("score") or "0")) if record else Decimal("0")
+        is_correct = bool(record and record.get("is_correct"))
+        total_score += question_score
+        max_score += question_max_score
+        correct_count += 1 if is_correct else 0
+
+        board = (record.get("board_snapshot") if record else question.get("board")) or "未分类"
         stats = by_board[board]
         stats["total"] = int(stats["total"]) + 1
-        stats["correct"] = int(stats["correct"]) + (1 if record.get("is_correct") else 0)
-        stats["score"] = Decimal(stats["score"]) + Decimal(str(record.get("score") or "0"))
-        stats["max_score"] = Decimal(stats["max_score"]) + Decimal(str(record.get("max_score") or "0"))
-        if not record.get("is_correct"):
+        stats["correct"] = int(stats["correct"]) + (1 if is_correct else 0)
+        stats["score"] = Decimal(stats["score"]) + question_score
+        stats["max_score"] = Decimal(stats["max_score"]) + question_max_score
+        if not is_correct:
             wrong_questions.append(
                 WrongQuestionItem(
-                    question_code=record.get("question_code_snapshot"),
-                    content=record.get("content_snapshot"),
-                    student_answer=record.get("student_answer"),
-                    standard_answer=record.get("standard_answer_snapshot"),
-                    explanation=record.get("explanation_snapshot"),
-                    llm_feedback=record.get("llm_feedback"),
+                    question_code=(record.get("question_code_snapshot") if record else question.get("question_code")),
+                    content=(record.get("content_snapshot") if record else question.get("content")),
+                    student_answer=record.get("student_answer") if record else None,
+                    standard_answer=(record.get("standard_answer_snapshot") if record else question.get("standard_answer")),
+                    explanation=(record.get("explanation_snapshot") if record else question.get("explanation")),
+                    llm_feedback=record.get("llm_feedback") if record else "未作答",
                 )
             )
+
+    accuracy = correct_count / len(exam_questions) if exam_questions else 0
 
     board_analysis = [
         BoardAnalysisItem(
