@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 class MathRecognizer {
   static const _apiKeyEnv = 'VOLC_API_KEY';
@@ -47,6 +48,7 @@ class MathRecognizer {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',
+          ...AuthService().proxyAuthHeaders,
         },
         body: jsonEncode({
           "model": modelId,

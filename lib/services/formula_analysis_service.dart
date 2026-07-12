@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 class FormulaAnalysisResult {
   final String explanation;
@@ -57,6 +58,7 @@ class FormulaAnalysisService {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ${config.apiKey}',
+        ...AuthService().proxyAuthHeaders,
       },
       body: jsonEncode({
         'model': config.modelId,

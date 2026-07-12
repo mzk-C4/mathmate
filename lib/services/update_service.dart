@@ -39,8 +39,8 @@ class UpdateService {
   static const String _versionUrl = 'https://mathmate.top/version.json';
 
   /// 当前 APP 版本号（与 pubspec.yaml 保持同步）
-  static const int currentBuildNumber = 20260601;
-  static const String currentVersion = '2.3.0';
+  static const int currentBuildNumber = 20260712;
+  static const String currentVersion = '2.4.3';
 
   /// 是否正在下载
   static bool _isDownloading = false;

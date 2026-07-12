@@ -79,6 +79,8 @@ class AuthService {
   bool get isLoggedIn => _token != null;
   String? get token => _token;
   AuthUser? get user => _user;
+  Map<String, String> get proxyAuthHeaders =>
+      _token == null || _token!.isEmpty ? const {} : {'X-MathMate-Token': _token!};
 
   /// 从本地存储恢复登录状态
   Future<bool> restore() async {

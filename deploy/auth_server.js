@@ -18,6 +18,8 @@ try {
   });
 } catch (_) { /* dotenv 未安装时忽略 */ }
 
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
 // 阿里云短信 SDK(可选;未安装或未配置时验证码回退到 console 打印)
 // 个人用 PNVS 号码认证服务(@alicloud/dypnsapi20170525,免资质);企业可用普通短信(@alicloud/dysmsapi20170525)
 let Dysmsapi = null, Dypnsapi = null, OpenApi = null;
@@ -57,19 +59,28 @@ async function sendSmsCode(phone, code) {
   if (!sign || !tmpl) return { fallback: true };
   // PNVS 手机号:纯数字,去掉前缀 86
   const phoneNum = phone.replace(/[^\d]/g, '').replace(/^86/, '');
-  const resp = await client.sendSmsVerifyCode(new Dypnsapi.SendSmsVerifyCodeRequest({
-    phoneNumber: phoneNum,
-    signName: sign,
-    templateCode: tmpl,
-    code: code,
-  }));
-  const b = resp && resp.body;
-  if (b && b.code === 'OK') return { ok: true };
-  return { ok: false, error: (b && b.message) || '短信发送失败' };
+  try {
+    const resp = await client.sendSmsVerifyCode(new Dypnsapi.SendSmsVerifyCodeRequest({
+      phoneNumber: phoneNum,
+      signName: sign,
+      templateCode: tmpl,
+      code: code,
+      // 预置模板变量:${Code} 验证码、${min} 有效期分钟数(PNVS key 用小写)
+      templateParam: JSON.stringify({ code: code, min: '5' }),
+    }));
+    const b = resp && resp.body;
+    if (b && b.code === 'OK') return { ok: true };
+    return { ok: false, error: (b && b.message) || '短信发送失败' };
+  } catch (e) {
+    // 捕获 API 异常,防止崩进程;返回错误给前端
+    return { ok: false, error: (e && (e.code || e.message)) || '短信发送失败' };
+  }
 }
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SECRET_FILE = path.join(DATA_DIR, 'auth_secret.txt');
+const TOKEN_TTL_SECONDS = Math.max(300, parseInt(process.env.AUTH_TOKEN_TTL_SECONDS || '604800', 10) || 604800);
+const MAX_BODY_BYTES = Math.max(1024, parseInt(process.env.AUTH_MAX_BODY_BYTES || '1048576', 10) || 1048576);
 
 // ==================== 邮件发送(nodemailer) ====================
 let nodemailer = null;
@@ -85,7 +96,12 @@ function getMailTransporter() {
   if (!host || !user || !pass) return null;
   const port = parseInt(process.env.SMTP_PORT || '465', 10);
   _mailTransporter = nodemailer.createTransport({
-    host, port, secure: port === 465, auth: { user, pass },
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+    disableFileAccess: true,
+    disableUrlAccess: true,
   });
   return _mailTransporter;
 }
@@ -137,8 +153,9 @@ function verifyPassword(pw, salt, hash) {
 }
 
 function createToken(payload) {
+  const now = Math.floor(Date.now() / 1000);
   const h = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const b = Buffer.from(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000) })).toString('base64url');
+  const b = Buffer.from(JSON.stringify({ ...payload, iat: now, exp: now + TOKEN_TTL_SECONDS })).toString('base64url');
   const s = crypto.createHmac('sha256', getSecret()).update(h + '.' + b).digest('base64url');
   return h + '.' + b + '.' + s;
 }
@@ -147,8 +164,12 @@ function verifyToken(token) {
     const p = token.split('.');
     if (p.length !== 3) return null;
     const s = crypto.createHmac('sha256', getSecret()).update(p[0] + '.' + p[1]).digest('base64url');
-    if (s !== p[2]) return null;
-    return JSON.parse(Buffer.from(p[1], 'base64url').toString());
+    const expected = Buffer.from(s);
+    const actual = Buffer.from(p[2]);
+    if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) return null;
+    const payload = JSON.parse(Buffer.from(p[1], 'base64url').toString());
+    if (!Number.isInteger(payload.exp) || payload.exp <= Math.floor(Date.now() / 1000)) return null;
+    return payload;
   } catch (e) { return null; }
 }
 function getUserId(req) {
@@ -164,8 +185,20 @@ function getUserRole(req) {
 
 function parseBody(req, res, cb) {
   const c = [];
-  req.on('data', d => c.push(d));
+  let size = 0;
+  let rejected = false;
+  req.on('data', d => {
+    if (rejected) return;
+    size += d.length;
+    if (size > MAX_BODY_BYTES) {
+      rejected = true;
+      send(res, 413, { error: '请求内容过大' });
+      return;
+    }
+    c.push(d);
+  });
   req.on('end', () => {
+    if (rejected) return;
     try { cb(JSON.parse(Buffer.concat(c).toString())); }
     catch (e) { res.writeHead(400, cors()); res.end(JSON.stringify({ error: 'Invalid JSON' })); }
   });
@@ -189,6 +222,24 @@ function send(res, code, data) {
 const VERIFY_CODES = {};
 
 function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
+
+function consumeVerificationAttempt(target, code) {
+  const vc = VERIFY_CODES[target];
+  if (!vc) return { ok: false, status: 400, error: '请先获取验证码' };
+  if (vc.expires < Date.now()) {
+    delete VERIFY_CODES[target];
+    return { ok: false, status: 400, error: '验证码已过期，请重新获取' };
+  }
+  vc.attempts = (vc.attempts || 0) + 1;
+  if (vc.attempts > 5) {
+    delete VERIFY_CODES[target];
+    return { ok: false, status: 429, error: '尝试次数过多，请重新获取' };
+  }
+  if (vc.code !== String(code || '').trim()) {
+    return { ok: false, status: 400, error: `验证码错误，还剩 ${5 - vc.attempts} 次机会` };
+  }
+  return { ok: true };
+}
 
 async function handleSendCode(req, res, body) {
   const { email, phone } = body;
@@ -214,6 +265,10 @@ async function handleSendCode(req, res, body) {
   if (isEmail) {
     const result = await sendMailCode(target, code);
     if (result.fallback) {
+      if (IS_PRODUCTION) {
+        delete VERIFY_CODES[target];
+        return send(res, 503, { error: '邮件服务暂未配置，请联系管理员' });
+      }
       console.log(`========== 验证码(dev) ==========`);
       console.log(`目标: ${target}`);
       console.log(`验证码: ${code}`);
@@ -228,6 +283,10 @@ async function handleSendCode(req, res, body) {
   // 手机:走阿里云短信;未配置 SDK/密钥时回退 console(开发模式)
   const result = await sendSmsCode(target, code);
   if (result.fallback) {
+    if (IS_PRODUCTION) {
+      delete VERIFY_CODES[target];
+      return send(res, 503, { error: '短信服务暂未配置，请联系管理员' });
+    }
     console.log(`========== 验证码(dev) ==========`);
     console.log(`目标: ${target}`);
     console.log(`验证码: ${code}`);
@@ -247,16 +306,8 @@ function handleVerifyCode(req, res, body) {
   const target = (email || phone || '').trim();
   if (!target || !code) return send(res, 400, { error: '参数不完整' });
 
-  const vc = VERIFY_CODES[target];
-  if (!vc) return send(res, 400, { error: '请先获取验证码' });
-  if (vc.expires < Date.now()) { delete VERIFY_CODES[target]; return send(res, 400, { error: '验证码已过期，请重新获取' }); }
-
-  vc.attempts = (vc.attempts || 0) + 1;
-  if (vc.attempts > 5) { delete VERIFY_CODES[target]; return send(res, 429, { error: '尝试次数过多，请重新获取' }); }
-
-  if (vc.code !== code.trim()) {
-    return send(res, 400, { error: `验证码错误，还剩 ${5 - vc.attempts} 次机会` });
-  }
+  const result = consumeVerificationAttempt(target, code);
+  if (!result.ok) return send(res, result.status, { error: result.error });
 
   return send(res, 200, { ok: true, message: '验证成功' });
 }
@@ -272,12 +323,8 @@ function handleRegister(req, res, body) {
   if (!target) return send(res, 400, { error: '请输入邮箱或手机号' });
 
   // 直接校验验证码（前端 register 时携带 code）
-  const vc = VERIFY_CODES[target];
-  if (!vc) return send(res, 400, { error: '请先获取验证码' });
-  if (vc.expires < Date.now()) { delete VERIFY_CODES[target]; return send(res, 400, { error: '验证码已过期，请重新获取' }); }
-  if (vc.code !== (code || '').trim()) {
-    return send(res, 400, { error: '验证码错误' });
-  }
+  const verification = consumeVerificationAttempt(target, code);
+  if (!verification.ok) return send(res, verification.status, { error: verification.error });
 
   const users = loadUsers();
   if (users.find(u => u.username === username)) return send(res, 409, { error: '用户名已存在' });
@@ -375,9 +422,25 @@ const server = http.createServer((req, res) => {
 
   if (req.url === '/api/auth/users') return handleUsers(req, res);
 
-  if (req.url === '/api/auth/health') return send(res, 200, { ok: true });
+  if (req.url === '/api/auth/health') {
+    return send(res, 200, {
+      ok: true,
+      version: 'v3',
+      smsConfigured: Boolean(
+        getSmsClient() && process.env.SMS_SIGN_NAME && process.env.SMS_TEMPLATE_CODE,
+      ),
+      smtpConfigured: Boolean(getMailTransporter()),
+    });
+  }
 
   send(res, 404, { error: 'Not found' });
 });
 
-server.listen(3002, '0.0.0.0', () => console.log('MathMate Auth v3 running on :3002 (无邀请码, 局域网可访问)'));
+const AUTH_HOST = process.env.AUTH_HOST ||
+  (process.platform === 'win32' ? '0.0.0.0' : '127.0.0.1');
+if (require.main === module) {
+  server.listen(3002, AUTH_HOST, () =>
+    console.log(`MathMate Auth v3 running on ${AUTH_HOST}:3002`));
+}
+
+module.exports = { server, createToken, verifyToken, consumeVerificationAttempt, VERIFY_CODES };

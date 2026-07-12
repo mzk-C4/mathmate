@@ -7,6 +7,7 @@ import 'package:mathmate/data/hive_models.dart';
 import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/data/video_resources.dart';
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 class VideoRecommendationService {
   static const String _apiKeyEnv = 'VOLC_API_KEY';
@@ -57,6 +58,7 @@ class VideoRecommendationService {
       final Map<String, String> headers = <String, String>{
         'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer $apiKey',
+        ...AuthService().proxyAuthHeaders,
       };
 
       final Map<String, dynamic> body = <String, dynamic>{
@@ -269,6 +271,7 @@ $text
       final Map<String, String> headers = <String, String>{
         'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer $apiKey',
+        ...AuthService().proxyAuthHeaders,
       };
 
       final Map<String, dynamic> body = <String, dynamic>{

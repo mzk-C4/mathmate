@@ -28,7 +28,7 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
           },
         ),
       )
-      ..loadRequest(Uri.parse('http://47.94.83.150:3003/chat'));
+      ..loadRequest(Uri.parse('https://mathmate.top/geogebra-chat/'));
   }
 
   @override

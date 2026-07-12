@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/services/app_logger.dart';
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 class VolcAiClientService {
   static const String _apiKeyEnv = 'VOLC_API_KEY';
@@ -106,6 +107,7 @@ class VolcAiClientService {
     final Map<String, String> headers = <String, String>{
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $apiKey',
+      ...AuthService().proxyAuthHeaders,
     };
 
     final Stopwatch sw = Stopwatch()..start();

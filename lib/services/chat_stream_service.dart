@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 /// API 消息（发给 LLM 的消息，去 vivo 品牌，替代 VivoChatMessage）
 ///
@@ -116,6 +117,7 @@ class ChatStreamService {
       ..headers.addAll(<String, String>{
         'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer $apiKey',
+        ...AuthService().proxyAuthHeaders,
       })
       ..body = jsonEncode(<String, dynamic>{
         'model': model,

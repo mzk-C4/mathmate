@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mathmate/data/hive_models.dart';
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 const String _kIsFirstLaunch = 'is_first_launch';
 const String _kGradeLevel = 'grade_level';
@@ -134,6 +135,7 @@ class HistoryRepository {
       final Map<String, String> headers = <String, String>{
         'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer $apiKey',
+        ...AuthService().proxyAuthHeaders,
       };
 
       final Map<String, dynamic> body = <String, dynamic>{

@@ -9,6 +9,7 @@ import 'package:mathmate/fusion/ai_drawing/prompts/math_prompts.dart';
 import 'package:mathmate/fusion/models/ai_models.dart';
 import 'package:mathmate/services/app_logger.dart';
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 /// AI 绘图服务
 ///
@@ -203,6 +204,7 @@ class AIDrawingService {
     final Map<String, String> headers = <String, String>{
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $apiKey',
+      ...AuthService().proxyAuthHeaders,
     };
 
     final List<Map<String, String>> messages = <Map<String, String>>[

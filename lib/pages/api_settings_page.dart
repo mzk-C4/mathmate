@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 class ApiSettingsPage extends StatefulWidget {
   const ApiSettingsPage({super.key});
@@ -102,6 +103,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
             headers: <String, String>{
               'Content-Type': 'application/json',
               'Authorization': 'Bearer ${config.apiKey.trim()}',
+              ...AuthService().proxyAuthHeaders,
             },
             body: jsonEncode(<String, dynamic>{
               'model': config.modelId.trim(),

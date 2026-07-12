@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:mathmate/services/app_logger.dart';
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 class DeepSeekService {
   static const String _apiKeyEnv = 'DEEPSEEK_API_KEY';
@@ -58,6 +59,7 @@ class DeepSeekService {
     final Map<String, String> headers = <String, String>{
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $apiKey',
+      ...AuthService().proxyAuthHeaders,
     };
 
     final List<Map<String, String>> messages = <Map<String, String>>[

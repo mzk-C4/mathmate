@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 import 'prompts/geogebra_agent_prompt.dart';
 
@@ -305,6 +306,7 @@ class GeogebraAgentService {
         ..headers.addAll({
           'Content-Type': 'application/json; charset=utf-8',
           'Authorization': 'Bearer $apiKey',
+          ...AuthService().proxyAuthHeaders,
         })
         ..body = body;
 

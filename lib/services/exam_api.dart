@@ -41,11 +41,11 @@ class ExamApi {
       'student_id': studentId,
       'title': title,
       'total_count': totalCount,
-      'board': ?board,
+      if (board != null) 'board': board,
       if (boards != null && boards.isNotEmpty) 'boards': boards,
-      'difficulty_min': ?difficultyMin,
-      'difficulty_max': ?difficultyMax,
-      'question_types': ?questionTypes,
+      if (difficultyMin != null) 'difficulty_min': difficultyMin,
+      if (difficultyMax != null) 'difficulty_max': difficultyMax,
+      if (questionTypes != null) 'question_types': questionTypes,
     });
   }
 
@@ -66,11 +66,11 @@ class ExamApi {
     List<String>? questionTypes,
   }) async {
     final result = await _postJson('/api/exams/available-count', {
-      'board': ?board,
+      if (board != null) 'board': board,
       if (boards != null && boards.isNotEmpty) 'boards': boards,
-      'difficulty_min': ?difficultyMin,
-      'difficulty_max': ?difficultyMax,
-      'question_types': ?questionTypes,
+      if (difficultyMin != null) 'difficulty_min': difficultyMin,
+      if (difficultyMax != null) 'difficulty_max': difficultyMax,
+      if (questionTypes != null) 'question_types': questionTypes,
     });
     return (result['available_count'] as num?)?.toInt() ?? 0;
   }
@@ -88,7 +88,7 @@ class ExamApi {
       'student_id': studentId,
       'question_id': questionId,
       'student_answer': studentAnswer,
-      'image_url': ?imageUrl,
+      if (imageUrl != null) 'image_url': imageUrl,
     });
   }
 

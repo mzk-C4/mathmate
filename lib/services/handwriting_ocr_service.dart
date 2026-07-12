@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:mathmate/services/api_config_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 
 class HandwritingOcrService {
   static const String _ocrModelEnv = 'VOLC_OCR_MODEL_ID';
@@ -47,6 +48,7 @@ class HandwritingOcrService {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $apiKey',
+            ...AuthService().proxyAuthHeaders,
           },
           body: jsonEncode({
             'model': modelId,
