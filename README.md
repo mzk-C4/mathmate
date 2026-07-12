@@ -11,7 +11,7 @@
   [![Dart](https://img.shields.io/badge/Dart-^3.11.3-blue?logo=dart)](https://dart.dev)
   [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
   [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-lightgrey)](https://github.com/mzk-C4/mathmate)
-  [![Version](https://img.shields.io/badge/v2.4.2-purple)](https://github.com/mzk-C4/mathmate/releases)
+  [![Version](https://img.shields.io/badge/v2.4.3-purple)](https://github.com/mzk-C4/mathmate/releases)
 
   **拍照搜题 · 几何可视化 · AI 对话助手 · 学习画像 · 智能考试系统**
 
@@ -258,7 +258,7 @@ lib/
 
 ## 🔮 开发路线
 
-### ✅ 已完成 (v2.4.2)
+### ✅ 已完成 (v2.4.3)
 
 - [x] 核心流水线（OCR → 解题 → 可视化）
 - [x] AI 对话助手（流式响应）
@@ -279,6 +279,10 @@ lib/
 - [x] 聊天 UI 全面升级（背景图、消息气泡、流式优化）
 - [x] 年级吉祥物悬浮球（flutter_floating）
 - [x] 考试系统安全修复（权限验证、成绩计算、健康检查）
+- [x] 认证后端安全加固（JWT过期、防时序攻击、请求体限制）
+- [x] 代理认证头统一（10个AI服务接入X-MathMate-Token）
+- [x] GeoChat 迁移至 HTTPS（mathmate.top）
+- [x] 笔记标题修复（空标题自动时间戳、JSON泄露防御）
 
 ### 🚧 进行中
 
