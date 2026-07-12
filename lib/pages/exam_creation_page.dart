@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mathmate/models/user_radar_profile.dart';
 import 'package:mathmate/pages/exam_taking_page.dart';
 import 'package:mathmate/services/ability_score_service.dart';
+import 'package:mathmate/services/auth_service.dart';
 import 'package:mathmate/services/exam_api.dart';
 
 /// 自由组卷配置页 —— 选择维度、难度、题量后创建考试
@@ -20,7 +21,7 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
   String? _selectedDimension;
 
   /// 题量
-  int _questionCount = 10;
+  int _questionCount = 5;
 
   /// 难度区间
   double _difficultyMin = 0.2;
@@ -34,6 +35,7 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
   /// 后端是否可用
   bool _serverAvailable = false;
   bool _checking = true;
+  bool _starting = false;
 
   ColorScheme get cs => Theme.of(context).colorScheme;
 
@@ -72,7 +74,7 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
     );
   }
 
-  void _startExam() {
+  Future<void> _startExam() async {
     if (!_serverAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('考试服务不可用，请检查后端是否启动')),
@@ -80,22 +82,64 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ExamTakingPage(
-          api: _api,
-          studentId: 'mathmate_user',
-          title: _selectedDimension != null
-              ? '${_selectedDimension!}专项测试'
-              : '自由组卷测试',
-          totalCount: _questionCount,
-          board: _selectedDimension,
-          difficultyMin: _difficultyMin,
-          difficultyMax: _difficultyMax,
-          questionTypes: _buildQuestionTypes(),
+    final List<String> questionTypes = _buildQuestionTypes();
+    final List<String>? boards = _boardsForSelectedDimension();
+    setState(() => _starting = true);
+    try {
+      final int available = await _api.availableQuestionCount(
+        boards: boards,
+        difficultyMin: _difficultyMin,
+        difficultyMax: _difficultyMax,
+        questionTypes: questionTypes,
+      );
+      if (!mounted) return;
+      if (available <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('当前条件下没有可用题目，请调整板块、难度或题型')),
+        );
+        return;
+      }
+
+      final int actualCount = _questionCount > available
+          ? available
+          : _questionCount;
+      if (actualCount < _questionCount) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('当前条件仅有 $available 道题，将按 $actualCount 道组卷')),
+        );
+      }
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ExamTakingPage(
+            api: _api,
+            studentId: AuthService().user?.id ?? 'mathmate_user',
+            title: _selectedDimension != null
+                ? '${_selectedDimension!}专项测试'
+                : '自由组卷测试',
+            totalCount: actualCount,
+            boards: boards,
+            difficultyMin: _difficultyMin,
+            difficultyMax: _difficultyMax,
+            questionTypes: questionTypes,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('获取可用题量失败: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  List<String>? _boardsForSelectedDimension() {
+    final String? dimension = _selectedDimension;
+    if (dimension == null) return null;
+    return UserRadarProfile.dimensionTagsFor(_abilityService.currentGrade)[dimension];
   }
 
   List<String> _buildQuestionTypes() {
@@ -187,11 +231,15 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton.icon(
-                  onPressed: (_includeChoice || _includeBlank || _includeShortAnswer)
+                  onPressed: !_starting &&
+                          (_includeChoice || _includeBlank || _includeShortAnswer)
                       ? _startExam
                       : null,
                   icon: const Icon(Icons.assignment_rounded),
-                  label: const Text('开始考试', style: TextStyle(fontSize: 16)),
+                  label: Text(
+                    _starting ? '正在检查题量...' : '开始考试',
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 ),
               ),
             ],
@@ -257,7 +305,7 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
           Expanded(
             child: Text(
               '综合能力 ${(avgScore * UserRadarProfile.displayMultiplier).toStringAsFixed(1)} 分 | '
-              '建议加强「${UserRadarProfile.dimensionNames[weakestIdx]}」',
+              '建议加强「${profile.names[weakestIdx]}」',
               style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
             ),
           ),
@@ -280,7 +328,7 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
   }
 
   Widget _buildDimensionGrid() {
-    final List<String> dims = UserRadarProfile.dimensionNames;
+    final List<String> dims = _abilityService.currentDimensionNames;
     return Wrap(
       spacing: 8,
       runSpacing: 8,

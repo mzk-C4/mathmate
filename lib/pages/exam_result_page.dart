@@ -33,8 +33,11 @@ class _ExamResultPageState extends State<ExamResultPage> {
 
     // 汇总每个维度的答题数据
     final Map<String, _BoardStats> dimStats = <String, _BoardStats>{};
+    final Map<String, List<String>> dimensionTags =
+        UserRadarProfile.dimensionTagsFor(_abilityService.currentGrade);
+    final List<String> dimensionNames = _abilityService.currentDimensionNames;
     for (final MapEntry<String, List<String>> entry
-        in UserRadarProfile.dimensionTags.entries) {
+        in dimensionTags.entries) {
       dimStats[entry.key] = _BoardStats();
     }
 
@@ -46,7 +49,7 @@ class _ExamResultPageState extends State<ExamResultPage> {
 
       // 找到该 board 对应的维度
       for (final MapEntry<String, List<String>> entry
-          in UserRadarProfile.dimensionTags.entries) {
+          in dimensionTags.entries) {
         if (entry.value.contains(boardName)) {
           dimStats[entry.key]!.total += total;
           dimStats[entry.key]!.correct += correct;
@@ -60,8 +63,7 @@ class _ExamResultPageState extends State<ExamResultPage> {
       final _BoardStats stats = entry.value;
       if (stats.total <= 0) continue;
 
-      final int dimIndex =
-          UserRadarProfile.dimensionNames.indexOf(entry.key);
+      final int dimIndex = dimensionNames.indexOf(entry.key);
       if (dimIndex < 0) continue;
 
       // 每次答题算一条记录（按正确率折算）

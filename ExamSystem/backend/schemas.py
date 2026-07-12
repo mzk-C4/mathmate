@@ -37,14 +37,22 @@ class QuestionAdminOut(QuestionOut):
     updated_at: datetime | None = None
 
 
-class ExamCreateRequest(BaseModel):
-    student_id: str
-    title: str | None = "数学测试"
-    total_count: int = Field(default=10, ge=1, le=100)
+class ExamFilterRequest(BaseModel):
     board: str | None = None
+    boards: list[str] | None = None
     difficulty_min: Decimal | None = Field(default=None, ge=0, le=1)
     difficulty_max: Decimal | None = Field(default=None, ge=0, le=1)
     question_types: list[QuestionType] | None = None
+
+
+class ExamCreateRequest(ExamFilterRequest):
+    student_id: str
+    title: str | None = "数学测试"
+    total_count: int = Field(default=10, ge=1, le=100)
+
+
+class ExamAvailabilityResponse(BaseModel):
+    available_count: int
 
 
 class ExamCreateResponse(BaseModel):

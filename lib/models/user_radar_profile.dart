@@ -22,8 +22,8 @@ class UserRadarProfile {
   ];
 
   static const Map<String, List<String>> k12DimensionTags = <String, List<String>>{
-    '基础代数工具': <String>['集合与逻辑', '复数', '不等式'],
-    '函数微积分': <String>['函数与导数'],
+    '基础代数工具': <String>['代数', '集合与逻辑', '复数', '不等式'],
+    '函数微积分': <String>['函数', '函数与导数'],
     '数列三角': <String>['数列', '三角函数'],
     '平面与空间几何': <String>['向量', '立体几何', '解析几何'],
     '概率统计': <String>['概率统计'],
@@ -45,9 +45,9 @@ class UserRadarProfile {
   ];
 
   static const Map<String, List<String>> universityDimensionTags = <String, List<String>>{
-    '线性代数': <String>['复数', '向量'],
+    '线性代数': <String>['代数', '复数', '向量'],
     '概率论': <String>['概率统计'],
-    '高等数学': <String>['函数与导数', '不等式'],
+    '高等数学': <String>['函数', '函数与导数', '不等式'],
     '离散数学': <String>['集合与逻辑', '计数原理'],
     '数学建模': <String>['解析几何', '函数与导数'],
     '数值计算': <String>['数列', '不等式'],
