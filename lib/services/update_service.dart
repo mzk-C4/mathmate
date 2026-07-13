@@ -1,11 +1,13 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 版本信息模型
@@ -39,6 +41,25 @@ class AppVersion {
       apkSha256: json['apkSha256'] as String? ?? '',
     );
   }
+
+  bool get hasValidMetadata {
+    final versionPattern = RegExp(r'^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$');
+    final sha256Pattern = RegExp(r'^[0-9a-fA-F]{64}$');
+    return versionPattern.hasMatch(version.trim()) &&
+        buildNumber > 0 &&
+        apkSizeBytes >= UpdateService.minimumApkBytes &&
+        apkSizeBytes <= UpdateService.maximumApkBytes &&
+        sha256Pattern.hasMatch(apkSha256.trim());
+  }
+}
+
+class UpdateCheckException implements Exception {
+  final String message;
+
+  const UpdateCheckException(this.message);
+
+  @override
+  String toString() => message;
 }
 
 /// 联网自动更新服务。
@@ -47,43 +68,62 @@ class AppVersion {
 /// Android 端支持下载 APK 后自动唤起安装器。
 class UpdateService {
   static const String _versionUrl = 'https://mathmate.top/version.json';
-  static const int _minimumApkBytes = 1024 * 1024;
-  static const int _maximumApkBytes = 350 * 1024 * 1024;
+  static const int minimumApkBytes = 1024 * 1024;
+  static const int maximumApkBytes = 350 * 1024 * 1024;
   static const Set<String> _trustedDownloadHosts = {
     'mathmate.top',
     'www.mathmate.top',
   };
 
-  /// 当前 APP 版本号（与 pubspec.yaml 保持同步）
-  static const int currentBuildNumber = 2026071301;
-  static const String currentVersion = '2.4.4';
-
   /// 是否正在下载
   static bool _isDownloading = false;
 
   /// 检查更新。返回最新版本信息，若已是最新则返回 null。
-  static Future<AppVersion?> checkUpdate() async {
+  ///
+  /// 自动检查默认静默失败；用户主动检查时传入 [reportErrors]，以便展示
+  /// 网络或服务器元数据错误，而不是误报“已是最新版本”。
+  static Future<AppVersion?> checkUpdate({bool reportErrors = false}) async {
     try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentBuildNumber = int.tryParse(packageInfo.buildNumber);
+      if (currentBuildNumber == null || currentBuildNumber <= 0) {
+        throw const UpdateCheckException('无法读取当前应用版本');
+      }
+
+      final versionUri = Uri.parse(_versionUrl).replace(
+        queryParameters: <String, String>{
+          't': DateTime.now().millisecondsSinceEpoch.toString(),
+        },
+      );
       final response = await http
-          .get(Uri.parse(_versionUrl))
+          .get(
+            versionUri,
+            headers: const <String, String>{'Cache-Control': 'no-cache'},
+          )
           .timeout(const Duration(seconds: 8));
 
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        throw UpdateCheckException('更新服务器返回 HTTP ${response.statusCode}');
+      }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final latest = AppVersion.fromJson(json);
 
-      if (latest.version.trim().isEmpty ||
-          latest.buildNumber <= 0 ||
-          !_isTrustedDownloadUrl(latest.apkUrl)) {
-        return null;
+      if (!latest.hasValidMetadata || !_isTrustedDownloadUrl(latest.apkUrl)) {
+        throw const UpdateCheckException('更新服务器返回了无效的版本信息');
       }
 
-      if (latest.forceUpdate || latest.buildNumber > currentBuildNumber) {
+      if (latest.buildNumber > currentBuildNumber) {
         return latest;
       }
       return null;
+    } on UpdateCheckException {
+      if (reportErrors) rethrow;
+      return null;
     } catch (_) {
+      if (reportErrors) {
+        throw const UpdateCheckException('无法连接更新服务器，请检查网络后重试');
+      }
       return null;
     }
   }
@@ -115,13 +155,26 @@ class UpdateService {
     IOSink? sink;
     File? partialFile;
     try {
+      var installPermission = await Permission.requestInstallPackages.status;
+      if (!installPermission.isGranted) {
+        installPermission = await Permission.requestInstallPackages.request();
+        if (!installPermission.isGranted) {
+          return '请在系统设置中允许 MathMate 安装未知应用后重试';
+        }
+      }
+
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/mathmate-${version.version}.apk');
+      final safeVersion = version.version.replaceAll(
+        RegExp(r'[^0-9A-Za-z._-]'),
+        '-',
+      );
+      final file = File('${dir.path}/mathmate-$safeVersion.apk');
       partialFile = File('${file.path}.part');
       if (await partialFile.exists()) await partialFile.delete();
 
       client = http.Client();
       final request = http.Request('GET', Uri.parse(version.apkUrl));
+      request.followRedirects = false;
       final response = await client
           .send(request)
           .timeout(const Duration(seconds: 20));
@@ -135,7 +188,10 @@ class UpdateService {
       }
 
       final declaredLength = response.contentLength ?? version.apkSizeBytes;
-      if (declaredLength > _maximumApkBytes) return '下载失败：安装包大小异常';
+      if (declaredLength != version.apkSizeBytes ||
+          declaredLength > maximumApkBytes) {
+        return '下载失败：安装包大小与服务器清单不一致';
+      }
 
       sink = partialFile.openWrite();
       var received = 0;
@@ -144,7 +200,7 @@ class UpdateService {
         const Duration(seconds: 30),
       )) {
         received += chunk.length;
-        if (received > _maximumApkBytes) return '下载失败：安装包超过大小限制';
+        if (received > maximumApkBytes) return '下载失败：安装包超过大小限制';
         if (signature.length < 4) {
           signature.addAll(chunk.take(4 - signature.length));
         }
@@ -163,19 +219,17 @@ class UpdateService {
           signature[1] == 0x4b &&
           signature[2] == 0x03 &&
           signature[3] == 0x04;
-      if (!isZip || received < _minimumApkBytes) {
+      if (!isZip || received < minimumApkBytes) {
         return '下载失败：服务器返回的不是有效 APK';
       }
       if (version.apkSizeBytes > 0 && received != version.apkSizeBytes) {
         return '下载失败：安装包不完整，请重新下载';
       }
-      if (version.apkSha256.trim().isNotEmpty) {
-        final actualSha256 = (await sha256.bind(partialFile.openRead()).first)
-            .toString();
-        if (actualSha256.toLowerCase() !=
-            version.apkSha256.trim().toLowerCase()) {
-          return '下载失败：安装包完整性校验未通过';
-        }
+      final actualSha256 = (await sha256.bind(partialFile.openRead()).first)
+          .toString();
+      if (actualSha256.toLowerCase() !=
+          version.apkSha256.trim().toLowerCase()) {
+        return '下载失败：安装包完整性校验未通过';
       }
 
       if (await file.exists()) await file.delete();

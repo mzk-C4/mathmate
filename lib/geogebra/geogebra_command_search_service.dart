@@ -11,6 +11,17 @@ class GeogebraCommandSearchService {
 
   Future<Map<String, dynamic>>? _index;
 
+  static const Set<String> _verifiedCoreCommands = <String>{
+    'circle',
+    'intersect',
+    'midpoint',
+    'parallelline',
+    'perpendicularline',
+    'polygon',
+    'segment',
+    'tangent',
+  };
+
   Future<List<Map<String, dynamic>>> search(
     String query, {
     int limit = 8,
@@ -44,6 +55,20 @@ class GeogebraCommandSearchService {
         .take(limit)
         .map((match) => match.value)
         .toList(growable: false);
+  }
+
+  /// Returns the normalized command names shipped with the APP. The same
+  /// bundled index powers Agent lookup and runtime plan validation.
+  Future<Set<String>> supportedCommandNames() async {
+    final Map<String, dynamic> index = await (_index ??= _loadIndex());
+    return <String>{
+      ..._verifiedCoreCommands,
+      ...index.values
+          .whereType<Map>()
+          .map((Map<dynamic, dynamic> value) => value['commandBase'])
+          .whereType<String>()
+          .map((String command) => command.toLowerCase()),
+    };
   }
 
   Future<Map<String, dynamic>> _loadIndex() async {

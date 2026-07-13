@@ -12,6 +12,22 @@ server {
     root /var/www/mathmate;
     index index.html;
 
+    # 客户端每次检查更新都必须拿到最新清单。
+    location = /version.json {
+        try_files $uri =404;
+        default_type application/json;
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        expires -1;
+    }
+
+    # APK 使用带版本和构建号的唯一文件名，可长期缓存。
+    location ~ ^/app/.*\.apk$ {
+        try_files $uri =404;
+        default_type application/vnd.android.package-archive;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
     # ========== API 代理 ==========
     # Flutter Web 调用 /api/deepseek、/api/vivo、/api/volc
     # Nginx 转发到本地 Node.js 代理（3001 端口）

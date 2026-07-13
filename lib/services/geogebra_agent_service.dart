@@ -76,14 +76,21 @@ const List<AgentTool> geogebraTools = [
     parameters: {'type': 'object', 'properties': {}},
   ),
   AgentTool(
-    name: 'executeGeoGebraCommand',
-    description: '在 GeoGebra 画布中执行一条命令，返回执行结果',
+    name: 'executeGeoGebraPlan',
+    description: '将一次用户作图请求作为原子计划执行；任一步失败时 APP 会恢复整个画布',
     parameters: {
       'type': 'object',
       'properties': {
-        'command': {'type': 'string', 'description': '要执行的 GeoGebra 命令'},
+        'commands': {
+          'type': 'array',
+          'minItems': 1,
+          'maxItems': 32,
+          'items': {'type': 'string'},
+          'description': '按依赖顺序排列的 GeoGebra 命令，每项只包含一条命令',
+        },
+        'summary': {'type': 'string', 'description': '本次作图计划的简短中文说明'},
       },
-      'required': ['command'],
+      'required': ['commands', 'summary'],
     },
   ),
   AgentTool(
@@ -96,11 +103,6 @@ const List<AgentTool> geogebraTools = [
       },
       'required': ['label'],
     },
-  ),
-  AgentTool(
-    name: 'setUndoPoint',
-    description: '在 GeoGebra 画布中设置一个撤销点',
-    parameters: {'type': 'object', 'properties': {}},
   ),
   AgentTool(
     name: 'undo',

@@ -1,17 +1,24 @@
-class OfflineGeometryPlan {
-  const OfflineGeometryPlan({required this.commands, required this.summary});
-
-  final List<String> commands;
-  final String summary;
-}
+import 'package:mathmate/geogebra/geometry_plan.dart';
 
 /// Recognizes only high-confidence, deterministic drawing requests.
 /// Everything else is left to the online agent instead of guessing.
 class OfflineGeometryCommandParser {
   const OfflineGeometryCommandParser();
 
-  OfflineGeometryPlan? parse(String input) {
+  GeometryPlan? parse(
+    String input, {
+    Iterable<String> knownPointLabels = const <String>[],
+  }) {
     final String text = _normalize(input);
+
+    final GeometryPlan? referencePlan = _parsePointReferencePlan(
+      text,
+      knownPointLabels,
+    );
+    if (referencePlan != null) return referencePlan;
+
+    final GeometryPlan? compositePointPlan = _parseCompositePointPlan(text);
+    if (compositePointPlan != null) return compositePointPlan;
 
     final RegExpMatch? point = RegExp(
       r'(?:画|创建|新建)(?:一个)?点\s*([A-Za-z][A-Za-z0-9_]*)[^\d-]*\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)',
@@ -21,7 +28,7 @@ class OfflineGeometryCommandParser {
       final String label = point.group(1)!;
       final String x = point.group(2)!;
       final String y = point.group(3)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['$label = ($x, $y)'],
         summary: '已在本地创建点 $label($x, $y)。',
       );
@@ -35,7 +42,7 @@ class OfflineGeometryCommandParser {
       final String x = pointAtCoordinates.group(1)!;
       final String y = pointAtCoordinates.group(2)!;
       final String label = pointAtCoordinates.group(3)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['$label = ($x, $y)'],
         summary: '已在本地创建点 $label($x, $y)。',
       );
@@ -48,7 +55,7 @@ class OfflineGeometryCommandParser {
     if (circle != null) {
       final String center = circle.group(1)!;
       final String radius = circle.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Circle($center, $radius)'],
         summary: '已在本地创建以 $center 为圆心、半径为 $radius 的圆。',
       );
@@ -61,7 +68,7 @@ class OfflineGeometryCommandParser {
     if (circleWithCenter != null) {
       final String center = circleWithCenter.group(1)!;
       final String radius = circleWithCenter.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Circle($center, $radius)'],
         summary: '已在本地创建以 $center 为圆心、半径为 $radius 的圆。',
       );
@@ -72,7 +79,7 @@ class OfflineGeometryCommandParser {
     ).firstMatch(text);
     if (regularPolygon != null) {
       final int sides = _parseSideCount(regularPolygon.group(1)!);
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>[
           'P_1 = (-2, 0)',
           'P_2 = (2, 0)',
@@ -85,7 +92,7 @@ class OfflineGeometryCommandParser {
     final List<String>? polygonLabels = _parsePolygonLabels(text);
     if (polygonLabels != null) {
       final String labels = polygonLabels.join(', ');
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Polygon($labels)'],
         summary: '已在本地依次连接 ${polygonLabels.join('、')} 构成多边形。',
       );
@@ -98,7 +105,7 @@ class OfflineGeometryCommandParser {
     if (connectedPoints != null) {
       final String a = connectedPoints.group(1)!;
       final String b = connectedPoints.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Segment($a, $b)'],
         summary: '已在本地连接点 $a 和 $b。',
       );
@@ -111,7 +118,7 @@ class OfflineGeometryCommandParser {
     if (segment != null) {
       final String a = segment.group(1)!;
       final String b = segment.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Segment($a, $b)'],
         summary: '已在本地连接点 $a 和 $b。',
       );
@@ -124,7 +131,7 @@ class OfflineGeometryCommandParser {
     if (compactSegment != null) {
       final String a = compactSegment.group(1)!;
       final String b = compactSegment.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Segment($a, $b)'],
         summary: '已在本地连接点 $a 和 $b。',
       );
@@ -137,7 +144,7 @@ class OfflineGeometryCommandParser {
     if (midpoint != null) {
       final String a = midpoint.group(1)!;
       final String b = midpoint.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Midpoint($a, $b)'],
         summary: '已在本地创建 $a、$b 的中点。',
       );
@@ -150,7 +157,7 @@ class OfflineGeometryCommandParser {
     if (compactMidpoint != null) {
       final String a = compactMidpoint.group(1)!;
       final String b = compactMidpoint.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Midpoint($a, $b)'],
         summary: '已在本地创建 $a、$b 的中点。',
       );
@@ -163,7 +170,7 @@ class OfflineGeometryCommandParser {
     if (perpendicular != null) {
       final String point = perpendicular.group(1)!;
       final String line = perpendicular.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['PerpendicularLine($point, $line)'],
         summary: '已在本地创建过点 $point 且垂直于 $line 的直线。',
       );
@@ -176,7 +183,7 @@ class OfflineGeometryCommandParser {
     if (perpendicularToLine != null) {
       final String point = perpendicularToLine.group(1)!;
       final String line = perpendicularToLine.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['PerpendicularLine($point, $line)'],
         summary: '已在本地创建过点 $point 且垂直于 $line 的直线。',
       );
@@ -189,7 +196,7 @@ class OfflineGeometryCommandParser {
     if (parallel != null) {
       final String point = parallel.group(1)!;
       final String line = parallel.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['ParallelLine($point, $line)'],
         summary: '已在本地创建过点 $point 且平行于 $line 的直线。',
       );
@@ -202,7 +209,7 @@ class OfflineGeometryCommandParser {
     if (parallelToLine != null) {
       final String point = parallelToLine.group(1)!;
       final String line = parallelToLine.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['ParallelLine($point, $line)'],
         summary: '已在本地创建过点 $point 且平行于 $line 的直线。',
       );
@@ -215,7 +222,7 @@ class OfflineGeometryCommandParser {
     if (intersection != null) {
       final String first = intersection.group(1)!;
       final String second = intersection.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Intersect($first, $second)'],
         summary: '已在本地创建 $first 与 $second 的交点。',
       );
@@ -228,7 +235,7 @@ class OfflineGeometryCommandParser {
     if (tangent != null) {
       final String point = tangent.group(1)!;
       final String circle = tangent.group(2)!;
-      return OfflineGeometryPlan(
+      return GeometryPlan(
         commands: <String>['Tangent($point, $circle)'],
         summary: '已在本地创建点 $point 到圆 $circle 的切线。',
       );
@@ -241,7 +248,7 @@ class OfflineGeometryCommandParser {
     if (function != null) {
       final String expression = function.group(1)!.trim();
       if (!RegExp(r'[\u3400-\u9fff]').hasMatch(expression)) {
-        return OfflineGeometryPlan(
+        return GeometryPlan(
           commands: <String>[expression],
           summary: '已在本地绘制 $expression。',
         );
@@ -249,6 +256,111 @@ class OfflineGeometryCommandParser {
     }
 
     return null;
+  }
+
+  /// Whether [input] needs local canvas context to resolve point references.
+  /// The mobile page uses this to avoid a bridge round-trip for ordinary text.
+  bool needsPointReference(String input) {
+    final String text = _normalize(input);
+    return RegExp(r'(?:这|这些|所有).{0,4}点').hasMatch(text) &&
+        RegExp(r'连接|连结').hasMatch(text);
+  }
+
+  GeometryPlan? _parsePointReferencePlan(
+    String text,
+    Iterable<String> knownPointLabels,
+  ) {
+    if (!needsPointReference(text)) return null;
+    final List<String> labels = knownPointLabels
+        .where(
+          (String label) => RegExp(r'^[A-Za-z][A-Za-z0-9_]*$').hasMatch(label),
+        )
+        .toSet()
+        .toList(growable: false);
+
+    if (RegExp(r'(?:这)?(?:两|2)(?:个)?点').hasMatch(text) && labels.length == 2) {
+      return GeometryPlan(
+        commands: <String>['Segment(${labels[0]}, ${labels[1]})'],
+        summary: '已在本地连接当前的两个点 ${labels[0]} 和 ${labels[1]}。',
+      );
+    }
+
+    final bool isTriangle = RegExp(r'三角形').hasMatch(text);
+    if (isTriangle &&
+        RegExp(r'(?:这)?(?:三|3)(?:个)?点').hasMatch(text) &&
+        labels.length == 3) {
+      return GeometryPlan(
+        commands: <String>['Polygon(${labels.join(', ')})'],
+        summary: '已在本地连接当前三个点构成三角形。',
+      );
+    }
+
+    if (RegExp(r'(?:这些|所有)点').hasMatch(text) &&
+        labels.length >= 3 &&
+        labels.length <= 12) {
+      return GeometryPlan(
+        commands: <String>['Polygon(${labels.join(', ')})'],
+        summary: '已在本地连接当前 ${labels.length} 个点构成多边形。',
+      );
+    }
+    return null;
+  }
+
+  GeometryPlan? _parseCompositePointPlan(String text) {
+    if (!RegExp(r'画|作|绘制|创建|新建|连接|点|三角形|多边形').hasMatch(text)) {
+      return null;
+    }
+
+    final List<_ParsedPoint> points =
+        RegExp(
+              r'(?:点\s*)?([A-Za-z][A-Za-z0-9_]*)\s*(?:点)?\s*(?:的)?\s*(?:坐标)?\s*(?:=|为|是|:)?\s*\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)',
+              caseSensitive: false,
+            )
+            .allMatches(text)
+            .map((RegExpMatch match) {
+              return _ParsedPoint(
+                label: match.group(1)!,
+                x: match.group(2)!,
+                y: match.group(3)!,
+              );
+            })
+            .toList(growable: false);
+
+    // A single point is handled by the more specific rules below. This branch
+    // exists for genuinely multi-step requests so that no trailing geometry
+    // instruction is silently discarded.
+    if (points.length < 2) return null;
+    final Set<String> labels = points
+        .map((_ParsedPoint point) => point.label.toLowerCase())
+        .toSet();
+    if (labels.length != points.length) return null;
+
+    final List<String> commands = points
+        .map(
+          (_ParsedPoint point) => '${point.label} = (${point.x}, ${point.y})',
+        )
+        .toList(growable: true);
+    String constructionSummary = '';
+
+    final List<String>? explicitPolygon = _parsePolygonLabels(text);
+    if (explicitPolygon != null) {
+      commands.add('Polygon(${explicitPolygon.join(', ')})');
+      constructionSummary = '，并连接成多边形';
+    } else if (RegExp(r'三角形|多边形').hasMatch(text) && points.length >= 3) {
+      commands.add('Polygon(${points.map((point) => point.label).join(', ')})');
+      constructionSummary = '，并连接成多边形';
+    } else if (RegExp(r'连接|线段').hasMatch(text) && points.length == 2) {
+      commands.add('Segment(${points[0].label}, ${points[1].label})');
+      constructionSummary = '，并连接成线段';
+    }
+
+    final String pointSummary = points
+        .map((_ParsedPoint point) => '${point.label}(${point.x}, ${point.y})')
+        .join('、');
+    return GeometryPlan(
+      commands: commands,
+      summary: '已在本地创建 $pointSummary$constructionSummary。',
+    );
   }
 
   int _parseSideCount(String value) {
@@ -305,4 +417,12 @@ class OfflineGeometryCommandParser {
         .replaceAll('²', '^2')
         .replaceAll('³', '^3');
   }
+}
+
+class _ParsedPoint {
+  const _ParsedPoint({required this.label, required this.x, required this.y});
+
+  final String label;
+  final String x;
+  final String y;
 }

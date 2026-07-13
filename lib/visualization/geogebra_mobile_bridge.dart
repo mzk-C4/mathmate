@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:mathmate/geogebra/geometry_engine.dart';
 
 /// GeoGebra 移动端 JS Bridge —— 通过 WebViewController 的 JavaScript channel
 /// 与 GeoGebra applet 通信。替代 Web 端的 dart:html postMessage 方案。
-class GeogebraMobileBridge {
+class GeogebraMobileBridge implements GeometryEngine {
   final WebViewController _controller;
   int _msgId = 0;
   final Map<String, Completer<dynamic>> _pending = {};
@@ -67,13 +68,25 @@ class GeogebraMobileBridge {
     return {'success': false, 'label': null, 'error': '解析失败'};
   }
 
+  @override
+  Future<GeometryEngineCommandResult> executeCommand(String command) async {
+    final Map<String, dynamic> result = await evalCommand(command);
+    return GeometryEngineCommandResult(
+      success: result['success'] == true,
+      label: result['label'] as String?,
+      error: result['error'] as String?,
+    );
+  }
+
   /// 获取 GeoGebra XML 状态。
+  @override
   Future<String> getXML() async {
     final result = await _send('getXML');
     return result is String ? result : '';
   }
 
   /// Replaces the current construction with a previously saved XML snapshot.
+  @override
   Future<bool> setXML(String xml) async {
     final r = await _send('setXML', xml);
     return r == true || r == 'true';
@@ -86,6 +99,7 @@ class GeogebraMobileBridge {
   }
 
   /// 设置撤销点。
+  @override
   Future<bool> setUndoPoint() async {
     final r = await _send('setUndoPoint');
     return r == true || r == 'true';

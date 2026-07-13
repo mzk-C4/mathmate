@@ -10,6 +10,32 @@ void main() {
     expect(parser.parse('在（-2，3）处创建点 B')?.commands, <String>['B = (-2, 3)']);
   });
 
+  test('parses multiple points as one local plan', () {
+    expect(parser.parse('创建点 A(0,0)、B(4,0)、C(2,3)')?.commands, <String>[
+      'A = (0, 0)',
+      'B = (4, 0)',
+      'C = (2, 3)',
+    ]);
+    expect(parser.parse('新建 A 点的坐标为（1，2），B 点坐标是（3，4）')?.commands, <String>[
+      'A = (1, 2)',
+      'B = (3, 4)',
+    ]);
+  });
+
+  test('parses multi-step point constructions without dropping the tail', () {
+    expect(parser.parse('创建 A(0,0)、B(4,0)、C(2,3)，连接成三角形')?.commands, <String>[
+      'A = (0, 0)',
+      'B = (4, 0)',
+      'C = (2, 3)',
+      'Polygon(A, B, C)',
+    ]);
+    expect(parser.parse('画点 A(-1,0) 和点 B(2,3)，再连接线段 AB')?.commands, <String>[
+      'A = (-1, 0)',
+      'B = (2, 3)',
+      'Segment(A, B)',
+    ]);
+  });
+
   test('parses a fixed-radius circle', () {
     final plan = parser.parse('以 A 为圆心，半径为 3 画圆');
     expect(plan?.commands, <String>['Circle(A, 3)']);
@@ -66,6 +92,35 @@ void main() {
 
   test('parses compact midpoint notation', () {
     expect(parser.parse('求线段 AB 的中点')?.commands, <String>['Midpoint(A, B)']);
+  });
+
+  test('resolves unambiguous point references from the local canvas', () {
+    expect(
+      parser
+          .parse('连接这三个点构成三角形', knownPointLabels: <String>['A', 'B', 'C'])
+          ?.commands,
+      <String>['Polygon(A, B, C)'],
+    );
+    expect(
+      parser.parse('连接这两个点', knownPointLabels: <String>['P', 'Q'])?.commands,
+      <String>['Segment(P, Q)'],
+    );
+    expect(
+      parser
+          .parse('连接这些点构成多边形', knownPointLabels: <String>['A', 'B', 'C', 'D'])
+          ?.commands,
+      <String>['Polygon(A, B, C, D)'],
+    );
+  });
+
+  test('does not guess an ambiguous point reference', () {
+    expect(
+      parser.parse(
+        '连接这三个点构成三角形',
+        knownPointLabels: <String>['A', 'B', 'C', 'D'],
+      ),
+      isNull,
+    );
   });
 
   test('rejects invalid polygon labels', () {

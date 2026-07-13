@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:async';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui;
@@ -13,7 +13,8 @@ import 'geogebra_command_builder.dart';
 /// evalCommand, getXML, deleteObject, setUndoPoint, undo,
 /// setPerspective, reset, getPNGBase64, getSelectedObjects。
 class GeogebraJSBridge {
-  static final Map<String, Completer<dynamic>> _pending = <String, Completer<dynamic>>{};
+  static final Map<String, Completer<dynamic>> _pending =
+      <String, Completer<dynamic>>{};
   static int _msgId = 0;
   static bool _listenerRegistered = false;
   static html.IFrameElement? _iframe;
@@ -66,13 +67,23 @@ class GeogebraJSBridge {
   /// 执行一条 GeoGebra 命令，返回 {success, label, error}。
   static Future<Map<String, dynamic>> evalCommand(String command) async {
     final result = await _send('evalCommand', {'command': command});
-    return {'success': result['success'] == true, 'label': result['label'], 'error': result['error']};
+    return {
+      'success': result['success'] == true,
+      'label': result['label'],
+      'error': result['error'],
+    };
   }
 
   /// 获取 GeoGebra XML 状态。
   static Future<String> getXML() async {
     final result = await _send('getXML');
     return result['xml'] as String? ?? '';
+  }
+
+  /// Replaces the current construction with a saved XML snapshot.
+  static Future<bool> setXML(String xml) async {
+    final result = await _send('setXML', {'xml': xml});
+    return result['success'] == true;
   }
 
   /// 删除指定标签的对象。
@@ -113,7 +124,11 @@ class GeogebraJSBridge {
   }
 
   /// 导出 PNG Base64。
-  static Future<String> getPNGBase64({double scale = 1.0, bool transparent = false, int dpi = 96}) async {
+  static Future<String> getPNGBase64({
+    double scale = 1.0,
+    bool transparent = false,
+    int dpi = 96,
+  }) async {
     final result = await _send('getPNGBase64', {
       'scale': scale,
       'transparent': transparent,
@@ -250,6 +265,11 @@ class _GeogebraWebRendererState extends State<GeogebraWebRenderer> {
         case 'getXML':
           postReply(id, { type: 'xmlResult', xml: window.ggbApplet.getXML() || '' });
           break;
+        case 'setXML':
+          var restored = true;
+          try { window.ggbApplet.setXML(msg.xml || ''); } catch(e) { restored = false; }
+          postReply(id, { type: 'setXMLResult', success: restored });
+          break;
         case 'deleteObject':
           var ok = true;
           try { window.ggbApplet.deleteObject(msg.label); } catch(e) { ok = false; }
@@ -369,7 +389,8 @@ $jsCommands
       _loading = true;
       _hasError = false;
     });
-    final freshViewType = 'ggb-scene-retry-${DateTime.now().millisecondsSinceEpoch}';
+    final freshViewType =
+        'ggb-scene-retry-${DateTime.now().millisecondsSinceEpoch}';
     _viewType = freshViewType;
     _createGeoGebraView();
   }
@@ -389,8 +410,13 @@ $jsCommands
                 children: <Widget>[
                   const CircularProgressIndicator(strokeWidth: 2),
                   const SizedBox(height: 12),
-                  Text('GeoGebra 加载中...',
-                      style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.5))),
+                  Text(
+                    'GeoGebra 加载中...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -402,10 +428,19 @@ $jsCommands
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Icon(Icons.error_outline, color: cs.onSurface.withValues(alpha: 0.4), size: 40),
+                  Icon(
+                    Icons.error_outline,
+                    color: cs.onSurface.withValues(alpha: 0.4),
+                    size: 40,
+                  ),
                   const SizedBox(height: 12),
-                  Text('GeoGebra 加载失败',
-                      style: TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.6))),
+                  Text(
+                    'GeoGebra 加载失败',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: _retry,
@@ -421,6 +456,10 @@ $jsCommands
   }
 
   static String _escapeJs(String s) {
-    return s.replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll('\n', '\\n').replaceAll('\r', '\\r');
+    return s
+        .replaceAll('\\', '\\\\')
+        .replaceAll('"', '\\"')
+        .replaceAll('\n', '\\n')
+        .replaceAll('\r', '\\r');
   }
 }

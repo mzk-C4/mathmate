@@ -21,4 +21,12 @@ void main() {
     final results = await GeogebraCommandSearchService.instance.search('  ');
     expect(results, isEmpty);
   });
+
+  test('exposes normalized names for runtime plan validation', () async {
+    final Set<String> commands = await GeogebraCommandSearchService.instance
+        .supportedCommandNames();
+
+    expect(commands, containsAll(<String>['circle', 'polygon', 'rotate']));
+    expect(commands, isNot(contains('RegularPolygon')));
+  });
 }

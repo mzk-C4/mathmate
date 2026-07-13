@@ -32,8 +32,11 @@ class ConversationRepository {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    conversation.id = DateTime.now().millisecondsSinceEpoch;
-    await _box!.put(conversation.id, conversation);
+    // Hive int key 范围 0-0xFFFFFFFF，不能用毫秒时间戳（超范围导致 HiveError）
+    conversation.id = 0; // 临时值（满足 Hive 序列化）
+    final int hiveKey = await _box!.add(conversation); // Hive 自动递增 key（保证 < 0xFFFFFFFF）
+    conversation.id = hiveKey;
+    await _box!.put(hiveKey, conversation); // 更新 id 到持久化对象
     return conversation;
   }
 

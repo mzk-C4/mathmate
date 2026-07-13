@@ -185,6 +185,40 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
     }
   }
 
+  /// 修改新增：长按资料卡 → 确认后删除（MaterialRepository.watch 会自动刷新列表）
+  Future<void> _confirmDelete(StudyMaterial m) async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) {
+        final ColorScheme cs = Theme.of(ctx).colorScheme;
+        return AlertDialog(
+          title: const Text('删除资料'),
+          content: Text('确定删除「${m.title}」吗？此操作不可撤销。'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.errorContainer,
+                foregroundColor: cs.onErrorContainer,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
+    );
+    if (ok != true) return;
+    await MaterialRepository.instance.delete(m.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已删除'), duration: Duration(seconds: 1)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,8 +249,11 @@ class _MyMaterialsTabState extends State<_MyMaterialsTab> {
                               childAspectRatio: 0.70,
                             ),
                         delegate: SliverChildBuilderDelegate(
-                          (BuildContext ctx, int i) =>
-                              _MaterialCard(material: _filtered[i]),
+                          (BuildContext ctx, int i) => GestureDetector(
+                            // 修改新增：长按资料卡触发删除确认
+                            onLongPress: () => _confirmDelete(_filtered[i]),
+                            child: _MaterialCard(material: _filtered[i]),
+                          ),
                           childCount: _filtered.length,
                         ),
                       ),

@@ -10,11 +10,11 @@
 ### GeoGebra 离线命令解析
 - 新增离线几何命令解析器，无需联网即可解析常见 GeoGebra 命令
 - 命令搜索服务支持本地索引快速检索
-- 新增 commands_index.json 资产文件覆盖常用几何指令
+- 新增 `commands_index.json` 资产文件覆盖常用几何指令
 - GeoChat 会话状态本地存储与恢复
 
 ### 考试系统后端增强
-- 新增独立认证模块 (auth.py)，支持 JWT Token 签发与校验
+- 新增独立认证模块 (`auth.py`)，支持 JWT Token 签发与校验
 - 考试路由增加认证中间件保护
 - 题目选择器新增单元测试覆盖
 - 数据库模型扩展支持更多考试元数据
@@ -54,9 +54,9 @@
 - 扩展 Widget 测试覆盖
 
 ## 依赖更新
-- 新增 crypto: ^3.0.7（SHA256 校验）
-- 新增 pdfrx: ^2.4.7（PDF 渲染）
+- 新增 `crypto: ^3.0.7`（SHA256 校验）
+- 新增 `pdfrx: ^2.4.7`（PDF 渲染）
 
 ---
-发布日期: 2026-07-13
-Full Changelog: https://github.com/mzk-C4/mathmate/compare/v2.4.3...v2.4.4
+**发布日期**: 2026-07-13
+**Full Changelog**: https://github.com/mzk-C4/mathmate/compare/v2.4.3...v2.4.4

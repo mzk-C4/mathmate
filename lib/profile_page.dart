@@ -229,7 +229,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 10),
                   _MenuCard(
                     icon: Icons.system_update_rounded,
-                    title: '检查更新 (v${UpdateService.currentVersion})',
+                    title: '检查更新',
                     onTap: () => _checkUpdate(context),
                   ),
                   const SizedBox(height: 10),
@@ -489,32 +489,93 @@ class _ProfilePageState extends State<ProfilePage> {
         duration: Duration(seconds: 1),
       ),
     );
-    final update = await UpdateService.checkUpdate();
-    if (!mounted) return;
+    AppVersion? update;
+    try {
+      update = await UpdateService.checkUpdate(reportErrors: true);
+    } on UpdateCheckException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    if (!context.mounted) return;
     if (update == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('已是最新版本'), duration: Duration(seconds: 2)),
       );
     } else {
-      showDialog(
+      final availableUpdate = update;
+      final shouldInstall = await showDialog<bool>(
         context: context,
+        barrierDismissible: !availableUpdate.forceUpdate,
         builder: (ctx) => AlertDialog(
-          title: const Text('发现新版本'),
-          content: Text('最新版本: ${update.version}\n\n${update.releaseNotes}'),
+          title: Text(availableUpdate.forceUpdate ? '必须更新' : '发现新版本'),
+          content: Text(
+            '最新版本: ${availableUpdate.version}\n\n'
+            '${availableUpdate.releaseNotes}',
+          ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('稍后'),
-            ),
+            if (!availableUpdate.forceUpdate)
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('稍后'),
+              ),
             FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                UpdateService.downloadAndInstall(update);
-              },
+              onPressed: () => Navigator.pop(ctx, true),
               child: const Text('立即更新'),
             ),
           ],
         ),
+      );
+      if (shouldInstall == true && context.mounted) {
+        await _downloadUpdate(context, availableUpdate);
+      }
+    }
+  }
+
+  Future<void> _downloadUpdate(BuildContext context, AppVersion update) async {
+    final progress = ValueNotifier<double>(0);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('正在下载更新'),
+          content: ValueListenableBuilder<double>(
+            valueListenable: progress,
+            builder: (_, value, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinearProgressIndicator(value: value > 0 ? value : null),
+                const SizedBox(height: 12),
+                Text(
+                  value > 0
+                      ? '已下载 ${(value * 100).toStringAsFixed(0)}%'
+                      : '正在连接下载服务器...',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final message = await UpdateService.downloadAndInstall(
+      update,
+      onProgress: (value) => progress.value = value,
+    );
+    if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+    progress.dispose();
+
+    if (message != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 4)),
       );
     }
   }

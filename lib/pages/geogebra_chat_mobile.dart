@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mathmate/geogebra/geogebra_asset_manager.dart';
 import 'package:mathmate/geogebra/geogebra_canvas_context.dart';
+import 'package:mathmate/geogebra/geochat_history_builder.dart';
+import 'package:mathmate/geogebra/geometry_plan.dart';
+import 'package:mathmate/geogebra/geometry_plan_executor.dart';
+import 'package:mathmate/geogebra/geometry_plan_tool_handler.dart';
 import 'package:mathmate/geogebra/offline_geometry_command_parser.dart';
 import 'package:mathmate/geogebra/geochat_session_store.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -28,6 +32,8 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
       const GeogebraCanvasContextParser();
   final OfflineGeometryCommandParser _offlineParser =
       const OfflineGeometryCommandParser();
+  final GeochatHistoryBuilder _historyBuilder = const GeochatHistoryBuilder();
+  final GeometryPlanExecutor _planExecutor = const GeometryPlanExecutor();
   final GeochatSessionStore _sessionStore = GeochatSessionStore();
   late GeogebraMobileBridge _bridge;
 
@@ -171,8 +177,14 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
             try { r = ggb.getXML ? ggb.getXML() : ''; } catch(e) { r = ''; }
             break;
           case 'setXML':
-            try { if (ggb.setXML) ggb.setXML(pl); } catch(e) {}
-            r = 'true';
+            var restored = false;
+            try {
+              if (ggb.setXML) {
+                ggb.setXML(pl);
+                restored = true;
+              }
+            } catch(e) {}
+            r = JSON.stringify(restored);
             break;
           case 'deleteObject':
             try { ggb.deleteObject(pl); } catch(e) {}
@@ -244,6 +256,9 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
           }
           return '失败: ${result['error'] ?? "未知错误"}';
 
+        case 'executeGeoGebraPlan':
+          return GeometryPlanToolHandler(engine: _bridge).execute(args);
+
         case 'deleteGeoGebraObject':
           final label = args['label'] as String? ?? '';
           final ok = await _bridge.deleteObject(label);
@@ -288,16 +303,24 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
     });
     _scrollToBottom();
 
-    final OfflineGeometryPlan? localPlan = _offlineParser.parse(text);
+    GeometryPlan? localPlan = _offlineParser.parse(text);
+    if (localPlan == null && _offlineParser.needsPointReference(text)) {
+      localPlan = await _parsePlanWithCanvasPoints(text);
+    }
     if (localPlan != null) {
       await _executeOfflinePlan(localPlan);
       return;
     }
 
-    final history = <Map<String, String>>[];
-    for (final b in _bubbles.where((b) => !b.isStreaming)) {
-      history.add({'role': b.role, 'content': b.content});
-    }
+    final List<Map<String, String>> history = _historyBuilder.build(
+      _bubbles.map(
+        (ChatBubble bubble) => GeochatHistoryEntry(
+          role: bubble.role,
+          content: bubble.content,
+          isStreaming: bubble.isStreaming,
+        ),
+      ),
+    );
 
     try {
       final assistantIdx = _bubbles.length - 1;
@@ -317,9 +340,12 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
           // 替换掉之前的 ⏳ 占位为实际结果
           if (pendingTool.isNotEmpty) {
             final placeholder = '\n\n⏳ 调用工具: `$pendingTool`...';
+            final String displayedResult = pendingTool == 'executeGeoGebraPlan'
+                ? GeometryPlanToolHandler.describeResult(chunk.toolResult!)
+                : chunk.toolResult!;
             fullContent = fullContent.replaceFirst(
               placeholder,
-              '\n\n✅ `$pendingTool` → ${chunk.toolResult}',
+              '\n\n✅ `$pendingTool` → $displayedResult',
             );
             pendingTool = '';
           }
@@ -353,26 +379,47 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
     }
   }
 
-  Future<void> _executeOfflinePlan(OfflineGeometryPlan plan) async {
+  Future<GeometryPlan?> _parsePlanWithCanvasPoints(String text) async {
+    final List<String> selected = await _bridge.getSelectedObjects();
+    final String xml = await _bridge.getXML();
+    final GeogebraCanvasContext context = _contextParser.parse(
+      xml,
+      selectedObjects: selected,
+    );
+    final Set<String> pointLabels = context.elements
+        .where((Map<String, dynamic> element) => element['type'] == 'point')
+        .map((Map<String, dynamic> element) => element['label'])
+        .whereType<String>()
+        .toSet();
+    final List<String> selectedPoints = selected
+        .where(pointLabels.contains)
+        .toList(growable: false);
+    return _offlineParser.parse(
+      text,
+      knownPointLabels: selectedPoints.isNotEmpty
+          ? selectedPoints
+          : pointLabels.toList(growable: false),
+    );
+  }
+
+  Future<void> _executeOfflinePlan(GeometryPlan plan) async {
     final int assistantIndex = _bubbles.length - 1;
-    final List<String> failures = <String>[];
     try {
-      await _bridge.setUndoPoint();
-      for (final String command in plan.commands) {
-        final Map<String, dynamic> result = await _bridge.evalCommand(command);
-        if (result['success'] != true) {
-          failures.add('$command: ${result['error'] ?? '命令执行失败'}');
-          break;
-        }
-      }
+      final GeometryPlanExecutionResult result = await _planExecutor.execute(
+        plan: plan,
+        engine: _bridge,
+      );
 
       if (!mounted) return;
       setState(() {
         _bubbles[assistantIndex] = ChatBubble(
           role: 'assistant',
-          content: failures.isEmpty
+          content: result.success
               ? '📱 ${plan.summary}\n\n本次使用 APP 本地解析，未请求大模型。'
-              : '本地绘图失败：${failures.join('\n')}',
+              : result.validation?.isValid == false
+              ? '本地计划校验失败：${result.error}'
+              : '本地绘图失败：${result.error}'
+                    '${result.rolledBack ? '\n\n画布已恢复到执行前状态。' : ''}',
         );
       });
     } catch (error) {
