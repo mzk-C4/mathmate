@@ -54,6 +54,9 @@ class AbilityScoreService extends ChangeNotifier {
   /// 超参数
   static const double n0 = 5.0; // 初始虚拟样本量
   static const double lambda = 30.0; // 题量成长半衰期
+  // [摆拍] static const double demoLambda = 15.0;
+  // [摆拍] bool _demoMode = false;
+  // [摆拍] bool get demoMode => _demoMode;
 
   /// K-12 自评画像
   UserRadarProfile? _selfAssessmentK12;
@@ -96,6 +99,9 @@ class AbilityScoreService extends ChangeNotifier {
     _currentGrade = grade;
     notifyListeners();
   }
+
+  // [摆拍] Future<void> enableDemoMode() async { … }
+  // [摆拍] void disableDemoMode() { … }
 
   /// 保存自评分数（自动关联到对应维度体系）
   Future<void> saveSelfAssessment(UserRadarProfile profile) async {
@@ -241,7 +247,7 @@ class AbilityScoreService extends ChangeNotifier {
       N: N,
       R: R,
       D: D,
-      lambdaValue: lambda,
+      lambdaValue: lambda, // [摆拍] lambdaValue: _demoMode ? demoLambda : lambda,
     );
   }
 

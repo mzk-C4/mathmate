@@ -8,7 +8,7 @@ class AccountSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('账户设置')),
+      appBar: AppBar(title: const Text('个人资料修改')),
       backgroundColor: cs.surfaceContainerLowest,
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -20,28 +20,6 @@ class AccountSettingsPage extends StatelessWidget {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const EditProfilePage()),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          _SettingTile(
-            icon: Icons.lock_outline_rounded,
-            title: '账号与安全',
-            subtitle: '密码、绑定手机与邮箱',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('账号与安全功能开发中')),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          _SettingTile(
-            icon: Icons.notifications_none_rounded,
-            title: '通知设置',
-            subtitle: '提醒频率与消息类型',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('通知设置功能开发中')),
               );
             },
           ),

@@ -43,6 +43,7 @@ class _PracticePageState extends State<PracticePage> {
   void initState() {
     super.initState();
     _abilityService.addListener(_onAbilityChanged);
+    // [摆拍] _abilityService.enableDemoMode();
     _loadGradeAndRecommend();
   }
 
@@ -87,6 +88,25 @@ class _PracticePageState extends State<PracticePage> {
       );
 
       if (!mounted) return;
+
+      // ====== [摆拍] 演示题目 ======
+      // const LibraryQuestion demoBinomial = LibraryQuestion(
+      //   id: 'demo_binomial_2022tj', section: '计数原理', type: '单选题',
+      //   content: r'在 $(\sqrt{x} + \frac{3}{x^2})^5$ 的展开式中，常数项是',
+      //   options: ['A. 5', 'B. 10', 'C. 15', 'D. 20'], answer: 'C',
+      //   solution: r'…通项 $T_{r+1}=C_5^r\cdot3^r\cdot x^{\frac{5-r}{2}-2r}$，令指数=0得r=1，常数项$C_5^1\cdot3^1=15$',
+      //   difficulty: 0.6, knowledgePoints: ['二项式定理', '计数原理'], sourceRef: '2022天津卷',
+      // );
+      // const LibraryQuestion demoProbability = LibraryQuestion(
+      //   id: 'demo_probability_5choose3', section: '计数原理', type: '填空题',
+      //   content: r'从甲、乙等5名同学中随机选3名参加社区服务工作，则甲、乙都入选的概率为',
+      //   answer: '3/10',
+      //   solution: r'总选法$C_5^3=10$种；甲乙都入选时再选1人$C_3^1=3$种，概率$\frac{3}{10}$',
+      //   difficulty: 0.5, knowledgePoints: ['古典概型', '计数原理'], sourceRef: '2022新课标卷',
+      // );
+      // final List<LibraryQuestion> questions = [demoBinomial, demoProbability, ...result.questions];
+      // ====== [摆拍] 演示题目 END ======
+
       setState(() {
         _questions = result.questions;
         _details = result.details;
@@ -280,6 +300,7 @@ class _PracticePageState extends State<PracticePage> {
           index: index,
           grade: _grade,
           detail: _details[_questions[index].dimensionFromSectionFor(_grade)],
+          allQuestions: _questions,
         );
       },
     );
@@ -369,12 +390,14 @@ class _QuestionCard extends StatelessWidget {
   final int index;
   final int? grade;
   final DimensionRecommendDetail? detail;
+  final List<LibraryQuestion> allQuestions;
 
   const _QuestionCard({
     required this.question,
     required this.index,
     this.grade,
     this.detail,
+    this.allQuestions = const [],
   });
 
   @override
@@ -534,7 +557,11 @@ class _QuestionCard extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => QuestionSolverPage(question: question),
+                      builder: (_) => QuestionSolverPage(
+                        question: question,
+                        allQuestions: allQuestions,
+                        currentIndex: index,
+                      ),
                     ),
                   );
                 },

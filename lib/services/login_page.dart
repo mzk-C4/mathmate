@@ -1,7 +1,8 @@
-import 'package:mathmate/main.dart'; // 引入 main.dart 以便识别 MainScreen
+import 'package:mathmate/main.dart';
 import 'package:mathmate/pages/register_page.dart';
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart'; 
+import 'package:mathmate/services/auth_service.dart';
+import 'package:mathmate/services/user_profile_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -40,9 +41,18 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       if (response.ok) {
+        // 用 UserProfile 中的昵称，未设置时回退到用户名
+        final profileService = UserProfileService();
+        await profileService.load();
+        final nickname = profileService.profile.nickname;
+        final displayName = (nickname.isNotEmpty && nickname != 'MathMate_User')
+            ? nickname
+            : (response.user?.username ?? '用户');
+
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('欢迎回来, ${response.user?.username ?? '用户'}!'),
+            content: Text('$displayName，你好'),
             backgroundColor: Colors.green,
           ),
         );
@@ -111,18 +121,19 @@ const Image(
                 ),
                 const SizedBox(height: 40),
 
-                // 账号输入框
+                // 手机号输入框
                 TextFormField(
                   controller: _usernameController,
+                  keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
-                    labelText: '用户名',
-                    prefixIcon: const Icon(Icons.person_outline),
+                    labelText: '手机号',
+                    prefixIcon: const Icon(Icons.phone_android_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return '请输入用户名';
+                    if (value == null || value.isEmpty) return '请输入手机号';
                     return null;
                   },
                 ),

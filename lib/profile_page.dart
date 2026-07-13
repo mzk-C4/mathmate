@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mathmate/about_mathmate_page.dart';
-import 'package:mathmate/account_settings_page.dart';
+import 'package:mathmate/edit_profile_page.dart';
 import 'package:mathmate/data/history_repository.dart';
 import 'package:mathmate/grade_selection_page.dart';
 import 'package:mathmate/help_support_page.dart';
@@ -14,6 +16,7 @@ import 'package:mathmate/services/ability_score_service.dart';
 import 'package:mathmate/services/auth_service.dart';
 import 'package:mathmate/services/login_page.dart';
 import 'package:mathmate/services/theme_service.dart';
+import 'package:mathmate/models/user_profile.dart';
 import 'package:mathmate/services/update_service.dart';
 import 'package:mathmate/services/user_profile_service.dart';
 import 'package:mathmate/tutorial_page.dart';
@@ -131,11 +134,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 26),
                   _MenuCard(
                     icon: Icons.settings_outlined,
-                    title: '账户设置',
+                    title: '个人资料修改',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const AccountSettingsPage(),
+                          builder: (_) => const EditProfilePage(),
                         ),
                       );
                     },
@@ -276,6 +279,34 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _pickAndSaveAvatar() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (file == null) return;
+    _profileService.save(UserProfile(
+      nickname: _profileService.profile.nickname,
+      avatar: file.path,
+      grade: _profileService.profile.grade,
+      bio: _profileService.profile.bio,
+    ));
+  }
+
+  Widget _buildAvatar(ColorScheme cs) {
+    final avatarPath = _profileService.profile.avatar;
+    if (avatarPath.isNotEmpty) {
+      final file = File(avatarPath);
+      if (file.existsSync()) {
+        return Image.file(file, width: 92, height: 92, fit: BoxFit.cover);
+      }
+    }
+    return const Image(
+      image: AssetImage('assets/app_icon_final.png'),
+      width: 92,
+      height: 92,
+      fit: BoxFit.cover,
+    );
+  }
+
   void _showThemePicker(BuildContext context) {
     final ThemeService ts = ThemeService.instance;
     showDialog(
@@ -335,32 +366,56 @@ class _ProfilePageState extends State<ProfilePage> {
       alignment: Alignment.center,
       child: Column(
         children: <Widget>[
-          Container(
+          SizedBox(
             width: 92,
             height: 92,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: cs.primary.withValues(alpha: 0.28),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                Container(
+                  width: 92,
+                  height: 92,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: cs.primary.withValues(alpha: 0.28),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: _buildAvatar(cs),
+                  ),
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: GestureDetector(
+                    onTap: _pickAndSaveAvatar,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: cs.primary,
+                        border: Border.all(color: cs.surface, width: 2),
+                      ),
+                      child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                    ),
+                  ),
                 ),
               ],
-            ),
-            child: const ClipOval(
-              child: Image(
-                image: AssetImage('assets/app_icon_final.png'),
-                width: 92,
-                height: 92,
-                fit: BoxFit.cover,
-              ),
             ),
           ),
           const SizedBox(height: 14),
           if (auth.isLoggedIn && auth.user != null) ...[
             Text(
-              auth.user!.username,
+              _profileService.profile.nickname.isNotEmpty &&
+                      _profileService.profile.nickname != 'MathMate_User'
+                  ? _profileService.profile.nickname
+                  : auth.user!.username,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,

@@ -7,8 +7,15 @@ import 'package:mathmate/services/ability_score_service.dart';
 /// 答题页面 —— 从题库选题后进入，支持单选/填空，提交后看解析
 class QuestionSolverPage extends StatefulWidget {
   final LibraryQuestion question;
+  final List<LibraryQuestion> allQuestions;
+  final int currentIndex;
 
-  const QuestionSolverPage({super.key, required this.question});
+  const QuestionSolverPage({
+    super.key,
+    required this.question,
+    this.allQuestions = const [],
+    this.currentIndex = 0,
+  });
 
   @override
   State<QuestionSolverPage> createState() => _QuestionSolverPageState();
@@ -53,10 +60,14 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
       return;
     }
 
-    // 判断对错
-    final bool correct = _isChoice
-        ? userAnswer == q.answer
-        : userAnswer.toLowerCase() == q.answer.toLowerCase();
+    // 判断对错（清洗标准答案中的 $、括号、空格）
+    final String cleanAnswer = _cleanAnswer(q.answer);
+    final bool correct;
+    if (_isChoice) {
+      correct = userAnswer == cleanAnswer;
+    } else {
+      correct = _normalizedEquals(userAnswer, q.answer);
+    }
 
     // 记录到能力评分
     final int dimIndex = _dimensionIndex;
@@ -85,12 +96,61 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
     return -1;
   }
 
+  String _cleanAnswer(String answer) =>
+      answer.replaceAll(RegExp(r'[\$\(\)\s]'), '');
+
+  bool _normalizedEquals(String user, String expected) {
+    final String u = user.trim();
+    final String e = expected.trim().replaceAll(RegExp(r'[\$\\,{}]'), '');
+    if (u.toLowerCase() == e.toLowerCase()) return true;
+    final double? uNum = _tryParseNumber(u);
+    final double? eNum = _tryParseNumber(e);
+    if (uNum != null && eNum != null) return (uNum - eNum).abs() < 1e-9;
+    return false;
+  }
+
+  double? _tryParseNumber(String s) {
+    final slash = s.indexOf('/');
+    if (slash > 0 && slash < s.length - 1) {
+      final a = double.tryParse(s.substring(0, slash));
+      final b = double.tryParse(s.substring(slash + 1));
+      if (a != null && b != null && b != 0) return a / b;
+    }
+    return double.tryParse(s);
+  }
+
   void _retry() {
     setState(() {
       _submitted = false;
       _isCorrect = null;
       _selectedOption = null;
       _answerController.clear();
+    });
+  }
+
+  bool get _hasNextQuestion =>
+      widget.allQuestions.isNotEmpty &&
+      widget.currentIndex < widget.allQuestions.length - 1;
+
+  void _goToNextQuestion() {
+    if (!_hasNextQuestion) return;
+    final next = widget.allQuestions[widget.currentIndex + 1];
+    final nextIdx = widget.currentIndex + 1;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => QuestionSolverPage(
+              question: next,
+              allQuestions: widget.allQuestions,
+              currentIndex: nextIdx,
+            ),
+          ),
+        );
+      } catch (e) {
+        debugPrint('下一题跳转失败: $e');
+      }
     });
   }
 
@@ -194,17 +254,34 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: options.map((opt) {
-        // 解析选项：如 "A. {−1, 0}" → label="A", text="{−1, 0}"
-        final String label = opt.length >= 2 && opt[1] == '.'
-            ? opt.substring(0, 1)
-            : opt;
-        final String text = opt.length >= 2 && opt[1] == '.'
-            ? opt.substring(2).trim()
-            : opt;
+        String label;
+        String text;
+        final paren = RegExp(r'^\$*\s*\(\s*([A-D])\s*\)\s*\$*\s*(.*)').firstMatch(opt);
+        if (paren != null) {
+          label = paren.group(1)!;
+          text = paren.group(2)!;
+        } else {
+          final dot = RegExp(r'^\$*\s*([A-D])\s*\$*\s*[\.、．]\s*(.*)').firstMatch(opt);
+          if (dot != null) {
+            label = dot.group(1)!;
+            text = dot.group(2)!;
+          } else {
+            label = opt.length >= 2 && opt[1] == '.'
+                ? opt.substring(0, 1)
+                : opt;
+            text = opt.length >= 2 && opt[1] == '.'
+                ? opt.substring(2).trim()
+                : opt;
+          }
+        }
+        label = label.replaceAll(RegExp(r'[^A-D]'), '');
+        if (label.isEmpty) label = opt;
+
+        final String cleanAnswer = q.answer.replaceAll(RegExp(r'[\$\(\)\s]'), '');
 
         final bool isSelected = _selectedOption == label;
-        final bool showCorrect = _submitted && label == q.answer;
-        final bool showWrong = _submitted && isSelected && label != q.answer;
+        final bool showCorrect = _submitted && label == cleanAnswer;
+        final bool showWrong = _submitted && isSelected && label != cleanAnswer;
 
         Color? bgColor;
         Color? borderColor;
@@ -361,7 +438,7 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
               Expanded(
                 child: _isChoice
                     ? Text(
-                        q.answer,
+                        _cleanAnswer(q.answer),
                         style: TextStyle(
                           fontSize: 14,
                           color: cs.primary,
@@ -400,12 +477,14 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('重新作答'),
               ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: const Text('下一题'),
-              ),
+              if (_hasNextQuestion) ...[
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: _goToNextQuestion,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                  label: const Text('下一题'),
+                ),
+              ],
             ],
           ),
         ],
@@ -480,59 +559,34 @@ class _LatexRenderer extends StatelessWidget {
   /// 混合模式：逐字符解析 $...$ 和 $$...$$，其余为普通文本
   Widget _buildMixed() {
     final String t = text;
-    final List<InlineSpan> spans = <InlineSpan>[];
     final Color effectiveColor = color ?? cs.onSurface;
     final FontWeight weight = bold ? FontWeight.w700 : FontWeight.w400;
+    final List<_LatexSegment> segments = <_LatexSegment>[];
 
     int i = 0;
     while (i < t.length) {
-      // 检查 $$ 块级公式开始
       if (i + 1 < t.length && t.substring(i).startsWith(r'$$')) {
         final end = t.indexOf(r'$$', i + 2);
         if (end != -1) {
           final formula = t.substring(i + 2, end).trim();
           if (formula.isNotEmpty) {
-            spans.add(WidgetSpan(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Math.tex(
-                  formula,
-                  mathStyle: MathStyle.display,
-                  textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor),
-                  onErrorFallback: (err) => Text(formula,
-                      style: TextStyle(fontSize: baseFontSize, color: effectiveColor)),
-                ),
-              ),
-            ));
+            segments.add(_LatexSegment(formula, isLatex: true, isDisplay: true));
           }
           i = end + 2;
           continue;
         }
       }
-
-      // 检查 $ 内联公式
       if (t[i] == r'$') {
         final end = t.indexOf(r'$', i + 1);
         if (end != -1) {
           final formula = t.substring(i + 1, end);
           if (formula.trim().isNotEmpty) {
-            spans.add(WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: Math.tex(
-                formula,
-                mathStyle: MathStyle.text,
-                textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
-                onErrorFallback: (err) => Text(formula,
-                    style: TextStyle(fontSize: baseFontSize, color: effectiveColor)),
-              ),
-            ));
+            segments.add(_LatexSegment(formula, isLatex: true));
           }
           i = end + 1;
           continue;
         }
       }
-
-      // 普通文本：累积到下一个 $ 或 $$
       final next1 = t.indexOf(r'$$', i);
       final next2 = t.indexOf(r'$', i);
       int next = -1;
@@ -543,18 +597,47 @@ class _LatexRenderer extends StatelessWidget {
       } else if (next2 != -1) {
         next = next2;
       }
-
       final String plain = next == -1 ? t.substring(i) : t.substring(i, next);
       if (plain.isNotEmpty) {
-        spans.add(TextSpan(
-          text: plain,
-          style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight, height: 1.6),
-        ));
+        segments.add(_LatexSegment(plain));
       }
       if (next == -1) break;
       i = next;
     }
 
-    return Text.rich(TextSpan(children: spans));
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: segments.map((seg) {
+        if (!seg.isLatex) {
+          return Text(
+            seg.text,
+            style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight, height: 1.6),
+          );
+        }
+        try {
+          return Math.tex(
+            seg.text,
+            mathStyle: seg.isDisplay ? MathStyle.display : MathStyle.text,
+            textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+            onErrorFallback: (err) => Text(
+              seg.text,
+              style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+            ),
+          );
+        } catch (_) {
+          return Text(
+            seg.text,
+            style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+          );
+        }
+      }).toList(),
+    );
   }
+}
+
+class _LatexSegment {
+  final String text;
+  final bool isLatex;
+  final bool isDisplay;
+  const _LatexSegment(this.text, {this.isLatex = false, this.isDisplay = false});
 }
