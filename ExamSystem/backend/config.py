@@ -23,6 +23,18 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     max_upload_mb: int = Field(default=8, ge=1, le=50)
 
+    auth_secret_path: str = "/opt/mathmate/auth_secret.txt"
+    auth_token_max_age_seconds: int = Field(default=604800, ge=300)
+    cors_origins: str = "https://mathmate.top,https://www.mathmate.top"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[1] / ".env",
         env_file_encoding="utf-8",

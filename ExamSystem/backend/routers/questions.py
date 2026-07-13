@@ -3,8 +3,15 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from auth import AuthUser, require_admin
 from database import JsonStore, get_store
-from schemas import QuestionAdminOut, QuestionCreate, QuestionOut
+from schemas import (
+    QuestionAdminOut,
+    QuestionCreate,
+    QuestionImportRequest,
+    QuestionImportResponse,
+    QuestionOut,
+)
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -28,9 +35,46 @@ def list_questions(
 @router.post("", response_model=QuestionAdminOut, status_code=201)
 def create_question(
     payload: QuestionCreate,
+    _admin: AuthUser = Depends(require_admin),
     store: JsonStore = Depends(get_store),
 ) -> dict[str, Any]:
     try:
         return store.create_question(payload.model_dump())
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/import", response_model=QuestionImportResponse)
+def import_questions(
+    payload: QuestionImportRequest,
+    _admin: AuthUser = Depends(require_admin),
+    store: JsonStore = Depends(get_store),
+) -> QuestionImportResponse:
+    questions = [question.model_dump() for question in payload.questions]
+    codes = [str(question["question_code"]) for question in questions]
+    existing = {str(question["question_code"]) for question in store.list_questions()}
+    duplicates = sorted(
+        {code for code in codes if codes.count(code) > 1 or code in existing}
+    )
+    if duplicates:
+        return QuestionImportResponse(
+            dry_run=payload.dry_run,
+            accepted_count=0,
+            imported_count=0,
+            duplicate_codes=duplicates,
+        )
+    if payload.dry_run:
+        return QuestionImportResponse(
+            dry_run=True,
+            accepted_count=len(questions),
+            imported_count=0,
+        )
+    try:
+        created = store.create_questions(questions)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return QuestionImportResponse(
+        dry_run=False,
+        accepted_count=len(created),
+        imported_count=len(created),
+    )

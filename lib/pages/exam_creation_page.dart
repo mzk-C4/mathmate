@@ -68,16 +68,26 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('已根据你的学习画像设置难度范围：'
-            '${_difficultyMin.toStringAsFixed(2)} ~ ${_difficultyMax.toStringAsFixed(2)}'),
+        content: Text(
+          '已根据你的学习画像设置难度范围：'
+          '${_difficultyMin.toStringAsFixed(2)} ~ ${_difficultyMax.toStringAsFixed(2)}',
+        ),
       ),
     );
   }
 
   Future<void> _startExam() async {
     if (!_serverAvailable) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('考试服务不可用，请检查后端是否启动')));
+      return;
+    }
+
+    final String? studentId = AuthService().user?.id.trim();
+    if (studentId == null || studentId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('考试服务不可用，请检查后端是否启动')),
+        const SnackBar(content: Text('登录状态异常，请退出账号后重新登录')),
       );
       return;
     }
@@ -113,7 +123,7 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
         MaterialPageRoute(
           builder: (_) => ExamTakingPage(
             api: _api,
-            studentId: AuthService().user?.id ?? 'mathmate_user',
+            studentId: studentId,
             title: _selectedDimension != null
                 ? '${_selectedDimension!}专项测试'
                 : '自由组卷测试',
@@ -125,11 +135,19 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
           ),
         ),
       );
+    } on ExamApiException catch (e) {
+      if (!mounted) return;
+      final message = e.statusCode == 401
+          ? '登录已过期，请退出账号后重新登录'
+          : '组卷服务请求失败：${e.message}';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('获取可用题量失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('获取可用题量失败: $e')));
       }
     } finally {
       if (mounted) setState(() => _starting = false);
@@ -139,7 +157,9 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
   List<String>? _boardsForSelectedDimension() {
     final String? dimension = _selectedDimension;
     if (dimension == null) return null;
-    return UserRadarProfile.dimensionTagsFor(_abilityService.currentGrade)[dimension];
+    return UserRadarProfile.dimensionTagsFor(
+      _abilityService.currentGrade,
+    )[dimension];
   }
 
   List<String> _buildQuestionTypes() {
@@ -154,10 +174,7 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(
-        title: const Text('自由组卷'),
-        backgroundColor: cs.surface,
-      ),
+      appBar: AppBar(title: const Text('自由组卷'), backgroundColor: cs.surface),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -231,8 +248,11 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton.icon(
-                  onPressed: !_starting &&
-                          (_includeChoice || _includeBlank || _includeShortAnswer)
+                  onPressed:
+                      !_starting &&
+                          (_includeChoice ||
+                              _includeBlank ||
+                              _includeShortAnswer)
                       ? _startExam
                       : null,
                   icon: const Icon(Icons.assignment_rounded),
@@ -254,7 +274,8 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
       return Row(
         children: <Widget>[
           const SizedBox(
-            width: 16, height: 16,
+            width: 16,
+            height: 16,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           const SizedBox(width: 8),
@@ -324,7 +345,10 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
   }
 
   Widget _buildSectionTitle(String text) {
-    return Text(text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600));
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+    );
   }
 
   Widget _buildDimensionGrid() {

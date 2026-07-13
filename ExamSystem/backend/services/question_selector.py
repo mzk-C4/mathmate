@@ -25,6 +25,9 @@ def filter_questions(
         questions = [item for item in questions if item["board"] in allowed_boards]
     if question_types:
         questions = [item for item in questions if item["question_type"] in question_types]
+    questions = [
+        item for item in questions if str(item.get("standard_answer") or "").strip()
+    ]
     return questions
 
 

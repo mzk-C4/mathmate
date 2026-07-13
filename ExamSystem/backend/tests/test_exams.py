@@ -1,8 +1,10 @@
 from decimal import Decimal
 
+from auth import AuthUser
 from database import JsonStore
 from routers.exams import available_count, finish_exam
-from schemas import ExamFilterRequest, FinishExamRequest
+from routers.questions import import_questions
+from schemas import ExamFilterRequest, FinishExamRequest, QuestionImportRequest
 from services.choice_grader import grade_choice
 from services.record_service import save_answer_record
 
@@ -40,6 +42,7 @@ def test_available_count_supports_multiple_boards(tmp_path) -> None:
             question_types=["choice"],
         ),
         store,
+        AuthUser(user_id="student-1", role="student"),
     )
 
     assert response.available_count == 2
@@ -70,6 +73,7 @@ def test_finish_exam_counts_unanswered_questions_as_incorrect(tmp_path) -> None:
     response = finish_exam(
         FinishExamRequest(exam_id=exam["id"], student_id="student-1"),
         store,
+        AuthUser(user_id="student-1", role="student"),
     )
 
     assert response.total_score == Decimal("1")
@@ -79,3 +83,29 @@ def test_finish_exam_counts_unanswered_questions_as_incorrect(tmp_path) -> None:
     assert response.wrong_questions[0].llm_feedback == "未作答"
     assert response.board_analysis[0].total == 2
     assert response.board_analysis[0].correct == 1
+
+
+def test_question_import_previews_and_inserts_atomically(tmp_path) -> None:
+    store = JsonStore(tmp_path / "exam.json")
+    payload = QuestionImportRequest.model_validate({
+        "questions": [{
+            "question_code": "BATCH-1",
+            "content": "1+1=?",
+            "standard_answer": "2",
+            "difficulty": 0.2,
+            "board": "基础",
+            "question_type": "blank",
+            "knowledge_points": ["加法"],
+            "source": {"dataset": "test"},
+        }],
+    })
+    admin = AuthUser(user_id="admin", role="admin")
+    preview = import_questions(payload, admin, store)
+    assert preview.dry_run is True
+    assert preview.accepted_count == 1
+    assert store.list_questions() == []
+
+    inserted = import_questions(payload.model_copy(update={"dry_run": False}), admin, store)
+    assert inserted.imported_count == 1
+    duplicate = import_questions(payload, admin, store)
+    assert duplicate.duplicate_codes == ["BATCH-1"]

@@ -47,7 +47,9 @@ class GeogebraMobileBridge {
     _pending[id] = completer;
 
     final msg = '$type|$id|${payload ?? '{}'}';
-    await _controller.runJavaScript('window._ggbBridgeCallback("$msg");');
+    await _controller.runJavaScript(
+      'window._ggbBridgeCallback(${jsonEncode(msg)});',
+    );
 
     return completer.future.timeout(
       const Duration(seconds: 10),
@@ -69,6 +71,12 @@ class GeogebraMobileBridge {
   Future<String> getXML() async {
     final result = await _send('getXML');
     return result is String ? result : '';
+  }
+
+  /// Replaces the current construction with a previously saved XML snapshot.
+  Future<bool> setXML(String xml) async {
+    final r = await _send('setXML', xml);
+    return r == true || r == 'true';
   }
 
   /// 删除指定标签的对象。

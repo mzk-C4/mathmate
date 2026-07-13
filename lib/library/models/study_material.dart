@@ -60,10 +60,10 @@ class MaterialTags {
 
   /// 空标签（分类失败时兜底，仍允许入库）
   factory MaterialTags.unknown() => const MaterialTags(
-        subject: '未分类',
-        materialType: '未分类',
-        summary: 'AI 分类失败，已按原文件入库',
-      );
+    subject: '未分类',
+    materialType: '未分类',
+    summary: 'AI 分类失败，已按原文件入库',
+  );
 
   bool get isUnknown => subject == '未分类';
 }
@@ -127,6 +127,7 @@ class StudyMaterial {
     required String fileName,
     required int sizeBytes,
     required String extractedText,
+    int pageCount = 0,
     required MaterialTags tags,
   }) {
     final now = DateTime.now();
@@ -141,6 +142,7 @@ class StudyMaterial {
       sizeBytes: sizeBytes,
       uploadedAt: now,
       extractedText: extractedText,
+      pageCount: pageCount,
       subject: tags.subject,
       knowledgePoints: tags.knowledgePoints,
       materialType: tags.materialType,
@@ -182,26 +184,26 @@ class StudyMaterial {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'kind': kind.name,
-        'localPath': localPath,
-        'sizeBytes': sizeBytes,
-        'uploadedAt': uploadedAt.toIso8601String(),
-        'extractedText': extractedText,
-        'pageCount': pageCount,
-        'subject': subject,
-        'knowledgePoints': knowledgePoints,
-        'materialType': materialType,
-        'university': university,
-        'course': course,
-        'year': year,
-        'difficulty': difficulty,
-        'summary': summary,
-        'keyConcepts': keyConcepts,
-        'openCount': openCount,
-        'lastOpenedAt': lastOpenedAt?.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'kind': kind.name,
+    'localPath': localPath,
+    'sizeBytes': sizeBytes,
+    'uploadedAt': uploadedAt.toIso8601String(),
+    'extractedText': extractedText,
+    'pageCount': pageCount,
+    'subject': subject,
+    'knowledgePoints': knowledgePoints,
+    'materialType': materialType,
+    'university': university,
+    'course': course,
+    'year': year,
+    'difficulty': difficulty,
+    'summary': summary,
+    'keyConcepts': keyConcepts,
+    'openCount': openCount,
+    'lastOpenedAt': lastOpenedAt?.toIso8601String(),
+  };
 
   factory StudyMaterial.fromJson(Map<String, dynamic> json) {
     String? asStr(dynamic v) {
@@ -220,7 +222,7 @@ class StudyMaterial {
       sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
       uploadedAt:
           DateTime.tryParse(json['uploadedAt'] as String? ?? '') ??
-              DateTime.now(),
+          DateTime.now(),
       extractedText: json['extractedText'] as String? ?? '',
       pageCount: (json['pageCount'] as num?)?.toInt() ?? 0,
       subject: json['subject'] as String? ?? '',
@@ -241,7 +243,7 @@ class StudyMaterial {
     );
   }
 
-  /// 序列化为 JSON 字符串（Hive Box<String> 存储）
+  /// 序列化为 JSON 字符串（Hive 的字符串 Box 存储）。
   String encode() => jsonEncode(toJson());
 
   static StudyMaterial? tryDecode(String? raw) {

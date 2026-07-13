@@ -14,19 +14,21 @@ class ClassificationService {
   final DeepSeekService _deepseek;
 
   ClassificationService({DeepSeekService? deepseek})
-      : _deepseek = deepseek ?? DeepSeekService();
+    : _deepseek = deepseek ?? DeepSeekService();
 
   /// 对一份资料进行分类打标签
   Future<MaterialTags?> classify({
     required MaterialKind kind,
     required String extractedText,
     required String fileName,
+    int pageCount = 0,
   }) async {
     try {
       final StringBuffer userText = StringBuffer()
         ..writeln('文件名: $fileName')
-        ..writeln('资料类型: ${kind.displayName}')
-        ..writeln('内容:');
+        ..writeln('资料类型: ${kind.displayName}');
+      if (pageCount > 0) userText.writeln('页数: $pageCount');
+      userText.writeln('内容:');
       // 文本不足时（如 PDF 未提取），至少给文件名供推断
       if (extractedText.trim().isNotEmpty) {
         userText.writeln(_truncate(extractedText, 6000));
@@ -44,7 +46,8 @@ class ClassificationService {
           jsonDecode(jsonStr) as Map<String, dynamic>;
       final MaterialTags tags = MaterialTags.fromJson(parsed);
       AppLogger.instance.info(
-          '[Classify] 分类完成: 学科=${tags.subject} | 类型=${tags.materialType} | 知识点=${tags.knowledgePoints}');
+        '[Classify] 分类完成: 学科=${tags.subject} | 类型=${tags.materialType} | 知识点=${tags.knowledgePoints}',
+      );
       return tags;
     } catch (e) {
       AppLogger.instance.error('[Classify] 分类失败: $e');

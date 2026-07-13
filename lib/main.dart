@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -49,9 +50,12 @@ import 'package:mathmate/pages/ability_assessment_page.dart';
 import 'package:mathmate/pages/practice_page.dart';
 import 'package:mathmate/services/ability_score_service.dart';
 import 'package:mathmate/widgets/grade_mascot_orb.dart';
+import 'package:mathmate/wrong_book/services/wrong_question_repository.dart';
+import 'package:pdfrx/pdfrx.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  pdfrxFlutterInitialize();
 
   await dotenv.load(fileName: '.env');
 
@@ -78,6 +82,7 @@ Future<void> main() async {
   }
   await ThemeService.instance.init();
   await MaterialRepository.instance.init();
+  await WrongQuestionRepository.instance.init();
   await AbilityScoreService().load();
   // 同步年级到能力评分服务（决定使用 K-12 还是大学维度体系）
   if (kIsWeb) {
@@ -138,6 +143,7 @@ class MathMateApp extends StatefulWidget {
 
 class _MathMateAppState extends State<MathMateApp> {
   late ThemeService _themeService;
+  Timer? _updateCheckTimer;
 
   @override
   void initState() {
@@ -145,7 +151,7 @@ class _MathMateAppState extends State<MathMateApp> {
     _themeService = ThemeService.instance;
     _themeService.addListener(_onThemeChanged);
     // 启动 3 秒后静默检查更新
-    Future.delayed(const Duration(seconds: 3), _checkAutoUpdate);
+    _updateCheckTimer = Timer(const Duration(seconds: 3), _checkAutoUpdate);
   }
 
   Future<void> _checkAutoUpdate() async {
@@ -153,23 +159,20 @@ class _MathMateAppState extends State<MathMateApp> {
     if (!mounted || update == null) return;
     showDialog(
       context: context,
+      barrierDismissible: !update.forceUpdate,
       builder: (ctx) => AlertDialog(
-        title: const Text('发现新版本'),
+        title: Text(update.forceUpdate ? '必须更新' : '发现新版本'),
         content: Text('最新版本: ${update.version}\n\n${update.releaseNotes}'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('稍后'),
-          ),
+          if (!update.forceUpdate)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('稍后'),
+            ),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final msg = await UpdateService.downloadAndInstall(update);
-              if (msg != null && mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(msg)));
-              }
+              await _downloadUpdate(update);
             },
             child: const Text('立即更新'),
           ),
@@ -178,8 +181,57 @@ class _MathMateAppState extends State<MathMateApp> {
     );
   }
 
+  Future<void> _downloadUpdate(AppVersion update) async {
+    final progress = ValueNotifier<double>(0);
+    if (!mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('正在下载更新'),
+          content: ValueListenableBuilder<double>(
+            valueListenable: progress,
+            builder: (_, value, __) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinearProgressIndicator(value: value > 0 ? value : null),
+                const SizedBox(height: 12),
+                Text(
+                  value > 0
+                      ? '已下载 ${(value * 100).toStringAsFixed(0)}%'
+                      : '正在连接下载服务器…',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final message = await UpdateService.downloadAndInstall(
+      update,
+      onProgress: (value) => progress.value = value,
+    );
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+    progress.dispose();
+
+    if (message != null && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      if (update.forceUpdate) {
+        Future<void>.delayed(const Duration(seconds: 1), _checkAutoUpdate);
+      }
+    }
+  }
+
   @override
   void dispose() {
+    _updateCheckTimer?.cancel();
     _themeService.removeListener(_onThemeChanged);
     super.dispose();
   }

@@ -47,7 +47,7 @@ class AuthResponse {
   final String? error;
 
   AuthResponse({this.token, this.user, this.error});
-  bool get ok => token != null;
+  bool get ok => token != null || user != null;
 }
 
 /// 认证服务 —— 注册/登录/个人信息/Token 管理。

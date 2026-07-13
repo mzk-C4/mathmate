@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mathmate/models/user_radar_profile.dart';
 import 'package:mathmate/services/ability_score_service.dart';
+import 'package:mathmate/wrong_book/presentation/wrong_question_book_page.dart';
+import 'package:mathmate/wrong_book/services/wrong_question_repository.dart';
 
 /// 考试成绩报告页 —— 展示总分、板块分析、错题回顾，并更新六维能力评分
 class ExamResultPage extends StatefulWidget {
@@ -22,6 +24,7 @@ class _ExamResultPageState extends State<ExamResultPage> {
   void initState() {
     super.initState();
     _updateAbilityScores();
+    WrongQuestionRepository.instance.importReport(widget.report);
   }
 
   /// 根据考试报告的 board_analysis 更新六维能力评分
@@ -36,8 +39,7 @@ class _ExamResultPageState extends State<ExamResultPage> {
     final Map<String, List<String>> dimensionTags =
         UserRadarProfile.dimensionTagsFor(_abilityService.currentGrade);
     final List<String> dimensionNames = _abilityService.currentDimensionNames;
-    for (final MapEntry<String, List<String>> entry
-        in dimensionTags.entries) {
+    for (final MapEntry<String, List<String>> entry in dimensionTags.entries) {
       dimStats[entry.key] = _BoardStats();
     }
 
@@ -95,10 +97,7 @@ class _ExamResultPageState extends State<ExamResultPage> {
 
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(
-        title: const Text('考试报告'),
-        backgroundColor: cs.surface,
-      ),
+      appBar: AppBar(title: const Text('考试报告'), backgroundColor: cs.surface),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: <Widget>[
@@ -107,16 +106,17 @@ class _ExamResultPageState extends State<ExamResultPage> {
           const SizedBox(height: 24),
 
           // 板块分析
-          const Text('板块分析',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          const Text(
+            '板块分析',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
           if (boardAnalysis.isEmpty)
-            Text('暂无板块数据',
-                style: TextStyle(color: cs.onSurfaceVariant))
+            Text('暂无板块数据', style: TextStyle(color: cs.onSurfaceVariant))
           else
-            ...boardAnalysis.map((item) => _buildBoardItem(
-                  item as Map<String, dynamic>,
-                )),
+            ...boardAnalysis.map(
+              (item) => _buildBoardItem(item as Map<String, dynamic>),
+            ),
           const SizedBox(height: 24),
 
           // 能力评分更新提示
@@ -124,8 +124,10 @@ class _ExamResultPageState extends State<ExamResultPage> {
           const SizedBox(height: 24),
 
           // 错题回顾
-          const Text('错题回顾',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          const Text(
+            '错题回顾',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
           if (wrongQuestions.isEmpty)
             Container(
@@ -136,17 +138,36 @@ class _ExamResultPageState extends State<ExamResultPage> {
               ),
               child: const Row(
                 children: <Widget>[
-                  Icon(Icons.emoji_events_rounded, color: Colors.green, size: 28),
+                  Icon(
+                    Icons.emoji_events_rounded,
+                    color: Colors.green,
+                    size: 28,
+                  ),
                   SizedBox(width: 12),
-                  Text('全部正确，太棒了！',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(
+                    '全部正确，太棒了！',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             )
           else
-            ...wrongQuestions.map((item) => _buildWrongItem(
-                  item as Map<String, dynamic>,
-                )),
+            ...wrongQuestions.map(
+              (item) => _buildWrongItem(item as Map<String, dynamic>),
+            ),
+          if (wrongQuestions.isNotEmpty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const WrongQuestionBookPage(),
+                  ),
+                ),
+                icon: const Icon(Icons.menu_book_outlined),
+                label: const Text('查看智能错题本'),
+              ),
+            ),
           const SizedBox(height: 32),
 
           // 底部操作
@@ -178,7 +199,11 @@ class _ExamResultPageState extends State<ExamResultPage> {
   }
 
   Widget _buildScoreCard(
-      double total, double max, double accuracy, bool passed) {
+    double total,
+    double max,
+    double accuracy,
+    bool passed,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -214,10 +239,7 @@ class _ExamResultPageState extends State<ExamResultPage> {
           const SizedBox(height: 8),
           Text(
             '正确率 ${(accuracy * 100).toStringAsFixed(1)}%',
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
+            style: const TextStyle(fontSize: 16, color: Colors.white70),
           ),
         ],
       ),
@@ -259,13 +281,16 @@ class _ExamResultPageState extends State<ExamResultPage> {
                 children: <Widget>[
                   Row(
                     children: <Widget>[
-                      Text(name,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       if (dimension != null) ...[
                         const SizedBox(width: 8),
-                        Text('→ $dimension',
-                            style: TextStyle(
-                                fontSize: 11, color: cs.primary)),
+                        Text(
+                          '→ $dimension',
+                          style: TextStyle(fontSize: 11, color: cs.primary),
+                        ),
                       ],
                     ],
                   ),
@@ -290,8 +315,10 @@ class _ExamResultPageState extends State<ExamResultPage> {
                     color: rate >= 0.6 ? Colors.green : Colors.orange,
                   ),
                   const SizedBox(height: 4),
-                  Text('${(rate * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                  Text(
+                    '${(rate * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  ),
                 ],
               ),
             ),
@@ -318,8 +345,10 @@ class _ExamResultPageState extends State<ExamResultPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text('六维能力已更新',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const Text(
+                  '六维能力已更新',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '综合能力 ${(profile.scores.reduce((a, b) => a + b) / profile.scores.length * UserRadarProfile.displayMultiplier).toStringAsFixed(1)} 分',
@@ -346,16 +375,23 @@ class _ExamResultPageState extends State<ExamResultPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(item['content']?.toString() ?? '',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            Text(
+              item['content']?.toString() ?? '',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 10),
             _buildWrongRow('你的答案', item['student_answer']?.toString()),
-            _buildWrongRow('正确答案', item['standard_answer']?.toString(),
-                isCorrect: true),
+            _buildWrongRow(
+              '正确答案',
+              item['standard_answer']?.toString(),
+              isCorrect: true,
+            ),
             if (item['explanation'] != null) ...[
               const SizedBox(height: 8),
-              Text('解析：${item['explanation']}',
-                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              Text(
+                '解析：${item['explanation']}',
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
             ],
             if (item['llm_feedback'] != null &&
                 (item['llm_feedback'] as String).isNotEmpty) ...[
@@ -367,8 +403,10 @@ class _ExamResultPageState extends State<ExamResultPage> {
                   color: Colors.orange.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text('💡 ${item['llm_feedback']}',
-                    style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+                child: Text(
+                  '💡 ${item['llm_feedback']}',
+                  style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+                ),
               ),
             ],
           ],
@@ -384,17 +422,23 @@ class _ExamResultPageState extends State<ExamResultPage> {
         children: <Widget>[
           SizedBox(
             width: 64,
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: isCorrect ? Colors.green : Colors.red)),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isCorrect ? Colors.green : Colors.red,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value ?? '',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isCorrect ? Colors.green : Colors.red)),
+            child: Text(
+              value ?? '',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isCorrect ? Colors.green : Colors.red,
+              ),
+            ),
           ),
         ],
       ),

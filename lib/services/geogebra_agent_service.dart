@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mathmate/geogebra/geogebra_command_search_service.dart';
 import 'package:mathmate/services/api_config_service.dart';
 import 'package:mathmate/services/auth_service.dart';
 
@@ -50,8 +51,25 @@ class AgentTool {
   };
 }
 
-/// GeoGebra 7 个 MCP 工具定义
+/// GeoGebra Agent tools. Command lookup is local; canvas tools are delegated
+/// to the platform bridge.
 const List<AgentTool> geogebraTools = [
+  AgentTool(
+    name: 'searchGeoGebraCommands',
+    description:
+        'Search the bundled GeoGebra command reference before using an unfamiliar command.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'query': {
+          'type': 'string',
+          'description':
+              'English command name or keywords, for example circle tangent',
+        },
+      },
+      'required': ['query'],
+    },
+  ),
   AgentTool(
     name: 'getCanvasContext',
     description: '获取当前 GeoGebra 画布的完整状态，包括所有对象和表达式',
@@ -258,7 +276,13 @@ class GeogebraAgentService {
 
         // 执行工具
         String toolResult;
-        if (onToolCall != null) {
+        if (toolName == 'searchGeoGebraCommands') {
+          final String query = args['query'] as String? ?? '';
+          final results = await GeogebraCommandSearchService.instance.search(
+            query,
+          );
+          toolResult = jsonEncode(results);
+        } else if (onToolCall != null) {
           try {
             toolResult = await onToolCall!(toolName, args);
           } catch (e) {

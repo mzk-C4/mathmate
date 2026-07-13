@@ -1,17 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:mathmate/geogebra/geogebra_asset_manager.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class GeogebraPage extends StatefulWidget {
   final String appName;
 
-  const GeogebraPage({
-    super.key,
-    this.appName = 'graphing',
-  });
+  const GeogebraPage({super.key, this.appName = 'graphing'});
 
   @override
   State<GeogebraPage> createState() => _GeogebraPageState();
@@ -71,7 +65,7 @@ class _GeogebraPageState extends State<GeogebraPage> {
 
   Future<void> _initAsync() async {
     try {
-      _localBasePath = await _ensureLocalFiles();
+      _localBasePath = await GeogebraAssetManager.ensureInstalled();
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(const Color(0xFFFFFFFF))
@@ -100,37 +94,6 @@ class _GeogebraPageState extends State<GeogebraPage> {
       }
     }
     if (mounted) setState(() {});
-  }
-
-  Future<String> _ensureLocalFiles() async {
-    final Directory dir =
-        Directory('${(await getApplicationDocumentsDirectory()).path}/geogebra');
-    if (await dir.exists()) {
-      // 验证关键文件是否存在，缺失则重新完整提取
-      final File testHtml = File('${dir.path}/$_htmlFile');
-      final File testWeb3d = File('${dir.path}/web3d/web3d.nocache.js');
-      if (await testHtml.exists() && await testWeb3d.exists()) return dir.path;
-      // 目录存在但文件不完整，删除后重新提取
-      await dir.delete(recursive: true);
-    }
-
-    await dir.create(recursive: true);
-
-    final String manifest =
-        await rootBundle.loadString('assets/geogebra/file_manifest.txt');
-    final List<String> files = manifest
-        .split('\n')
-        .map((String s) => s.trim())
-        .where((String s) => s.isNotEmpty)
-        .toList();
-
-    for (final String file in files) {
-      final ByteData data = await rootBundle.load('assets/geogebra/$file');
-      final File target = File('${dir.path}/$file');
-      await target.parent.create(recursive: true);
-      await target.writeAsBytes(data.buffer.asUint8List());
-    }
-    return dir.path;
   }
 
   void _retry() {
@@ -162,8 +125,12 @@ class _GeogebraPageState extends State<GeogebraPage> {
                 children: <Widget>[
                   const CircularProgressIndicator(),
                   const SizedBox(height: 12),
-                  Text('加载中...',
-                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+                  Text(
+                    '加载中...',
+                    style: TextStyle(
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -172,12 +139,19 @@ class _GeogebraPageState extends State<GeogebraPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Icon(Icons.error_outline,
-                      color: cs.onSurface.withValues(alpha: 0.4), size: 48),
+                  Icon(
+                    Icons.error_outline,
+                    color: cs.onSurface.withValues(alpha: 0.4),
+                    size: 48,
+                  ),
                   const SizedBox(height: 16),
-                  Text('加载失败',
-                      style: TextStyle(
-                          fontSize: 16, color: cs.onSurface.withValues(alpha: 0.6))),
+                  Text(
+                    '加载失败',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: _retry,

@@ -1,8 +1,10 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:path_provider/path_provider.dart';
+import 'package:mathmate/geogebra/geogebra_asset_manager.dart';
+import 'package:mathmate/geogebra/geogebra_canvas_context.dart';
+import 'package:mathmate/geogebra/offline_geometry_command_parser.dart';
+import 'package:mathmate/geogebra/geochat_session_store.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'package:mathmate/services/geogebra_agent_service.dart';
@@ -22,11 +24,18 @@ class GeogebraChatPage extends StatefulWidget {
 
 class _GeogebraChatPageState extends State<GeogebraChatPage> {
   final GeogebraAgentService _agent = GeogebraAgentService();
+  final GeogebraCanvasContextParser _contextParser =
+      const GeogebraCanvasContextParser();
+  final OfflineGeometryCommandParser _offlineParser =
+      const OfflineGeometryCommandParser();
+  final GeochatSessionStore _sessionStore = GeochatSessionStore();
   late GeogebraMobileBridge _bridge;
 
   WebViewController? _ggbController;
   bool _ggbReady = false;
   bool _ggbLoading = true;
+  String? _ggbError;
+  bool _sessionRestored = false;
 
   final TextEditingController _inputCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
@@ -41,6 +50,19 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
   }
 
   Future<void> _initGeoGebra() async {
+    if (_ggbController != null) {
+      _bridge.dispose();
+    }
+    if (mounted) {
+      setState(() {
+        _ggbController = null;
+        _ggbReady = false;
+        _ggbLoading = true;
+        _ggbError = null;
+        _sessionRestored = false;
+      });
+    }
+
     try {
       final ctrl = WebViewController();
       ctrl.setJavaScriptMode(JavaScriptMode.unrestricted);
@@ -53,9 +75,21 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
       ctrl.addJavaScriptChannel(
         'GgbBridge',
         onMessageReceived: (JavaScriptMessage msg) {
+          if (_ggbController != ctrl) return;
           if (msg.message.startsWith('ready|')) {
             _bridge.markReady();
-            if (mounted) setState(() { _ggbReady = true; _ggbLoading = false; });
+            if (mounted) {
+              setState(() {
+                _ggbReady = true;
+                _ggbLoading = false;
+                _ggbError = null;
+              });
+            }
+            unawaited(_restoreSession());
+            return;
+          }
+          if (msg.message.startsWith('error|0|')) {
+            _setGeoGebraLoadError('本地几何引擎启动超时，请重试。');
             return;
           }
           _bridge.handleMessage(msg.message);
@@ -63,66 +97,40 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
       );
 
       // 自动解压本地 GeoGebra 离线文件（与数学工具箱一致），不再依赖 CDN
-      final localPath = await _ensureLocalFiles();
+      // GeoChat needs the full geometry command set (Rotate, Polygon, Tangent,
+      // transformations, ...). The graphing app deliberately filters several
+      // of those commands, so it remains suitable for the toolbox but not here.
+      final localPath = await GeogebraAssetManager.htmlPath('geometry.html');
 
       ctrl.setNavigationDelegate(
         NavigationDelegate(
-          onPageFinished: (_) => _injectBridge(ctrl),
-          onWebResourceError: (_) {
-            if (mounted) setState(() => _ggbLoading = false);
+          onPageFinished: (_) async {
+            try {
+              await _injectBridge(ctrl);
+            } catch (error) {
+              _setGeoGebraLoadError('本地几何引擎连接失败，请重试。');
+            }
+          },
+          onWebResourceError: (WebResourceError error) {
+            if (error.isForMainFrame == false) return;
+            _setGeoGebraLoadError('本地几何引擎页面加载失败：${error.description}');
           },
         ),
       );
       await ctrl.loadFile(localPath);
     } catch (e) {
       debugPrint('[GeoChat] Init error: $e');
-      // 本地文件加载失败时，回退到 CDN
-      await _fallbackToCdn();
+      _setGeoGebraLoadError('本地几何引擎初始化失败，请重试。');
     }
   }
 
-  /// 回退到 CDN 加载 GeoGebra（仅在本地文件不可用时）
-  Future<void> _fallbackToCdn() async {
-    try {
-      if (_ggbController == null) return;
-      await _ggbController!.loadHtmlString(_buildGgbHtml());
-    } catch (e) {
-      debugPrint('[GeoChat] CDN fallback error: $e');
-      if (mounted) setState(() => _ggbLoading = false);
-    }
-  }
-
-  /// 自动解压本地 GeoGebra 离线文件，与数学工具箱共用同一份
-  Future<String> _ensureLocalFiles() async {
-    final dir = Directory(
-        '${(await getApplicationDocumentsDirectory()).path}/geogebra');
-
-    if (await dir.exists()) {
-      final html = File('${dir.path}/graphing.html');
-      final web3d = File('${dir.path}/web3d/web3d.nocache.js');
-      if (await html.exists() && await web3d.exists()) return html.path;
-      // 文件不完整，删除重新解压
-      await dir.delete(recursive: true);
-    }
-
-    await dir.create(recursive: true);
-
-    final manifest =
-        await rootBundle.loadString('assets/geogebra/file_manifest.txt');
-    final files = manifest
-        .split('\n')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-
-    for (final file in files) {
-      final data = await rootBundle.load('assets/geogebra/$file');
-      final target = File('${dir.path}/$file');
-      await target.parent.create(recursive: true);
-      await target.writeAsBytes(data.buffer.asUint8List());
-    }
-
-    return '${dir.path}/graphing.html';
+  void _setGeoGebraLoadError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _ggbReady = false;
+      _ggbLoading = false;
+      _ggbError = message;
+    });
   }
 
   /// 注入 JS Bridge —— 仅本地 GeoGebra 5.4 文件需要（CDN 版 HTML 已内置）
@@ -161,6 +169,10 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
             break;
           case 'getXML':
             try { r = ggb.getXML ? ggb.getXML() : ''; } catch(e) { r = ''; }
+            break;
+          case 'setXML':
+            try { if (ggb.setXML) ggb.setXML(pl); } catch(e) {}
+            r = 'true';
             break;
           case 'deleteObject':
             try { ggb.deleteObject(pl); } catch(e) {}
@@ -209,113 +221,19 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
     await ctrl.runJavaScript(bridgeJs);
   }
 
-  /// CDN 版精简 GeoGebra HTML（本地文件不存在时使用）
-  String _buildGgbHtml() {
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<style>
-  * { margin:0; padding:0; }
-  html, body, #ggb { width:100%; height:100%; overflow:hidden; }
-</style>
-<script src="https://www.geogebra.org/apps/deployggb.js"></script>
-</head>
-<body>
-<div id="ggb"></div>
-<script>
-  var ggbApp = new GGBApplet({
-    "appName": "graphing",
-    "width": "100%",
-    "height": "100%",
-    "showToolBar": false,
-    "showAlgebraInput": false,
-    "showMenuBar": false,
-    "enableLabelDrags": false,
-    "enableShiftDragZoom": true,
-    "enableRightClick": false,
-    "showResetIcon": false,
-    "enable3d": true,
-    "errorDialogsActive": false,
-    "useBrowserForJS": false,
-    "language": "zh",
-    "borderColor": "#FFFFFF"
-  }, true);
-  ggbApp.setHTML5Codebase("https://www.geogebra.org/apps/HTML5/5.0/web3d/");
-
-  window._ggbBridgeCallback = function(msg) {
-    var parts = msg.split('|');
-    var type = parts[0], msgId = parts[1];
-    var payload = parts.length > 2 ? parts.slice(2).join('|') : '';
-    try {
-      // 确保 API 已就绪再执行
-      if (!ggbApp || typeof ggbApp.evalCommandGetLabels !== 'function') {
-        GgbBridge.postMessage('error|' + msgId + '|GeoGebra API 尚未就绪，请稍后重试');
-        return;
-      }
-      var result = '';
-      switch(type) {
-        case 'evalCommand':
-          var label = ggbApp.evalCommandGetLabels(payload);
-          var err = (ggbApp.getErrorString && ggbApp.getErrorString()) || '';
-          result = JSON.stringify({success: !err, label: label||null, error: err||null});
-          break;
-        case 'getXML':
-          result = ggbApp.getXML() || '';
-          break;
-        case 'deleteObject':
-          ggbApp.deleteObject(payload); result = 'true'; break;
-        case 'setUndoPoint':
-          ggbApp.setUndoPoint(); result = 'true'; break;
-        case 'undo':
-          ggbApp.undo(); result = 'true'; break;
-        case 'setPerspective':
-          ggbApp.setPerspective(payload); result = 'true'; break;
-        case 'reset':
-          ggbApp.reset(); result = 'true'; break;
-        case 'getSelectedObjects':
-          result = ggbApp.getSelectedObjects ? ggbApp.getSelectedObjects().join(',') : '';
-          break;
-        default: result = 'unknown';
-      }
-      GgbBridge.postMessage(type + '|' + msgId + '|' + result);
-    } catch(e) {
-      GgbBridge.postMessage('error|' + msgId + '|' + e.toString());
-    }
-  };
-
-  ggbApp.inject('ggb', 'preferHTML5');
-
-  // 等待 applet API 真正就绪后再通知 Flutter（最多等待 20 秒）
-  var _apiAttempts = 0;
-  (function waitForApi() {
-    if (ggbApp && typeof ggbApp.evalCommandGetLabels === 'function') {
-      GgbBridge.postMessage('ready|0|{}');
-      return;
-    }
-    _apiAttempts++;
-    if (_apiAttempts > 100) {
-      GgbBridge.postMessage('error|0|GeoGebra 加载超时，请检查网络连接');
-      return;
-    }
-    setTimeout(waitForApi, 200);
-  })();
-</script>
-</body>
-</html>
-''';
-  }
-
   /// 桥接 Agent 工具调用到 GeoGebra
-  Future<String> _executeTool(String toolName, Map<String, dynamic> args) async {
+  Future<String> _executeTool(
+    String toolName,
+    Map<String, dynamic> args,
+  ) async {
     try {
       switch (toolName) {
         case 'getCanvasContext':
           final xml = await _bridge.getXML();
           final selected = await _bridge.getSelectedObjects();
-          return _summarizeXML(xml, selected);
+          return _contextParser
+              .parse(xml, selectedObjects: selected)
+              .toString();
 
         case 'executeGeoGebraCommand':
           final cmd = args['command'] as String? ?? '';
@@ -356,19 +274,6 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
     }
   }
 
-  String _summarizeXML(String xml, List<String> selected) {
-    if (xml.isEmpty) return '{}';
-    final elementExp = RegExp(r'<element[^>]*type="(\w+)"[^>]*label="([^"]*)"');
-    final matches = elementExp.allMatches(xml);
-    final elements = matches.map((m) => '${m.group(1)}:${m.group(2)}').toList();
-    final buf = StringBuffer();
-    buf.writeln('{');
-    buf.writeln('  "elements": ${elements.isNotEmpty ? elements.toString() : "[]"},');
-    buf.writeln('  "selectedObjects": ${selected.toString()}');
-    buf.writeln('}');
-    return buf.toString();
-  }
-
   Future<void> _sendMessage() async {
     final text = _inputCtrl.text.trim();
     if (text.isEmpty || _isLoading || !_ggbReady) return;
@@ -376,16 +281,23 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
     _inputCtrl.clear();
     setState(() {
       _bubbles.add(ChatBubble(role: 'user', content: text));
-      _bubbles.add(ChatBubble(role: 'assistant', content: '', isStreaming: true));
+      _bubbles.add(
+        ChatBubble(role: 'assistant', content: '', isStreaming: true),
+      );
       _isLoading = true;
     });
     _scrollToBottom();
+
+    final OfflineGeometryPlan? localPlan = _offlineParser.parse(text);
+    if (localPlan != null) {
+      await _executeOfflinePlan(localPlan);
+      return;
+    }
 
     final history = <Map<String, String>>[];
     for (final b in _bubbles.where((b) => !b.isStreaming)) {
       history.add({'role': b.role, 'content': b.content});
     }
-    history.removeLast(); // 去掉刚加的 streaming 占位
 
     try {
       final assistantIdx = _bubbles.length - 1;
@@ -437,6 +349,95 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+      unawaited(_persistSession());
+    }
+  }
+
+  Future<void> _executeOfflinePlan(OfflineGeometryPlan plan) async {
+    final int assistantIndex = _bubbles.length - 1;
+    final List<String> failures = <String>[];
+    try {
+      await _bridge.setUndoPoint();
+      for (final String command in plan.commands) {
+        final Map<String, dynamic> result = await _bridge.evalCommand(command);
+        if (result['success'] != true) {
+          failures.add('$command: ${result['error'] ?? '命令执行失败'}');
+          break;
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _bubbles[assistantIndex] = ChatBubble(
+          role: 'assistant',
+          content: failures.isEmpty
+              ? '📱 ${plan.summary}\n\n本次使用 APP 本地解析，未请求大模型。'
+              : '本地绘图失败：${failures.join('\n')}',
+        );
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _bubbles[assistantIndex] = ChatBubble(
+          role: 'assistant',
+          content: '本地绘图失败：$error',
+        );
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _scrollToBottom();
+      }
+      unawaited(_persistSession());
+    }
+  }
+
+  Future<void> _restoreSession() async {
+    if (_sessionRestored || !_bridge.isReady) return;
+    _sessionRestored = true;
+    final GeochatSessionSnapshot? snapshot = await _sessionStore.load();
+    if (snapshot == null) return;
+
+    if (snapshot.canvasXml.isNotEmpty) {
+      await _bridge.setXML(snapshot.canvasXml);
+    }
+    if (!mounted || snapshot.messages.isEmpty) return;
+    setState(() {
+      _bubbles
+        ..clear()
+        ..addAll(
+          snapshot.messages.map(
+            (Map<String, dynamic> message) => ChatBubble(
+              role: message['role'] as String? ?? 'assistant',
+              content: message['content'] as String? ?? '',
+            ),
+          ),
+        );
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _persistSession() async {
+    if (!_bridge.isReady) return;
+    try {
+      final String xml = await _bridge.getXML();
+      await _sessionStore.save(
+        GeochatSessionSnapshot(
+          canvasXml: xml,
+          messages: _bubbles
+              .where((ChatBubble bubble) => !bubble.isStreaming)
+              .map(
+                (ChatBubble bubble) => <String, dynamic>{
+                  'role': bubble.role,
+                  'content': bubble.content,
+                },
+              )
+              .toList(growable: false),
+          updatedAt: DateTime.now(),
+        ),
+      );
+    } catch (error) {
+      debugPrint('[GeoChat] Failed to save session: $error');
     }
   }
 
@@ -452,24 +453,35 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
     });
   }
 
-  void _clearCanvas() {
+  Future<void> _clearCanvas() async {
     if (_isLoading) {
       _agent.cancel();
       setState(() => _isLoading = false);
       return;
     }
-    _bridge.reset();
+    if (!_ggbReady) return;
+    await _bridge.reset();
+    await _sessionStore.clear();
+    if (!mounted) return;
     setState(() => _bubbles.clear());
   }
 
-  void _undoLast() {
-    _bridge.undo();
+  Future<void> _undoLast() async {
+    if (!_ggbReady) return;
+    try {
+      final bool undone = await _bridge.undo();
+      if (undone) await _persistSession();
+    } catch (error) {
+      debugPrint('[GeoChat] Undo failed: $error');
+    }
   }
 
   @override
   void dispose() {
     _agent.cancel();
-    _bridge.dispose();
+    if (_ggbController != null) {
+      _bridge.dispose();
+    }
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
@@ -483,9 +495,16 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
         builder: (context, constraints) {
           final totalHeight = constraints.maxHeight;
           const dividerHeight = 24.0;
-          final availableHeight = (totalHeight - dividerHeight).clamp(0.0, totalHeight);
-          final canvasHeight = (availableHeight * (1 - _chatHeightFraction)).clamp(0.0, availableHeight);
-          final chatHeight = (availableHeight * _chatHeightFraction).clamp(0.0, availableHeight);
+          final availableHeight = (totalHeight - dividerHeight).clamp(
+            0.0,
+            totalHeight,
+          );
+          final canvasHeight = (availableHeight * (1 - _chatHeightFraction))
+              .clamp(0.0, availableHeight);
+          final chatHeight = (availableHeight * _chatHeightFraction).clamp(
+            0.0,
+            availableHeight,
+          );
 
           return Column(
             children: [
@@ -496,10 +515,45 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                   children: [
                     if (_ggbController != null)
                       Positioned.fill(
-                        child: WebViewWidget(controller: _ggbController!),
+                        child: RepaintBoundary(
+                          child: WebViewWidget(controller: _ggbController!),
+                        ),
                       ),
                     if (_ggbLoading)
                       const Center(child: CircularProgressIndicator()),
+                    if (_ggbError != null)
+                      Positioned.fill(
+                        child: ColoredBox(
+                          color: cs.surface,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    size: 40,
+                                    color: cs.error,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _ggbError!,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: cs.onSurface),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  FilledButton.icon(
+                                    onPressed: _initGeoGebra,
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('重新加载'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     // GeoGebra ready 标记
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 20,
@@ -509,7 +563,10 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                         children: [
                           IconButton(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.black38,
                             ),
@@ -521,11 +578,19 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _ggbReady ? Colors.green : Colors.orange,
+                              color: _ggbError != null
+                                  ? Colors.red
+                                  : _ggbReady
+                                  ? Colors.green
+                                  : Colors.orange,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              _ggbReady ? '就绪' : '等待...',
+                              _ggbError != null
+                                  ? '加载失败'
+                                  : _ggbReady
+                                  ? '就绪'
+                                  : '等待...',
                               style: const TextStyle(
                                 fontSize: 10,
                                 color: Colors.white,
@@ -534,7 +599,7 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                           ),
                           const SizedBox(width: 4),
                           IconButton(
-                            onPressed: _undoLast,
+                            onPressed: _ggbReady ? _undoLast : null,
                             icon: const Icon(Icons.undo, color: Colors.white),
                             tooltip: '撤销',
                             style: IconButton.styleFrom(
@@ -549,8 +614,9 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                             ),
                             tooltip: _isLoading ? '中止任务' : '清空画布',
                             style: IconButton.styleFrom(
-                              backgroundColor:
-                                  _isLoading ? Colors.red.withValues(alpha: 0.7) : Colors.black38,
+                              backgroundColor: _isLoading
+                                  ? Colors.red.withValues(alpha: 0.7)
+                                  : Colors.black38,
                             ),
                           ),
                         ],
@@ -621,7 +687,8 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                               controller: _scrollCtrl,
                               padding: const EdgeInsets.all(12),
                               itemCount: _bubbles.length,
-                              itemBuilder: (_, i) => _buildBubble(_bubbles[i], cs),
+                              itemBuilder: (_, i) =>
+                                  _buildBubble(_bubbles[i], cs),
                             ),
                     ),
 
@@ -651,28 +718,36 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline, size: 40,
-              color: cs.onSurface.withValues(alpha: 0.2)),
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 40,
+            color: cs.onSurface.withValues(alpha: 0.2),
+          ),
           const SizedBox(height: 8),
-          Text('描述你想绘制的图形',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: cs.onSurface.withValues(alpha: 0.4))),
+          Text(
+            '描述你想绘制的图形',
+            style: TextStyle(
+              fontSize: 13,
+              color: cs.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
           const SizedBox(height: 16),
           Wrap(
             spacing: 6,
             runSpacing: 6,
             alignment: WrapAlignment.center,
             children: suggestions
-                .map((s) => ActionChip(
-                      label: Text(s, style: const TextStyle(fontSize: 11)),
-                      onPressed: _ggbReady
-                          ? () {
-                              _inputCtrl.text = s;
-                              _sendMessage();
-                            }
-                          : null,
-                    ))
+                .map(
+                  (s) => ActionChip(
+                    label: Text(s, style: const TextStyle(fontSize: 11)),
+                    onPressed: _ggbReady
+                        ? () {
+                            _inputCtrl.text = s;
+                            _sendMessage();
+                          }
+                        : null,
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -685,8 +760,9 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
             constraints: const BoxConstraints(maxWidth: 300),
@@ -701,17 +777,19 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
               ),
             ),
             child: isUser
-                ? Text(bubble.content,
-                    style: TextStyle(fontSize: 14, color: cs.onPrimary))
+                ? Text(
+                    bubble.content,
+                    style: TextStyle(fontSize: 14, color: cs.onPrimary),
+                  )
                 : bubble.isStreaming && bubble.content.isEmpty
-                    ? SizedBox(
-                        width: 40,
-                        child: LinearProgressIndicator(
-                          backgroundColor: cs.surfaceContainerHighest,
-                          color: cs.primary,
-                        ),
-                      )
-                    : _buildAssistantContent(bubble.content),
+                ? SizedBox(
+                    width: 40,
+                    child: LinearProgressIndicator(
+                      backgroundColor: cs.surfaceContainerHighest,
+                      color: cs.primary,
+                    ),
+                  )
+                : _buildAssistantContent(bubble.content),
           ),
         ],
       ),
@@ -725,24 +803,39 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
 
     for (final line in lines) {
       if (line.startsWith('🔧')) {
-        widgets.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Text(line,
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              line,
               style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey,
-                  fontFamily: 'monospace')),
-        ));
+                fontSize: 11,
+                color: Colors.grey,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        );
       } else if (line.startsWith('> ⚠️')) {
-        widgets.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Text(line, style: const TextStyle(fontSize: 12, color: Colors.red)),
-        ));
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              line,
+              style: const TextStyle(fontSize: 12, color: Colors.red),
+            ),
+          ),
+        );
       } else if (line.trim().isNotEmpty) {
-        widgets.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Text(line, style: const TextStyle(fontSize: 13, height: 1.5)),
-        ));
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              line,
+              style: const TextStyle(fontSize: 13, height: 1.5),
+            ),
+          ),
+        );
       }
     }
 
@@ -772,8 +865,9 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                 decoration: InputDecoration(
                   hintText: _ggbReady ? '描述你要画的图形...' : '等待 GeoGebra 就绪...',
                   hintStyle: TextStyle(
-                      fontSize: 13,
-                      color: cs.onSurface.withValues(alpha: 0.3)),
+                    fontSize: 13,
+                    color: cs.onSurface.withValues(alpha: 0.3),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -781,7 +875,9 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
                   filled: true,
                   fillColor: cs.surfaceContainerHighest,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   isDense: true,
                 ),
                 onSubmitted: (_) => _sendMessage(),
@@ -789,14 +885,15 @@ class _GeogebraChatPageState extends State<GeogebraChatPage> {
             ),
             const SizedBox(width: 8),
             IconButton.filled(
-              onPressed:
-                  _isLoading || !_ggbReady ? null : _sendMessage,
+              onPressed: _isLoading || !_ggbReady ? null : _sendMessage,
               icon: _isLoading
                   ? const SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.send, size: 18),
               style: IconButton.styleFrom(backgroundColor: cs.primary),

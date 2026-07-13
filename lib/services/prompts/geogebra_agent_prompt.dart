@@ -21,6 +21,10 @@ const String geogebraAgentSystemPrompt = '''
 
 ## 工具调用准则
 
+### 命令查证
+- 首次使用不熟悉的 GeoGebra 命令前，必须先调用 searchGeoGebraCommands，查证英文命令名、参数数量和参数类型。
+- searchGeoGebraCommands 使用 APP 内置索引，不需要联网。
+
 ### 状态感知
 - 永远优先调用 getCanvasContext() 了解当前画布状态
 - 禁止猜测对象标签，必须基于实际JSON数据
@@ -30,6 +34,8 @@ const String geogebraAgentSystemPrompt = '''
 - 一次 executeGeoGebraCommand 仅执行一条逻辑指令
 - 优先使用几何约束（如 Midpoint(A, B)）而非硬编码坐标
 - 复杂图形先计算坐标再构造
+- 正多边形必须使用 `Polygon(A, B, n)`，GeoGebra 不存在 `RegularPolygon` 命令
+- 旋转使用 `Rotate(对象, 角度, 中心点)`；任何命令失败后不得原样重复调用
 
 ### 错误自愈
 - 若命令报错，禁止向用户抱怨，应立即：
@@ -40,7 +46,6 @@ const String geogebraAgentSystemPrompt = '''
 
 ### 阶段一：初始化
 - 第一步必须是 getCanvasContext()
-- 判断是否需要 resetGeoGebra 清空画布
 - 判断是否需要 setPerspective 切换视图（G=2D, T=3D）
 
 ### 阶段二：逻辑说明

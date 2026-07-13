@@ -1,4 +1,4 @@
-name: mathmate
+﻿name: mathmate
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.4.3
+version: 2.4.4+2026071302
 
 environment:
   sdk: ^3.11.3
@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.1.0
+  crypto: ^3.0.7
   image_picker: ^1.0.0
 
   # The following adds the Cupertino Icons font to your application.
@@ -49,6 +50,7 @@ dependencies:
   path: ^1.9.1
   path_provider: ^2.1.5
   pdf: ^3.11.3
+  pdfrx: ^2.4.7
   permission_handler: ^11.3.1
   device_info_plus: ^11.0.0
   shared_preferences: ^2.5.3

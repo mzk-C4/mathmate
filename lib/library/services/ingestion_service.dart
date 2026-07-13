@@ -6,6 +6,7 @@ import 'package:mathmate/library/models/study_material.dart';
 import 'package:mathmate/library/services/classification_service.dart';
 import 'package:mathmate/library/services/material_repository.dart';
 import 'package:mathmate/library/services/parsing/image_ocr_parser.dart';
+import 'package:mathmate/library/services/parsing/pdf_text_parser.dart';
 import 'package:mathmate/services/app_logger.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -19,6 +20,7 @@ class IngestionService {
 
   final ImagePicker _picker = ImagePicker();
   final ImageOcrParser _ocr = ImageOcrParser();
+  final PdfTextParser _pdf = PdfTextParser();
   final ClassificationService _classifier = ClassificationService();
 
   /// 采集指定类型资料并入库
@@ -68,7 +70,8 @@ class IngestionService {
     }
     final String safeName = fileName.replaceAll(RegExp(r'[\\/]'), '_');
     final File dest = File(
-        '${libDir.path}/${DateTime.now().millisecondsSinceEpoch}_$safeName');
+      '${libDir.path}/${DateTime.now().millisecondsSinceEpoch}_$safeName',
+    );
     await source.copy(dest.path);
     final int sizeBytes = await dest.length();
 
@@ -78,9 +81,8 @@ class IngestionService {
     if (kind == MaterialKind.image) {
       extractedText = await _ocr.extractFromPath(dest.path);
     } else if (kind == MaterialKind.pdf) {
-      // L1 MVP：PDF 正文提取留接口，先用文件名供分类
-      // TODO(L4): 接 assets/pdfjs 提取正文文本
-      extractedText = '';
+      final PdfParseResult result = await _pdf.extractFromPath(dest.path);
+      extractedText = result.text;
     }
 
     // AI 分类

@@ -110,6 +110,32 @@ class JsonStore:
 
         return self.transact(op)
 
+    def create_questions(self, payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Atomically insert a normalized question batch after duplicate checks."""
+        def op(data: dict[str, Any]) -> list[dict[str, Any]]:
+            codes = [str(payload["question_code"]) for payload in payloads]
+            existing = {str(item["question_code"]) for item in data["questions"]}
+            duplicates = sorted(
+                {code for code in codes if codes.count(code) > 1 or code in existing}
+            )
+            if duplicates:
+                raise ValueError(f"题目编号重复: {', '.join(duplicates[:10])}")
+            now = utc_now()
+            created: list[dict[str, Any]] = []
+            for payload in payloads:
+                question = {
+                    "id": self.next_id(data, "questions"),
+                    **payload,
+                    "difficulty": str(payload["difficulty"]),
+                    "created_at": now,
+                    "updated_at": now,
+                }
+                data["questions"].append(question)
+                created.append(question)
+            return created
+
+        return self.transact(op)
+
     def get_question(self, question_id: int) -> dict[str, Any] | None:
         data = self.read()
         return next((item for item in data["questions"] if item["id"] == question_id), None)
@@ -204,6 +230,8 @@ class JsonStore:
                     "difficulty_snapshot": question["difficulty"],
                     "board_snapshot": question["board"],
                     "question_type_snapshot": question["question_type"],
+                    "knowledge_points_snapshot": question.get("knowledge_points", []),
+                    "source_snapshot": question.get("source", {}),
                     "student_answer": student_answer,
                     "image_url": image_url,
                     "is_correct": grade.is_correct,

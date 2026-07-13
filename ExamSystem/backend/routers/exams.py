@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from auth import AuthUser, ensure_owner, require_user
 from database import JsonStore, get_store
 from schemas import (
     BoardAnalysisItem,
@@ -37,6 +38,7 @@ def health() -> dict[str, str]:
 def available_count(
     payload: ExamFilterRequest,
     store: JsonStore = Depends(get_store),
+    _user: AuthUser = Depends(require_user),
 ) -> ExamAvailabilityResponse:
     questions = filter_questions(
         store,
@@ -53,7 +55,9 @@ def available_count(
 def create_exam(
     payload: ExamCreateRequest,
     store: JsonStore = Depends(get_store),
+    user: AuthUser = Depends(require_user),
 ) -> ExamCreateResponse:
+    ensure_owner(user, payload.student_id)
     questions = select_questions(
         store,
         total_count=payload.total_count,
@@ -76,10 +80,12 @@ def create_exam(
 def get_exam(
     exam_id: int,
     store: JsonStore = Depends(get_store),
+    user: AuthUser = Depends(require_user),
 ) -> ExamDetailResponse:
     exam = store.get_exam(exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="考试不存在")
+    ensure_owner(user, exam.get("student_id"))
 
     questions = [
         ExamQuestionOut(
@@ -109,12 +115,13 @@ def get_exam(
 async def submit_answer(
     payload: SubmitAnswerRequest,
     store: JsonStore = Depends(get_store),
+    user: AuthUser = Depends(require_user),
 ) -> SubmitAnswerResponse:
     exam = store.get_exam(payload.exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="考试不存在")
-    if exam["student_id"] != payload.student_id:
-        raise HTTPException(status_code=403, detail="无权提交该考试答案")
+    ensure_owner(user, exam.get("student_id"))
+    ensure_owner(user, payload.student_id)
 
     question = store.get_question(payload.question_id)
     if not question:
@@ -158,12 +165,13 @@ async def submit_answer(
 def finish_exam(
     payload: FinishExamRequest,
     store: JsonStore = Depends(get_store),
+    user: AuthUser = Depends(require_user),
 ) -> FinishExamResponse:
     exam = store.get_exam(payload.exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="考试不存在")
-    if exam["student_id"] != payload.student_id:
-        raise HTTPException(status_code=403, detail="无权完成该考试")
+    ensure_owner(user, exam.get("student_id"))
+    ensure_owner(user, payload.student_id)
 
     records = store.list_answer_records(payload.exam_id, payload.student_id)
     records_by_question = {record["question_id"]: record for record in records}
@@ -200,6 +208,11 @@ def finish_exam(
                     standard_answer=(record.get("standard_answer_snapshot") if record else question.get("standard_answer")),
                     explanation=(record.get("explanation_snapshot") if record else question.get("explanation")),
                     llm_feedback=record.get("llm_feedback") if record else "未作答",
+                    board=(record.get("board_snapshot") if record else question.get("board")),
+                    question_type=(record.get("question_type_snapshot") if record else question.get("question_type")),
+                    difficulty=float(record.get("difficulty_snapshot") if record else question.get("difficulty", 0.5)),
+                    knowledge_points=(record.get("knowledge_points_snapshot") if record else question.get("knowledge_points", [])),
+                    source=(record.get("source_snapshot") if record else question.get("source", {})),
                 )
             )
 

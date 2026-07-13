@@ -7,7 +7,9 @@ void main() {
   testWidgets('Home page shows initial recognizer UI', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MathMateApp(checkFirstLaunch: false));
+    await tester.pumpWidget(
+      const MathMateApp(checkFirstLaunch: false, isLoggedIn: true),
+    );
     // The home page contains continuous animations, so pumpAndSettle would
     // never become idle. One frame after async startup is enough here.
     await tester.pump(const Duration(seconds: 1));

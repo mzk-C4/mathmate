@@ -16,6 +16,8 @@ class QuestionCreate(BaseModel):
     board: str
     question_type: QuestionType
     options: dict[str, str] | None = None
+    knowledge_points: list[str] = Field(default_factory=list)
+    source: dict[str, Any] = Field(default_factory=dict)
 
 
 class QuestionOut(BaseModel):
@@ -26,6 +28,8 @@ class QuestionOut(BaseModel):
     board: str
     question_type: str
     options: dict[str, Any] | None = None
+    knowledge_points: list[str] = Field(default_factory=list)
+    source: dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,6 +39,18 @@ class QuestionAdminOut(QuestionOut):
     explanation: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class QuestionImportRequest(BaseModel):
+    questions: list[QuestionCreate] = Field(min_length=1, max_length=2000)
+    dry_run: bool = True
+
+
+class QuestionImportResponse(BaseModel):
+    dry_run: bool
+    accepted_count: int
+    imported_count: int
+    duplicate_codes: list[str] = Field(default_factory=list)
 
 
 class ExamFilterRequest(BaseModel):
@@ -114,6 +130,11 @@ class WrongQuestionItem(BaseModel):
     standard_answer: str | None
     explanation: str | None
     llm_feedback: str | None
+    board: str | None = None
+    question_type: str | None = None
+    difficulty: float = 0.5
+    knowledge_points: list[str] = Field(default_factory=list)
+    source: dict[str, Any] = Field(default_factory=dict)
 
 
 class FinishExamResponse(BaseModel):
