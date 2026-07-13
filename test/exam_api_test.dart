@@ -60,4 +60,28 @@ void main() {
 
     expect(count, 2);
   });
+
+  test('protected requests report an actionable message for 401', () async {
+    final client = MockClient(
+      (_) async => http.Response(
+        '{"detail":"Valid Bearer token required"}',
+        401,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
+    final api = ExamApi(
+      baseUrl: 'https://example.test',
+      client: client,
+      tokenProvider: () => null,
+    );
+
+    await expectLater(
+      api.availableQuestionCount(),
+      throwsA(
+        isA<ExamApiException>()
+            .having((e) => e.statusCode, 'statusCode', 401)
+            .having((e) => e.message, 'message', '登录状态已失效，请重新登录'),
+      ),
+    );
+  });
 }

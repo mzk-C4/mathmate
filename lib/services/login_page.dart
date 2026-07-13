@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart'; 
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  /// 从业务页进入登录时，登录成功后返回原页，而不是重复创建主页面。
+  final bool returnToPreviousPage;
+
+  const LoginPage({super.key, this.returnToPreviousPage = false});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -14,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _obscurePassword = true; 
   bool _isLoading = false;      
 
@@ -35,9 +38,8 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text.trim(),
       );
 
-      setState(() => _isLoading = false);
-
       if (!mounted) return;
+      setState(() => _isLoading = false);
 
       if (response.ok) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -46,16 +48,19 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.green,
           ),
         );
-        
-        // 登录成功后，销毁登录页，跳转到 MathMate 主界面
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-        
+
+        if (widget.returnToPreviousPage) {
+          Navigator.of(context).pop(true);
+        } else {
+          // 启动登录成功后，销毁登录页并进入主界面。
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const MainScreen()),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response.error ?? '登录失败，请检查账号密码'), 
+            content: Text(response.error ?? '登录失败，请检查账号密码'),
             backgroundColor: Colors.red,
           ),
         );
@@ -76,10 +81,14 @@ class _LoginPageState extends State<LoginPage> {
           // 右上角的跳过按钮
           TextButton(
             onPressed: () {
-              // 点击跳过，直接以游客身份进入主界面，且无法返回登录页
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              );
+              if (widget.returnToPreviousPage) {
+                Navigator.of(context).pop(false);
+              } else {
+                // 点击跳过，直接以游客身份进入主界面，且无法返回登录页
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const MainScreen()),
+                );
+              }
             },
             child: const Text(
               '跳过，直接使用',

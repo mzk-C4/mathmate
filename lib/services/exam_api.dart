@@ -162,6 +162,9 @@ class ExamApi {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return decoded as Map<String, dynamic>;
     }
+    if (response.statusCode == 401) {
+      throw ExamApiException(401, '登录状态已失效，请重新登录');
+    }
     final message = decoded is Map<String, dynamic>
         ? decoded['detail']
         : decoded;

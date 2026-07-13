@@ -4,6 +4,7 @@ import 'package:mathmate/pages/exam_taking_page.dart';
 import 'package:mathmate/services/ability_score_service.dart';
 import 'package:mathmate/services/auth_service.dart';
 import 'package:mathmate/services/exam_api.dart';
+import 'package:mathmate/services/login_page.dart';
 
 /// 自由组卷配置页 —— 选择维度、难度、题量后创建考试
 class ExamCreationPage extends StatefulWidget {
@@ -77,6 +78,8 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
   }
 
   Future<void> _startExam() async {
+    if (!await _ensureAuthenticated() || !mounted) return;
+
     if (!_serverAvailable) {
       ScaffoldMessenger.of(
         context,
@@ -152,6 +155,24 @@ class _ExamCreationPageState extends State<ExamCreationPage> {
     } finally {
       if (mounted) setState(() => _starting = false);
     }
+  }
+
+  Future<bool> _ensureAuthenticated() async {
+    final AuthService auth = AuthService();
+    if (auth.isLoggedIn && (auth.token?.isNotEmpty ?? false)) return true;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('考试功能需要登录，请先完成登录')),
+    );
+    final bool? loggedIn = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(returnToPreviousPage: true),
+      ),
+    );
+    if (!mounted) return false;
+    return loggedIn == true &&
+        auth.isLoggedIn &&
+        (auth.token?.isNotEmpty ?? false);
   }
 
   List<String>? _boardsForSelectedDimension() {
