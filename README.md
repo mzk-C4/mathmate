@@ -11,7 +11,7 @@
   [![Dart](https://img.shields.io/badge/Dart-^3.11.3-blue?logo=dart)](https://dart.dev)
   [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
   [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-lightgrey)](https://github.com/mzk-C4/mathmate)
-  [![Version](https://img.shields.io/badge/v2.4.3-purple)](https://github.com/mzk-C4/mathmate/releases)
+  [![Version](https://img.shields.io/badge/v2.4.4-purple)](https://github.com/mzk-C4/mathmate/releases)
 
   **拍照搜题 · 几何可视化 · AI 对话助手 · 学习画像 · 智能考试系统**
 
@@ -258,7 +258,7 @@ lib/
 
 ## 🔮 开发路线
 
-### ✅ 已完成 (v2.4.3)
+### ✅ 已完成 (v2.4.4)
 
 - [x] 核心流水线（OCR → 解题 → 可视化）
 - [x] AI 对话助手（流式响应）
@@ -283,11 +283,16 @@ lib/
 - [x] 代理认证头统一（10个AI服务接入X-MathMate-Token）
 - [x] GeoChat 迁移至 HTTPS（mathmate.top）
 - [x] 笔记标题修复（空标题自动时间戳、JSON泄露防御）
+- [x] 错题本系统（记录/分类/复习）
+- [x] GeoGebra 离线命令解析与搜索
+- [x] 考试系统后端认证模块（JWT/权限中间件）
+- [x] 更新服务安全加固（HTTPS白名单/SHA256/大小限制）
+- [x] PDF 文本解析服务
+- [x] 题目流水线与 E2E 冒烟测试脚本
 
 ### 🚧 进行中
 
 - [ ] 个人知识图谱构建
-- [ ] 智能错题本
 - [ ] 学习路径智能推荐
 
 ### 📋 计划中
