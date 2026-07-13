@@ -11,7 +11,7 @@
   [![Dart](https://img.shields.io/badge/Dart-^3.11.3-blue?logo=dart)](https://dart.dev)
   [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
   [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-lightgrey)](https://github.com/mzk-C4/mathmate)
-  [![Version](https://img.shields.io/badge/v2.4.4-purple)](https://github.com/mzk-C4/mathmate/releases)
+  [![Version](https://img.shields.io/badge/v2.4.5-purple)](https://github.com/mzk-C4/mathmate/releases)
 
   **拍照搜题 · 几何可视化 · AI 对话助手 · 学习画像 · 智能考试系统**
 
@@ -258,7 +258,7 @@ lib/
 
 ## 🔮 开发路线
 
-### ✅ 已完成 (v2.4.4)
+### ✅ 已完成 (v2.4.5)
 
 - [x] 核心流水线（OCR → 解题 → 可视化）
 - [x] AI 对话助手（流式响应）
@@ -289,6 +289,11 @@ lib/
 - [x] 更新服务安全加固（HTTPS白名单/SHA256/大小限制）
 - [x] PDF 文本解析服务
 - [x] 题目流水线与 E2E 冒烟测试脚本
+- [x] GeoChat 几何引擎（计划生成/执行/验证/工具处理）
+- [x] 资料库长按删除功能
+- [x] 练习答题系统优化（选项解析/答案对比/导航）
+- [x] 考试认证流程对齐
+- [x] Android 发布脚本
 
 ### 🚧 进行中
 
