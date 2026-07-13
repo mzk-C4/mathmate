@@ -118,13 +118,6 @@ final List<VideoResource> allVideoResources = <VideoResource>[
     uploader: '一数',
   ),
   const VideoResource(
-    title: '核心概念梳理：集合与不等式',
-    grade: '高中',
-    module: '集合、逻辑与不等式',
-    bvId: 'BV1Z5411j7jB',
-    uploader: '王梦抒',
-  ),
-  const VideoResource(
     title: '集合+逻辑基础',
     grade: '高中',
     module: '集合、逻辑与不等式',
@@ -247,14 +240,6 @@ final List<VideoResource> allVideoResources = <VideoResource>[
     bvId: 'BV1622LBFEv7',
     uploader: '王梦抒',
   ),
-  const VideoResource(
-    title: '诱导公式记忆法',
-    grade: '高中',
-    module: '三角函数',
-    bvId: 'BV1rk4y1A7mV',
-    uploader: '铭哥套路高考数学',
-  ),
-
   // ==================== 向量与复数（平面向量 来自 curated 清单） ====================
   const VideoResource(
     title: '向量基本概念',
@@ -566,25 +551,11 @@ final List<VideoResource> allVideoResources = <VideoResource>[
 
   // ==================== 数列 ====================
   const VideoResource(
-    title: '等差与等比数列',
-    grade: '高中',
-    module: '数列',
-    bvId: 'BV1nL41187k7',
-    uploader: '一数',
-  ),
-  const VideoResource(
     title: '错位相减法',
     grade: '高中',
     module: '数列',
     bvId: 'BV1byZtBuEV1',
     uploader: '佟大大还是ETT',
-  ),
-  const VideoResource(
-    title: '零基础学数列',
-    grade: '高中',
-    module: '数列',
-    bvId: 'BV1Z5411j7jB',
-    uploader: '王梦抒',
   ),
   const VideoResource(
     title: '数列求通项公式',
@@ -626,25 +597,11 @@ final List<VideoResource> allVideoResources = <VideoResource>[
 
   // ==================== 概率统计与排列组合 ====================
   const VideoResource(
-    title: '排列组合合集',
-    grade: '高中',
-    module: '概率统计与排列组合',
-    bvId: 'BV1nL41187k7',
-    uploader: '一数',
-  ),
-  const VideoResource(
     title: '随机变量的期望方差',
     grade: '高中',
     module: '概率统计与排列组合',
     bvId: 'BV1jJ411274s',
     uploader: '佟大大还是ETT',
-  ),
-  const VideoResource(
-    title: '生活化案例讲解',
-    grade: '高中',
-    module: '概率统计与排列组合',
-    bvId: 'BV1Z5411j7jB',
-    uploader: '王梦抒',
   ),
   const VideoResource(
     title: '条件概率讲解',

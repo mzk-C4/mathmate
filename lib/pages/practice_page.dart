@@ -43,6 +43,8 @@ class _PracticePageState extends State<PracticePage> {
   void initState() {
     super.initState();
     _abilityService.addListener(_onAbilityChanged);
+    // [摆拍] 启用演示模式：自评全 6.00 分 + 快速成长 λ
+    // _abilityService.enableDemoMode();
     _loadGradeAndRecommend();
   }
 
@@ -87,6 +89,42 @@ class _PracticePageState extends State<PracticePage> {
       );
 
       if (!mounted) return;
+
+      // ====== [摆拍] 演示题目 ======
+      // const LibraryQuestion demoBinomial = LibraryQuestion(
+      //   id: 'demo_binomial_2022tj',
+      //   section: '计数原理',
+      //   type: '单选题',
+      //   content: r'在 $(\sqrt{x} + \frac{3}{x^2})^5$ 的展开式中，常数项是',
+      //   options: ['A. 5', 'B. 10', 'C. 15', 'D. 20'],
+      //   answer: 'C',
+      //   solution: r'由二项式定理，通项 $$T_{r+1} = C_5^r \cdot (\sqrt{x})^{5-r} \cdot \left(\frac{3}{x^2}\right)^r = C_5^r \cdot 3^r \cdot x^{\frac{5-r}{2}-2r}$$'
+      //       '\n\n'
+      //       r'令 $\frac{5-r}{2} - 2r = 0$，得 $5-r-4r=0$，即 $r=1$。'
+      //       '\n\n'
+      //       r'故常数项为 $T_2 = C_5^1 \cdot 3^1 = 5 \times 3 = 15$，选 C。',
+      //   difficulty: 0.6,
+      //   knowledgePoints: ['二项式定理', '常数项', '计数原理'],
+      //   sourceRef: '2022天津卷',
+      // );
+      // const LibraryQuestion demoProbability = LibraryQuestion(
+      //   id: 'demo_probability_5choose3',
+      //   section: '计数原理',
+      //   type: '填空题',
+      //   content: r'从甲、乙等5名同学中随机选3名参加社区服务工作，则甲、乙都入选的概率为',
+      //   answer: '3/10',
+      //   solution: r'从5人中选3人，总选法为 $C_5^3 = 10$ 种。'
+      //       '\n\n'
+      //       r'甲、乙都入选时，只需再从剩余3人中选1人，选法为 $C_3^1 = 3$ 种。'
+      //       '\n\n'
+      //       r'故概率为 $\frac{3}{10}$。',
+      //   difficulty: 0.5,
+      //   knowledgePoints: ['古典概型', '组合计数', '计数原理'],
+      //   sourceRef: '2022新课标卷',
+      // );
+      // final List<LibraryQuestion> questions = [demoBinomial, demoProbability, ...result.questions];
+      // ====== [摆拍] 演示题目 END ======
+
       setState(() {
         _questions = result.questions;
         _details = result.details;
@@ -280,6 +318,7 @@ class _PracticePageState extends State<PracticePage> {
           index: index,
           grade: _grade,
           detail: _details[_questions[index].dimensionFromSectionFor(_grade)],
+          allQuestions: _questions,
         );
       },
     );
@@ -369,12 +408,15 @@ class _QuestionCard extends StatelessWidget {
   final int index;
   final int? grade;
   final DimensionRecommendDetail? detail;
+  /// 全部推荐题目列表，传入 QuestionSolverPage 用于"下一题"跳转
+  final List<LibraryQuestion> allQuestions;
 
   const _QuestionCard({
     required this.question,
     required this.index,
     this.grade,
     this.detail,
+    this.allQuestions = const [],
   });
 
   @override
@@ -534,7 +576,11 @@ class _QuestionCard extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => QuestionSolverPage(question: question),
+                      builder: (_) => QuestionSolverPage(
+                        question: question,
+                        allQuestions: allQuestions,
+                        currentIndex: index,
+                      ),
                     ),
                   );
                 },

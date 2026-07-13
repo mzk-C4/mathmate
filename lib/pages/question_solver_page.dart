@@ -7,8 +7,17 @@ import 'package:mathmate/services/ability_score_service.dart';
 /// 答题页面 —— 从题库选题后进入，支持单选/填空，提交后看解析
 class QuestionSolverPage extends StatefulWidget {
   final LibraryQuestion question;
+  /// 全部推荐题目列表（用于"下一题"跳转）
+  final List<LibraryQuestion> allQuestions;
+  /// 当前题目在列表中的索引（0-based）
+  final int currentIndex;
 
-  const QuestionSolverPage({super.key, required this.question});
+  const QuestionSolverPage({
+    super.key,
+    required this.question,
+    this.allQuestions = const [],
+    this.currentIndex = 0,
+  });
 
   @override
   State<QuestionSolverPage> createState() => _QuestionSolverPageState();
@@ -53,10 +62,15 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
       return;
     }
 
-    // 判断对错
-    final bool correct = _isChoice
-        ? userAnswer == q.answer
-        : userAnswer.toLowerCase() == q.answer.toLowerCase();
+    // 判断对错（清洗标准答案中的 $、括号、空格）
+    final String cleanAnswer = _cleanAnswer(q.answer);
+    final bool correct;
+    if (_isChoice) {
+      correct = userAnswer == cleanAnswer;
+    } else {
+      // 填空题：归一化比较，支持 3/10 ↔ 0.3 ↔ \frac{3}{10} 等价判定
+      correct = _normalizedEquals(userAnswer, q.answer);
+    }
 
     // 记录到能力评分
     final int dimIndex = _dimensionIndex;
@@ -85,12 +99,76 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
     return -1;
   }
 
+  /// 清洗答案：去掉 $、括号、空格，确保与选项 label 格式一致
+  String _cleanAnswer(String answer) {
+    return answer.replaceAll(RegExp(r'[\$\(\)\s]'), '');
+  }
+
+  /// 填空题归一化相等判断：支持分数、小数、LaTeX 等价
+  bool _normalizedEquals(String user, String expected) {
+    final String u = user.trim();
+    final String e = expected.trim().replaceAll(RegExp(r'[\$\\,{}]'), '');
+
+    // 直接相等
+    if (u.toLowerCase() == e.toLowerCase()) return true;
+
+    // 尝试数值比较：处理 3/10 ↔ 0.3
+    final double? uNum = _tryParseNumber(u);
+    final double? eNum = _tryParseNumber(e);
+    if (uNum != null && eNum != null) {
+      return (uNum - eNum).abs() < 1e-9;
+    }
+
+    return false;
+  }
+
+  /// 尝试将字符串解析为数值（支持分数如 "3/10"、小数如 "0.3"）
+  double? _tryParseNumber(String s) {
+    // 处理分数：a/b
+    final slash = s.indexOf('/');
+    if (slash > 0 && slash < s.length - 1) {
+      final a = double.tryParse(s.substring(0, slash));
+      final b = double.tryParse(s.substring(slash + 1));
+      if (a != null && b != null && b != 0) return a / b;
+    }
+    return double.tryParse(s);
+  }
+
   void _retry() {
     setState(() {
       _submitted = false;
       _isCorrect = null;
       _selectedOption = null;
       _answerController.clear();
+    });
+  }
+
+  /// 是否还有下一题（当前不是最后一题）
+  bool get _hasNextQuestion =>
+      widget.allQuestions.isNotEmpty &&
+      widget.currentIndex < widget.allQuestions.length - 1;
+
+  /// 跳转到下一题：延迟到下一帧 pushReplacement，避免 Android 路由动画冲突，
+  /// 同时保证返回键直接回到练习列表而非上一题。
+  void _goToNextQuestion() {
+    if (!_hasNextQuestion) return;
+    final next = widget.allQuestions[widget.currentIndex + 1];
+    final nextIdx = widget.currentIndex + 1;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => QuestionSolverPage(
+              question: next,
+              allQuestions: widget.allQuestions,
+              currentIndex: nextIdx,
+            ),
+          ),
+        );
+      } catch (e) {
+        debugPrint('下一题跳转失败: $e');
+      }
     });
   }
 
@@ -194,17 +272,44 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: options.map((opt) {
-        // 解析选项：如 "A. {−1, 0}" → label="A", text="{−1, 0}"
-        final String label = opt.length >= 2 && opt[1] == '.'
-            ? opt.substring(0, 1)
-            : opt;
-        final String text = opt.length >= 2 && opt[1] == '.'
-            ? opt.substring(2).trim()
-            : opt;
+        // 解析选项：支持多种格式
+        //   "(A) content" / "$$(A)$$ content" → label="A", text="content"
+        //   "A. content"  / "$$A$$. content"  → label="A", text="content"
+        //   "A、content"                       → label="A", text="content"
+        String label;
+        String text;
+
+        // 1) 先尝试括号格式：(A) 或 $$(A)$$
+        final paren = RegExp(r'^\$*\s*\(\s*([A-D])\s*\)\s*\$*\s*(.*)').firstMatch(opt);
+        if (paren != null) {
+          label = paren.group(1)!;
+          text = paren.group(2)!;
+        } else {
+          // 2) 再尝试点号/顿号格式：A. 或 A、
+          final dot = RegExp(r'^\$*\s*([A-D])\s*\$*\s*[\.、．]\s*(.*)').firstMatch(opt);
+          if (dot != null) {
+            label = dot.group(1)!;
+            text = dot.group(2)!;
+          } else {
+            // 3) 兜底
+            label = opt.length >= 2 && opt[1] == '.'
+                ? opt.substring(0, 1)
+                : opt;
+            text = opt.length >= 2 && opt[1] == '.'
+                ? opt.substring(2).trim()
+                : opt;
+          }
+        }
+        // 最终清理：label 只保留纯字母 ABCD
+        label = label.replaceAll(RegExp(r'[^A-D]'), '');
+        if (label.isEmpty) label = opt;
+
+        // 清洗标准答案（去掉 $、括号、空格），用于正确选项高亮和判题
+        final String cleanAnswer = q.answer.replaceAll(RegExp(r'[\$\(\)\s]'), '');
 
         final bool isSelected = _selectedOption == label;
-        final bool showCorrect = _submitted && label == q.answer;
-        final bool showWrong = _submitted && isSelected && label != q.answer;
+        final bool showCorrect = _submitted && label == cleanAnswer;
+        final bool showWrong = _submitted && isSelected && label != cleanAnswer;
 
         Color? bgColor;
         Color? borderColor;
@@ -361,7 +466,7 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
               Expanded(
                 child: _isChoice
                     ? Text(
-                        q.answer,
+                        _cleanAnswer(q.answer),
                         style: TextStyle(
                           fontSize: 14,
                           color: cs.primary,
@@ -400,12 +505,15 @@ class _QuestionSolverPageState extends State<QuestionSolverPage> {
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('重新作答'),
               ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: const Text('下一题'),
-              ),
+              // 下一题按钮：仅当不是最后一题时显示
+              if (_hasNextQuestion) ...[
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: _goToNextQuestion,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                  label: const Text('下一题'),
+                ),
+              ],
             ],
           ),
         ],
@@ -477,33 +585,22 @@ class _LatexRenderer extends StatelessWidget {
 
   bool _hasLatexCommands(String s) => RegExp(r'\\[a-zA-Z]+').hasMatch(s);
 
-  /// 混合模式：逐字符解析 $...$ 和 $$...$$，其余为普通文本
+  /// 混合模式：解析 $...$ 和 $$...$$，以 Wrap 布局避免 Android WidgetSpan 崩溃
   Widget _buildMixed() {
     final String t = text;
-    final List<InlineSpan> spans = <InlineSpan>[];
     final Color effectiveColor = color ?? cs.onSurface;
     final FontWeight weight = bold ? FontWeight.w700 : FontWeight.w400;
+    final List<_LatexSegment> segments = <_LatexSegment>[];
 
     int i = 0;
     while (i < t.length) {
-      // 检查 $$ 块级公式开始
+      // 检查 $$ 块级公式
       if (i + 1 < t.length && t.substring(i).startsWith(r'$$')) {
         final end = t.indexOf(r'$$', i + 2);
         if (end != -1) {
           final formula = t.substring(i + 2, end).trim();
           if (formula.isNotEmpty) {
-            spans.add(WidgetSpan(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Math.tex(
-                  formula,
-                  mathStyle: MathStyle.display,
-                  textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor),
-                  onErrorFallback: (err) => Text(formula,
-                      style: TextStyle(fontSize: baseFontSize, color: effectiveColor)),
-                ),
-              ),
-            ));
+            segments.add(_LatexSegment(formula, isLatex: true, isDisplay: true));
           }
           i = end + 2;
           continue;
@@ -516,16 +613,7 @@ class _LatexRenderer extends StatelessWidget {
         if (end != -1) {
           final formula = t.substring(i + 1, end);
           if (formula.trim().isNotEmpty) {
-            spans.add(WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: Math.tex(
-                formula,
-                mathStyle: MathStyle.text,
-                textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
-                onErrorFallback: (err) => Text(formula,
-                    style: TextStyle(fontSize: baseFontSize, color: effectiveColor)),
-              ),
-            ));
+            segments.add(_LatexSegment(formula, isLatex: true));
           }
           i = end + 1;
           continue;
@@ -546,15 +634,47 @@ class _LatexRenderer extends StatelessWidget {
 
       final String plain = next == -1 ? t.substring(i) : t.substring(i, next);
       if (plain.isNotEmpty) {
-        spans.add(TextSpan(
-          text: plain,
-          style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight, height: 1.6),
-        ));
+        segments.add(_LatexSegment(plain));
       }
       if (next == -1) break;
       i = next;
     }
 
-    return Text.rich(TextSpan(children: spans));
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: segments.map((seg) {
+        if (!seg.isLatex) {
+          return Text(
+            seg.text,
+            style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight, height: 1.6),
+          );
+        }
+        // 公式用 Math.tex 渲染，出错兜底显示原文
+        try {
+          return Math.tex(
+            seg.text,
+            mathStyle: seg.isDisplay ? MathStyle.display : MathStyle.text,
+            textStyle: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+            onErrorFallback: (err) => Text(
+              seg.text,
+              style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+            ),
+          );
+        } catch (_) {
+          return Text(
+            seg.text,
+            style: TextStyle(fontSize: baseFontSize, color: effectiveColor, fontWeight: weight),
+          );
+        }
+      }).toList(),
+    );
   }
+}
+
+/// LaTeX 混合文本解析片段
+class _LatexSegment {
+  final String text;
+  final bool isLatex;
+  final bool isDisplay;
+  const _LatexSegment(this.text, {this.isLatex = false, this.isDisplay = false});
 }
