@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,23 +46,20 @@ class AuthResponse {
   final String? error;
 
   AuthResponse({this.token, this.user, this.error});
-  bool get ok => token != null;
+  bool get ok => token != null || user != null;
 }
 
 /// 认证服务 —— 注册/登录/个人信息/Token 管理。
 ///
 /// 与服务端 auth_server.js 通信，Token 存储在 SharedPreferences。
 class AuthService {
-  // 公开构建通过 AUTH_BASE_URL 指向生产服务；本地开发仍保留原调试地址。
+  // 默认与考试接口使用同一套线上用户和签名密钥；本地联调可显式配置地址。
   static String get _baseUrl {
     final configured = (dotenv.env['AUTH_BASE_URL'] ?? '').trim();
     if (configured.isNotEmpty) {
       return configured.replaceFirst(RegExp(r'/+$'), '');
     }
-    if (kReleaseMode) return 'https://mathmate.top/api/auth';
-    return kIsWeb
-        ? 'http://localhost:3002/api/auth'
-        : 'http://10.136.66.36:3002/api/auth';
+    return 'https://mathmate.top/api/auth';
   }
 
   static const String _tokenKey = 'auth_token';
