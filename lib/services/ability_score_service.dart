@@ -54,6 +54,11 @@ class AbilityScoreService extends ChangeNotifier {
   /// 超参数
   static const double n0 = 5.0; // 初始虚拟样本量
   static const double lambda = 30.0; // 题量成长半衰期
+  // [摆拍] static const double demoLambda = 15.0; // 摆拍模式温和成长半衰期（≈ +0.05/题）
+
+  // [摆拍] 演示模式开关
+  // bool _demoMode = false;
+  // bool get demoMode => _demoMode;
 
   /// K-12 自评画像
   UserRadarProfile? _selfAssessmentK12;
@@ -96,6 +101,29 @@ class AbilityScoreService extends ChangeNotifier {
     _currentGrade = grade;
     notifyListeners();
   }
+
+  // [摆拍] 启用演示模式：自评全 3.0（显示 6.00 分），清空答题统计，快速成长 λ
+  // Future<void> enableDemoMode() async {
+  //   _demoMode = true;
+  //   final List<double> scores = List<double>.filled(6, 3.0);
+  //   await saveSelfAssessment(UserRadarProfile(scores: scores));
+  //   final List<DimensionStats> active = stats;
+  //   for (final DimensionStats s in active) {
+  //     s.totalQuestions = 0;
+  //     s.correctQuestions = 0;
+  //     s.avgDifficulty = 3.0;
+  //   }
+  //   await _saveStats();
+  //   notifyListeners();
+  //   debugPrint('[AbilityScore] Demo mode ON — λ=$demoLambda, self=3.0, stats cleared');
+  // }
+
+  // [摆拍] 关闭演示模式
+  // void disableDemoMode() {
+  //   _demoMode = false;
+  //   notifyListeners();
+  //   debugPrint('[AbilityScore] Demo mode OFF');
+  // }
 
   /// 保存自评分数（自动关联到对应维度体系）
   Future<void> saveSelfAssessment(UserRadarProfile profile) async {
@@ -242,6 +270,7 @@ class AbilityScoreService extends ChangeNotifier {
       R: R,
       D: D,
       lambdaValue: lambda,
+      // [摆拍] lambdaValue: _demoMode ? demoLambda : lambda,
     );
   }
 
